@@ -1,32 +1,39 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   thinking: string
 }>()
 
-const expanded = ref(false)
+const expanded = ref(true)
+
+const thinkCount = computed(() => {
+  const lines = props.thinking.trim().split('\n').length
+  const chars = props.thinking.length
+  if (chars > 500) return `${lines} 行 · ${Math.round(chars / 100) / 10}k 字`
+  return `${chars} 字`
+})
 </script>
 
 <template>
-  <div class="mb-3">
+  <div class="mb-4">
     <button
       @click="expanded = !expanded"
-      class="flex items-center gap-1.5 text-xs text-app-muted hover:text-app-heading transition-colors"
+      class="flex items-center gap-2 text-xs text-app-muted hover:text-app-heading transition-colors group mb-2"
     >
       <svg
-        class="w-3.5 h-3.5 transition-transform"
+        class="w-3 h-3 transition-transform shrink-0"
         :class="{ 'rotate-90': expanded }"
         fill="none" stroke="currentColor" viewBox="0 0 24 24"
       >
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
       </svg>
-      思考过程
+      <span class="font-medium">思考过程</span>
+      <span class="text-[10px] opacity-60">{{ thinkCount }}</span>
     </button>
     <div
       v-if="expanded"
-      class="mt-2 p-3 bg-amber-50/50 rounded-lg border border-amber-100/50 text-app-muted text-xs
-             whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto"
+      class="relative pl-4 border-l-2 border-amber-200 text-xs text-app-muted leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto"
     >
       {{ thinking }}
     </div>

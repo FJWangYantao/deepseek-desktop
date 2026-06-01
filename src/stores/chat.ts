@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import type { Message } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
@@ -137,8 +137,19 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = []
   }
 
+  async function retryMessage(messageId: string) {
+    const idx = messages.value.findIndex(m => m.id === messageId)
+    if (idx === -1) return
+    const userMsg = messages.value[idx]
+    if (userMsg.role !== 'user') return
+    // 删除这条用户消息及之后的所有回复
+    messages.value = messages.value.slice(0, idx)
+    await nextTick()
+    sendMessage(userMsg.content)
+  }
+
   return {
     messages, streaming, streamingThinking, thinkingEnabled, isGenerating, currentModel,
-    sendMessage, clearMessages, loadFromSession, toggleThinking,
+    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage,
   }
 })

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+import { fixCjkEmphasis } from '@/composables/useMarkdown'
 
 const props = defineProps<{
   content: string
@@ -42,6 +43,26 @@ renderer.code = function({ text, lang }: { text: string; lang?: string }) {
 </div>`
 }
 
+renderer.table = function({ header, rows }: { header: { text: string }[]; rows: { text: string }[][] }) {
+  const thead = header.map(cell =>
+    `<th class="px-3 py-2 text-left text-xs font-medium text-app-heading bg-[#f3f0eb] border-b border-app-border">${cell.text}</th>`
+  ).join('')
+
+  const tbody = rows.map((row, i) =>
+    `<tr class="${i % 2 === 0 ? 'bg-white' : 'bg-[#f9f8f5]'} border-b border-[#f0ede5] last:border-b-0">
+      ${row.map(cell => `<td class="px-3 py-2 text-sm text-app-text border-r border-[#f0ede5] last:border-r-0">${cell.text}</td>`).join('')}
+    </tr>`
+  ).join('')
+
+  return `
+<div class="my-4 overflow-x-auto rounded-lg border border-app-border">
+  <table class="w-full border-collapse text-sm">
+    <thead><tr>${thead}</tr></thead>
+    <tbody>${tbody}</tbody>
+  </table>
+</div>`
+}
+
 marked.setOptions({
   renderer,
   breaks: true,
@@ -50,7 +71,7 @@ marked.setOptions({
 
 const html = computed(() => {
   if (!props.content) return ''
-  return marked.parse(props.content) as string
+  return marked.parse(fixCjkEmphasis(props.content)) as string
 })
 
 // 事件委托：处理复制按钮点击

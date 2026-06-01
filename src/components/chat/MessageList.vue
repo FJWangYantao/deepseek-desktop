@@ -4,6 +4,7 @@ import { useChatStore } from '@/stores/chat'
 import { nextTick, ref, watch } from 'vue'
 import { marked } from 'marked'
 import { useStreamRender } from '@/composables/useStreamRender'
+import { fixCjkEmphasis } from '@/composables/useMarkdown'
 import MessageItem from './MessageItem.vue'
 import StreamCursor from '@/components/renderer/StreamCursor.vue'
 
@@ -25,7 +26,7 @@ const streamingPending = computed(() => {
 
 const streamHtml = computed(() => {
   if (!streamingSafe.value) return ''
-  return marked.parse(streamingSafe.value, { breaks: true, gfm: true }) as string
+  return marked.parse(fixCjkEmphasis(streamingSafe.value), { breaks: true, gfm: true }) as string
 })
 
 watch(
@@ -87,10 +88,10 @@ function isNearBottom(): boolean {
             D
           </div>
           <div class="min-w-0 flex-1">
-            <div v-if="chatStore.streamingThinking" class="mb-2">
-              <details class="text-sm">
-                <summary class="text-app-muted cursor-pointer">思考中...</summary>
-                <div class="mt-1 p-2.5 bg-amber-50 rounded-lg border border-amber-100 text-app-muted text-xs whitespace-pre-wrap">
+            <div v-if="chatStore.streamingThinking" class="mb-3">
+              <details open class="text-xs">
+                <summary class="text-app-muted hover:text-app-heading cursor-pointer font-medium">思考中...</summary>
+                <div class="mt-2 pl-4 border-l-2 border-amber-200 text-app-muted leading-relaxed whitespace-pre-wrap">
                   {{ chatStore.streamingThinking }}
                 </div>
               </details>

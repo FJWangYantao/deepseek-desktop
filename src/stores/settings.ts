@@ -4,15 +4,14 @@ import type { ModelOption } from '@/types'
 
 export const useSettingsStore = defineStore('settings', () => {
   const apiKey = ref(localStorage.getItem('ds_api_key') ?? '')
-  const defaultModel = ref(localStorage.getItem('ds_default_model') ?? 'deepseek-chat')
+  const defaultModel = ref(localStorage.getItem('ds_default_model') ?? 'deepseek-v4-pro')
   const showKey = ref(false)
 
   const models: ModelOption[] = [
-    { id: 'deepseek-chat', name: 'V4 Chat', description: '通用对话模型，快速响应' },
-    { id: 'deepseek-reasoner', name: 'V4 Reasoner', description: '深度推理模型，复杂问题' },
+    { id: 'deepseek-v4-pro', name: 'V4 Pro', description: '旗舰模型，最强性能' },
+    { id: 'deepseek-v4-flash', name: 'V4 Flash', description: '快速模型，高性价比' },
   ]
 
-  // 持久化 API Key
   function setApiKey(key: string) {
     apiKey.value = key
     localStorage.setItem('ds_api_key', key)
@@ -26,7 +25,7 @@ export const useSettingsStore = defineStore('settings', () => {
   function clearAllData() {
     localStorage.clear()
     apiKey.value = ''
-    defaultModel.value = 'deepseek-chat'
+    defaultModel.value = 'deepseek-v4-pro'
   }
 
   return {

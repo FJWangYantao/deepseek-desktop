@@ -16,8 +16,11 @@ export async function deepSeekChat(options: ChatOptions) {
     stream: true,
   }
 
-  if (model === 'deepseek-reasoner') {
-    body.thinking = { type: thinking }
+  // V4 Pro 和 V4 Flash 都支持思考模式
+  if (thinking === 'enabled') {
+    body.thinking = { type: 'enabled', reasoning_effort: 'high' }
+  } else {
+    body.thinking = { type: 'disabled' }
   }
 
   const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -59,11 +62,11 @@ export async function deepSeekChat(options: ChatOptions) {
         const data = JSON.parse(dataStr)
         const delta = data.choices?.[0]?.delta
 
-        if (delta?.content) {
-          onToken(delta.content)
-        }
         if (delta?.reasoning_content) {
           onThinking(delta.reasoning_content)
+        }
+        if (delta?.content) {
+          onToken(delta.content)
         }
       } catch {
         // 忽略解析失败的行
