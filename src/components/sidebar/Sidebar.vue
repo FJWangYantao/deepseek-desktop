@@ -18,7 +18,7 @@ function createSession() {
       <button
         @click="createSession"
         class="w-full py-2.5 text-sm font-medium rounded-lg border border-app-border bg-app-card
-               text-app-heading hover:bg-[#e8e5db] transition-colors"
+               text-app-heading hover:bg-app-hover-strong transition-colors"
       >
         + 新对话
       </button>

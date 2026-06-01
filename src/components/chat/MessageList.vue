@@ -95,7 +95,7 @@ function isNearBottom(): boolean {
             <div v-if="chatStore.streamingThinking" class="mb-3">
               <details open class="text-xs">
                 <summary class="text-app-muted hover:text-app-heading cursor-pointer font-medium">思考中...</summary>
-                <div class="mt-2 pl-4 border-l-2 border-amber-200 text-app-muted leading-relaxed whitespace-pre-wrap">
+                <div class="mt-2 pl-4 border-l-2 border-app-accent-soft-border text-app-muted leading-[1.8] whitespace-pre-wrap">
                   {{ chatStore.streamingThinking }}
                 </div>
               </details>
@@ -103,7 +103,7 @@ function isNearBottom(): boolean {
             <!-- 已闭合的 Markdown 部分：用 marked 实时渲染 -->
             <div
               v-if="streamHtml"
-              class="text-app-text leading-relaxed markdown-body prose-sm max-w-none
+              class="text-app-text leading-[1.8] markdown-body prose-sm max-w-none
                      prose-headings:text-app-heading prose-p:text-app-text prose-strong:text-app-text
                      prose-a:text-app-accent prose-a:no-underline
                      prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:text-xs prose-code:font-normal
@@ -113,7 +113,7 @@ function isNearBottom(): boolean {
               v-html="streamHtml"
             />
             <!-- 未闭合的代码块部分：纯文本 + 光标 -->
-            <div class="text-app-text whitespace-pre-wrap leading-relaxed" :style="{ fontSize: 'var(--app-font-size)' }">
+            <div class="text-app-text whitespace-pre-wrap leading-[1.8]" :style="{ fontSize: 'var(--app-font-size)' }">
               {{ streamingPending }}<StreamCursor v-if="streamingPending || !streamHtml" />
             </div>
           </div>

@@ -32,9 +32,9 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="px-5 pb-4 pt-2 border-t border-[#f0ede5]">
+  <div class="px-5 pb-4 pt-2 border-t border-app-border-light">
     <div class="max-w-[768px] mx-auto">
-      <div class="bg-white border border-app-border rounded-xl p-2.5">
+      <div class="bg-app-input border border-app-border rounded-xl p-2.5">
         <textarea
           v-model="inputText"
           @keydown="onKeydown"
@@ -43,10 +43,10 @@ function onKeydown(e: KeyboardEvent) {
           placeholder="输入消息..."
           :style="{ fontSize: 'var(--app-font-size)' }"
           class="w-full resize-none px-1.5 py-1 text-app-text placeholder-app-muted
-                 bg-transparent border-none outline-none leading-relaxed
+                 bg-transparent border-none outline-none leading-[1.8]
                  min-h-[28px] max-h-[160px]"
         ></textarea>
-        <div class="flex items-center justify-between pt-1.5 border-t border-gray-50">
+        <div class="flex items-center justify-between pt-1.5 border-t border-app-border-light">
           <div class="flex gap-1.5 items-center">
             <ModelSelector />
             <ThinkingToggle />

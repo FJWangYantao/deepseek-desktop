@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
+import { useTheme } from '@/composables/useTheme'
 
 const router = useRouter()
 const settings = useSettingsStore()
+const theme = useTheme()
+
+const themes = [
+  { id: 'amber' as const, label: '琥珀', color: '#d97706' },
+  { id: 'ocean' as const, label: '海蓝', color: '#2563eb' },
+  { id: 'sage' as const, label: '森绿', color: '#4d7c0f' },
+  { id: 'slate' as const, label: '岩灰', color: '#6366f1' },
+]
 </script>
 
 <template>
@@ -25,9 +34,10 @@ const settings = useSettingsStore()
         <label class="block text-sm font-medium text-app-heading mb-2">API Key</label>
         <input
           :type="settings.showKey ? 'text' : 'password'"
-          v-model="settings.apiKey"
+          :value="settings.apiKey"
+          @input="settings.apiKey = ($event.target as HTMLInputElement).value"
           placeholder="sk-..."
-          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-white
+          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
                  text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
                  transition-colors font-mono"
         />
@@ -47,8 +57,8 @@ const settings = useSettingsStore()
             @click="settings.defaultModel = m.id"
             class="flex-1 px-4 py-2.5 text-sm rounded-lg border transition-colors"
             :class="settings.defaultModel === m.id
-              ? 'border-app-accent bg-amber-50 text-app-accent font-medium'
-              : 'border-app-border bg-white text-app-heading hover:bg-gray-50'"
+              ? 'border-app-accent bg-app-accent-soft text-app-accent font-medium'
+              : 'border-app-border bg-app-input text-app-heading hover:bg-app-hover'"
           >
             {{ m.name }}
           </button>
@@ -64,11 +74,34 @@ const settings = useSettingsStore()
         <select
           :value="settings.fontSize"
           @change="settings.fontSize = Number(($event.target as HTMLSelectElement).value)"
-          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-white
+          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
                  text-app-text focus:outline-none focus:border-app-accent transition-colors"
         >
           <option v-for="s in [10,12,14,16,18,20,22,24,26,28]" :key="s" :value="s">{{ s }}px</option>
         </select>
+      </div>
+
+      <!-- 主题颜色 -->
+      <div class="mb-8">
+        <label class="block text-sm font-medium text-app-heading mb-2">主题颜色</label>
+        <div class="flex gap-2">
+          <button
+            v-for="t in themes"
+            :key="t.id"
+            @click="theme.setTheme(t.id)"
+            class="flex-1 px-3 py-2.5 text-sm rounded-lg border transition-colors text-center"
+            :class="theme.themeName.value === t.id
+              ? 'border-app-accent bg-app-accent-soft text-app-accent font-medium'
+              : 'border-app-border bg-app-input text-app-heading hover:bg-app-hover'"
+          >
+            <span class="inline-block w-3 h-3 rounded-full mr-1.5 align-middle" :style="{ backgroundColor: t.color }"></span>
+            {{ t.label }}
+          </button>
+        </div>
+        <label class="inline-flex items-center gap-2 mt-3 cursor-pointer">
+          <input type="checkbox" :checked="theme.themeMode.value === 'dark'" @change="theme.toggleMode()" class="rounded" />
+          <span class="text-sm text-app-text">暗色模式</span>
+        </label>
       </div>
 
       <!-- 数据管理 -->

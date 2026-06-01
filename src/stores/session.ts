@@ -20,9 +20,11 @@ export const useSessionStore = defineStore('session', () => {
   const sessions = ref<ChatSession[]>(loadSessions())
   const currentId = ref<string>(localStorage.getItem('ds_current_session') ?? '')
 
-  // 持久化
+  // 持久化（仅保存有效数据，防止意外覆盖）
   watch(sessions, (val) => {
-    localStorage.setItem('ds_sessions', JSON.stringify(val))
+    try {
+      localStorage.setItem('ds_sessions', JSON.stringify(val))
+    } catch { /* quota exceeded 等 */ }
   }, { deep: true })
 
   watch(currentId, (val) => {

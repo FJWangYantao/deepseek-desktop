@@ -22,3 +22,22 @@ export interface ModelOption {
 }
 
 export type ThinkingMode = 'enabled' | 'disabled'
+
+export type ThemeName = 'amber' | 'ocean' | 'sage' | 'slate'
+export type ThemeMode = 'light' | 'dark'
+
+export interface ThemeColors {
+  bg: string; sidebar: string; card: string; input: string; border: string
+  accent: string; 'accent-hover': string
+  text: string; heading: string; muted: string
+  hover: string; 'hover-strong': string; 'surface-alt': string
+  'border-light': string; scrollbar: string; 'scrollbar-hover': string
+  'accent-soft': string; 'accent-soft-border': string
+}
+
+export interface ThemeDefinition {
+  name: ThemeName
+  label: string
+  light: ThemeColors
+  dark: ThemeColors
+}

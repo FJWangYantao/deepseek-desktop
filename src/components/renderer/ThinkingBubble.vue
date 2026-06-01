@@ -33,7 +33,7 @@ const thinkCount = computed(() => {
     </button>
     <div
       v-if="expanded"
-      class="relative pl-4 border-l-2 border-amber-200 text-xs text-app-muted leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto"
+      class="relative pl-4 border-l-2 border-app-accent-soft-border text-xs text-app-muted leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto"
     >
       {{ thinking }}
     </div>

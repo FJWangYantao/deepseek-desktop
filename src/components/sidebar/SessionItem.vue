@@ -15,7 +15,7 @@ defineEmits<{
 <template>
   <div
     class="group relative flex items-center px-3 py-2.5 mb-0.5 rounded-lg cursor-pointer transition-colors text-sm"
-    :class="active ? 'bg-app-card text-app-text' : 'text-app-heading hover:bg-[#f3f0eb]'"
+    :class="active ? 'bg-app-card text-app-text' : 'text-app-heading hover:bg-app-hover'"
     @click="$emit('click')"
   >
     <span class="flex-1 truncate">{{ session.title }}</span>

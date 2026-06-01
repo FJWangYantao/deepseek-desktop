@@ -9,8 +9,8 @@ const chatStore = useChatStore()
     @click="chatStore.toggleThinking()"
     class="flex items-center gap-1 px-2 py-1 text-xs rounded-md border transition-colors"
     :class="chatStore.thinkingEnabled
-      ? 'border-app-accent bg-amber-50 text-app-accent'
-      : 'border-app-border text-app-muted hover:bg-[#f3f0eb]'"
+      ? 'border-app-accent bg-app-accent-soft text-app-accent'
+      : 'border-app-border text-app-muted hover:bg-app-hover'"
   >
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

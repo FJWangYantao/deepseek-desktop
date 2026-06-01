@@ -14,9 +14,15 @@ export const useSettingsStore = defineStore('settings', () => {
   ]
 
   // 持久化写入
-  watch(apiKey, (val) => { localStorage.setItem('ds_api_key', val) })
-  watch(defaultModel, (val) => { localStorage.setItem('ds_default_model', val) })
-  watch(fontSize, (val) => { localStorage.setItem('ds_font_size', String(val)) })
+  watch(apiKey, (val) => {
+    try { localStorage.setItem('ds_api_key', val) } catch { /* ignore */ }
+  })
+  watch(defaultModel, (val) => {
+    try { localStorage.setItem('ds_default_model', val) } catch { /* ignore */ }
+  })
+  watch(fontSize, (val) => {
+    try { localStorage.setItem('ds_font_size', String(val)) } catch { /* ignore */ }
+  })
 
   function clearAllData() {
     localStorage.clear()

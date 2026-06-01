@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== 基础 ===== */
 * {
   margin: 0;
   padding: 0;
@@ -16,31 +17,34 @@ html, body, #app {
 
 body {
   font-family: "Inter", "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
-  background-color: #fdfcf9;
-  color: #3d352d;
+  background-color: var(--app-bg);
+  color: var(--app-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 自定义滚动条 */
-::-webkit-scrollbar {
-  width: 6px;
+/* 首次加载禁止过渡，防闪烁 */
+html:not(.theme-ready) * {
+  transition: none !important;
+}
+html.theme-ready *,
+html.theme-ready *::before,
+html.theme-ready *::after {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* ===== 滚动条 ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #d4cfc5;
+  background: var(--app-scrollbar);
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #b8b0a4;
+  background: var(--app-scrollbar-hover);
 }
 
-/* 代码块基础样式 */
+/* ===== 代码块 ===== */
 pre {
   border-radius: 10px;
   overflow-x: auto;
@@ -48,18 +52,15 @@ pre {
   font-size: 13px;
   line-height: 1.6;
 }
-
 code {
   font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
 }
 
-/* 加粗文本 */
+/* ===== Markdown 覆盖 ===== */
 .markdown-body strong {
   font-weight: 600;
-  color: #2d2520;
+  color: var(--app-heading);
 }
-
-/* 内联代码样式 */
 .markdown-body code {
   background: transparent;
   color: inherit;
@@ -67,7 +68,6 @@ code {
   border-radius: 0;
   font-size: 0.9em;
 }
-
 .markdown-body pre code {
   background: transparent;
   color: inherit;
@@ -76,15 +76,191 @@ code {
   font-size: inherit;
   font-weight: inherit;
 }
+.markdown-body hr { display: none; }
 
-/* 隐藏 markdown 水平分割线 */
-.markdown-body hr {
-  display: none;
-}
-
-/* KaTeX */
+/* ===== KaTeX ===== */
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
   padding: 4px 0;
+}
+
+/* ================================================
+   主题 CSS 变量
+   ================================================ */
+
+/* ----- Amber / Light ----- */
+html[data-theme="amber"][data-mode="light"] {
+  --app-bg: #fdfcf9;
+  --app-sidebar: #f9f8f5;
+  --app-card: #f0ede5;
+  --app-input: #ffffff;
+  --app-border: #e0ddd6;
+  --app-accent: #d97706;
+  --app-accent-hover: #b45309;
+  --app-text: #3d352d;
+  --app-heading: #6b625a;
+  --app-muted: #a39b8f;
+  --app-hover: #f3f0eb;
+  --app-hover-strong: #e8e5db;
+  --app-surface-alt: #f9f8f5;
+  --app-border-light: #f0ede5;
+  --app-scrollbar: #d4cfc5;
+  --app-scrollbar-hover: #b8b0a4;
+  --app-accent-soft: #fef3c7;
+  --app-accent-soft-border: #fde68a;
+}
+
+/* ----- Amber / Dark ----- */
+html[data-theme="amber"][data-mode="dark"] {
+  --app-bg: #1a1815;
+  --app-sidebar: #151311;
+  --app-card: #262320;
+  --app-input: #2d2a26;
+  --app-border: #38342e;
+  --app-accent: #f59e0b;
+  --app-accent-hover: #d97706;
+  --app-text: #e5ded5;
+  --app-heading: #a39b8f;
+  --app-muted: #7a7167;
+  --app-hover: #2d2925;
+  --app-hover-strong: #38342e;
+  --app-surface-alt: #1e1c19;
+  --app-border-light: #302d28;
+  --app-scrollbar: #4a443c;
+  --app-scrollbar-hover: #5f5950;
+  --app-accent-soft: #3d2e0f;
+  --app-accent-soft-border: #5c420a;
+}
+
+/* ----- Ocean / Light ----- */
+html[data-theme="ocean"][data-mode="light"] {
+  --app-bg: #f9fafb;
+  --app-sidebar: #f4f6f8;
+  --app-card: #eaf0f6;
+  --app-input: #ffffff;
+  --app-border: #dde4ed;
+  --app-accent: #2563eb;
+  --app-accent-hover: #1d4ed8;
+  --app-text: #1e293b;
+  --app-heading: #475569;
+  --app-muted: #94a3b8;
+  --app-hover: #eef2f7;
+  --app-hover-strong: #e2e8f0;
+  --app-surface-alt: #f4f7fa;
+  --app-border-light: #e8eef4;
+  --app-scrollbar: #cbd5e1;
+  --app-scrollbar-hover: #a9b8cc;
+  --app-accent-soft: #dbeafe;
+  --app-accent-soft-border: #bfdbfe;
+}
+
+/* ----- Ocean / Dark ----- */
+html[data-theme="ocean"][data-mode="dark"] {
+  --app-bg: #0f1724;
+  --app-sidebar: #0c1421;
+  --app-card: #1a2332;
+  --app-input: #1e293b;
+  --app-border: #2d3a4d;
+  --app-accent: #60a5fa;
+  --app-accent-hover: #3b82f6;
+  --app-text: #e2e8f0;
+  --app-heading: #94a3b8;
+  --app-muted: #64748b;
+  --app-hover: #1e2a3a;
+  --app-hover-strong: #273548;
+  --app-surface-alt: #162032;
+  --app-border-light: #253544;
+  --app-scrollbar: #3b4a5e;
+  --app-scrollbar-hover: #4d5e78;
+  --app-accent-soft: #1a2744;
+  --app-accent-soft-border: #1e3a5f;
+}
+
+/* ----- Sage / Light ----- */
+html[data-theme="sage"][data-mode="light"] {
+  --app-bg: #fafbf9;
+  --app-sidebar: #f5f7f3;
+  --app-card: #edf1e8;
+  --app-input: #ffffff;
+  --app-border: #dde3d6;
+  --app-accent: #4d7c0f;
+  --app-accent-hover: #3f6212;
+  --app-text: #2d3328;
+  --app-heading: #5a6650;
+  --app-muted: #8a997a;
+  --app-hover: #f0f4eb;
+  --app-hover-strong: #e4ead9;
+  --app-surface-alt: #f5f7f2;
+  --app-border-light: #eaefe2;
+  --app-scrollbar: #c8d3bc;
+  --app-scrollbar-hover: #aeb99e;
+  --app-accent-soft: #ecfccb;
+  --app-accent-soft-border: #d9f99d;
+}
+
+/* ----- Sage / Dark ----- */
+html[data-theme="sage"][data-mode="dark"] {
+  --app-bg: #141a14;
+  --app-sidebar: #101610;
+  --app-card: #1e241c;
+  --app-input: #262e22;
+  --app-border: #333b2e;
+  --app-accent: #84cc16;
+  --app-accent-hover: #65a30d;
+  --app-text: #e0e6d8;
+  --app-heading: #9aa88c;
+  --app-muted: #6b7a5e;
+  --app-hover: #242c20;
+  --app-hover-strong: #303a28;
+  --app-surface-alt: #192019;
+  --app-border-light: #2a3424;
+  --app-scrollbar: #455038;
+  --app-scrollbar-hover: #58684a;
+  --app-accent-soft: #1a2810;
+  --app-accent-soft-border: #2d3f14;
+}
+
+/* ----- Slate / Light ----- */
+html[data-theme="slate"][data-mode="light"] {
+  --app-bg: #fafafa;
+  --app-sidebar: #f5f5f5;
+  --app-card: #ededed;
+  --app-input: #ffffff;
+  --app-border: #e0e0e0;
+  --app-accent: #6366f1;
+  --app-accent-hover: #4f46e5;
+  --app-text: #333333;
+  --app-heading: #5a5a5a;
+  --app-muted: #999999;
+  --app-hover: #f0f0f0;
+  --app-hover-strong: #e5e5e5;
+  --app-surface-alt: #f5f5f5;
+  --app-border-light: #ececec;
+  --app-scrollbar: #cccccc;
+  --app-scrollbar-hover: #b3b3b3;
+  --app-accent-soft: #e0e7ff;
+  --app-accent-soft-border: #c7d2fe;
+}
+
+/* ----- Slate / Dark ----- */
+html[data-theme="slate"][data-mode="dark"] {
+  --app-bg: #171717;
+  --app-sidebar: #121212;
+  --app-card: #242424;
+  --app-input: #2b2b2b;
+  --app-border: #363636;
+  --app-accent: #818cf8;
+  --app-accent-hover: #6366f1;
+  --app-text: #e5e5e5;
+  --app-heading: #a3a3a3;
+  --app-muted: #757575;
+  --app-hover: #2a2a2a;
+  --app-hover-strong: #353535;
+  --app-surface-alt: #1c1c1c;
+  --app-border-light: #303030;
+  --app-scrollbar: #4a4a4a;
+  --app-scrollbar-hover: #606060;
+  --app-accent-soft: #1c1a3a;
+  --app-accent-soft-border: #2e2854;
 }

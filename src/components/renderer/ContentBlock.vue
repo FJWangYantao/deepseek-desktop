@@ -32,25 +32,25 @@ renderer.code = function({ text, lang }: { text: string; lang?: string }) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
   return `
-<div class="code-block-wrapper group my-4 rounded-xl border border-app-border bg-[#f9f8f5] overflow-hidden">
-  <div class="flex items-center justify-between px-4 py-2 border-b border-app-border bg-[#f3f0eb]">
+<div class="code-block-wrapper group my-4 rounded-xl border border-app-border bg-app-surface-alt overflow-hidden">
+  <div class="flex items-center justify-between px-4 py-2 border-b border-app-border bg-app-hover">
     <span class="text-xs text-app-muted font-mono">${displayLang}</span>
-    <button class="copy-btn text-xs px-2 py-0.5 rounded-md text-app-muted hover:text-app-text hover:bg-[#e8e5db] transition-colors" data-code="${escaped}">
+    <button class="copy-btn text-xs px-2 py-0.5 rounded-md text-app-muted hover:text-app-text hover:bg-app-hover-strong transition-colors" data-code="${escaped}">
       复制
     </button>
   </div>
-  <pre class="p-4 overflow-x-auto text-[13px] leading-relaxed font-mono text-app-text"><code>${highlighted}</code></pre>
+  <pre class="p-4 overflow-x-auto text-[13px] leading-[1.8] font-mono text-app-text"><code>${highlighted}</code></pre>
 </div>`
 }
 
 renderer.table = function({ header, rows }: { header: { text: string }[]; rows: { text: string }[][] }) {
   const thead = header.map(cell =>
-    `<th class="px-3 py-2 text-left text-xs font-medium text-app-heading bg-[#f3f0eb] border-b border-app-border">${cell.text}</th>`
+    `<th class="px-3 py-2 text-left text-xs font-medium text-app-heading bg-app-hover border-b border-app-border">${cell.text}</th>`
   ).join('')
 
   const tbody = rows.map((row, i) =>
-    `<tr class="${i % 2 === 0 ? 'bg-white' : 'bg-[#f9f8f5]'} border-b border-[#f0ede5] last:border-b-0">
-      ${row.map(cell => `<td class="px-3 py-2 text-sm text-app-text border-r border-[#f0ede5] last:border-r-0">${cell.text}</td>`).join('')}
+    `<tr class="${i % 2 === 0 ? 'bg-app-input' : 'bg-app-surface-alt'} border-b border-app-border-light last:border-b-0">
+      ${row.map(cell => `<td class="px-3 py-2 text-sm text-app-text border-r border-app-border-light last:border-r-0">${cell.text}</td>`).join('')}
     </tr>`
   ).join('')
 
@@ -93,7 +93,7 @@ function onCodeCopy(e: Event) {
 
 <template>
   <div
-    class="markdown-body text-app-text leading-relaxed prose-sm max-w-none
+    class="markdown-body text-app-text leading-[1.8] prose-sm max-w-none
            prose-headings:text-app-heading prose-p:text-app-text prose-strong:text-app-text
            prose-a:text-app-accent prose-a:no-underline hover:prose-a:underline
            prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:text-xs prose-code:font-normal

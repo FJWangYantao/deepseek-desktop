@@ -30,12 +30,12 @@ function retry() {
     <!-- 用户消息 -->
     <div v-if="message.role === 'user'" class="flex flex-col items-end">
       <div class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm">
-        <p class="text-app-text whitespace-pre-wrap leading-relaxed" :style="{ fontSize: 'var(--app-font-size)' }">{{ message.content }}</p>
+        <p class="text-app-text whitespace-pre-wrap leading-[1.8]" :style="{ fontSize: 'var(--app-font-size)' }">{{ message.content }}</p>
       </div>
       <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           @click="retry"
-          class="w-7 h-7 flex items-center justify-center rounded-md text-app-muted hover:text-app-accent hover:bg-amber-50 transition-colors"
+          class="w-7 h-7 flex items-center justify-center rounded-md text-app-muted hover:text-app-accent hover:bg-app-accent-soft transition-colors"
           title="重试"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +45,7 @@ function retry() {
         <button
           @click="copyContent"
           class="w-7 h-7 flex items-center justify-center rounded-md transition-colors"
-          :class="copied ? 'text-green-600 bg-green-50' : 'text-app-muted hover:text-app-text hover:bg-[#f3f0eb]'"
+          :class="copied ? 'text-green-600 bg-green-50' : 'text-app-muted hover:text-app-text hover:bg-app-hover'"
           :title="copied ? '已复制' : '复制'"
         >
           <svg v-if="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,7 +70,7 @@ function retry() {
           <button
             @click="copyContent"
             class="w-7 h-7 flex items-center justify-center rounded-md transition-colors"
-            :class="copied ? 'text-green-600 bg-green-50' : 'text-app-muted hover:text-app-text hover:bg-[#f3f0eb]'"
+            :class="copied ? 'text-green-600 bg-green-50' : 'text-app-muted hover:text-app-text hover:bg-app-hover'"
             :title="copied ? '已复制' : '复制'"
           >
             <svg v-if="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
