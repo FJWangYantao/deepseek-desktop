@@ -73,8 +73,8 @@ const settings = useSettingsStore()
       <!-- 关于 -->
       <div>
         <h3 class="text-sm font-medium text-app-heading mb-2">关于</h3>
-        <p class="text-sm text-app-muted">DeepSeek Chat v1.0.0</p>
-        <p class="text-xs text-app-muted mt-1">基于 Electron + Vue 3 构建</p>
+        <p class="text-sm text-app-muted">DeepSeek Chat v1.3.0</p>
+        <p class="text-xs text-app-muted mt-1">Electron + Vue 3 + Tailwind CSS</p>
       </div>
     </div>
   </div>

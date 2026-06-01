@@ -40,11 +40,6 @@ export const useChatStore = defineStore('chat', () => {
     if (session) {
       session.messages = val
       session.updatedAt = Date.now()
-      // 自动更新标题
-      const firstUserMsg = val.find(m => m.role === 'user')
-      if (firstUserMsg && session.title === '新对话') {
-        sessionStore.updateSessionTitle(sid, firstUserMsg.content.slice(0, 30))
-      }
     }
   }, { deep: true })
 
@@ -57,11 +52,52 @@ export const useChatStore = defineStore('chat', () => {
     return session?.model ?? settingsStore.defaultModel
   })
 
+  async function generateTitle(sid: string, text: string) {
+    if (!settingsStore.apiKey) return
+    try {
+      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${settingsStore.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-v4-flash',
+          messages: [
+            { role: 'system', content: '你是一个标题生成助手。根据用户消息生成一个简短的对话标题（5-10个汉字），只输出标题，不要多余内容。' },
+            { role: 'user', content: `为以下对话生成标题：${text}` },
+          ],
+          thinking: { type: 'disabled' },
+        }),
+      })
+      if (!res.ok) {
+      console.warn('[Title] API 错误:', res.status)
+      return
+    }
+    const data = await res.json()
+    const title = data.choices?.[0]?.message?.content?.trim()
+    if (title) {
+      sessionStore.updateSessionTitle(sid, title.slice(0, 20))
+      console.warn('[Title] 标题已生成:', title)
+    } else {
+      console.warn('[Title] 未收到标题内容')
+    }
+    } catch (e) {
+      console.warn('[Title] 异常:', e)
+    }
+  }
+
   async function sendMessage(text: string) {
     const sid = sessionStore.ensureSession()
     if (!settingsStore.apiKey) {
       alert('请先在设置页面配置 API Key')
       return
+    }
+
+    // 新对话自动生成标题（fire-and-forget）
+    const session = sessionStore.sessions.find(s => s.id === sid)
+    if (session && session.title === '新对话') {
+      generateTitle(sid, text)
     }
 
     // 添加用户消息
