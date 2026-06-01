@@ -1,9 +1,16 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { existsSync } from 'fs'
 import { registerStorageHandlers } from './ipc/storage'
+import { registerSearchHandlers } from './ipc/search'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+const preloadPath = join(__dirname, 'preload.cjs')
+console.log('[Main] __dirname:', __dirname)
+console.log('[Main] preloadPath:', preloadPath)
+console.log('[Main] preloadPath 存在:', existsSync(preloadPath))
 
 let mainWindow: BrowserWindow | null = null
 
@@ -17,22 +24,37 @@ function createWindow() {
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#fdfcf9',
     webPreferences: {
-      preload: join(__dirname, 'preload.js'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
     }
   })
 
+  // 开发模式自动打开 DevTools
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
+    mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, '../dist/index.html'))
   }
 }
 
-registerStorageHandlers()
+// 最小菜单：保留 DevTools 快捷键
+const menu = Menu.buildFromTemplate([
+  {
+    label: 'App',
+    submenu: [
+      { role: 'reload', label: '刷新' },
+      { role: 'toggleDevTools', label: '开发者工具' },
+      { type: 'separator' },
+      { role: 'quit', label: '退出' },
+    ],
+  },
+])
+Menu.setApplicationMenu(menu)
 
-Menu.setApplicationMenu(null)
+registerStorageHandlers()
+registerSearchHandlers()
 
 app.whenReady().then(() => {
   createWindow()

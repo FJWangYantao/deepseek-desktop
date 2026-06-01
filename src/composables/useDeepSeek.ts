@@ -1,5 +1,5 @@
 interface ChatOptions {
-  messages: { role: 'user' | 'assistant'; content: string }[]
+  messages: { role: 'user' | 'assistant' | 'system'; content: string }[]
   model: string
   thinking: 'enabled' | 'disabled'
   apiKey: string

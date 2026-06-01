@@ -44,6 +44,13 @@ export interface ThemeDefinition {
 
 // ===== 统计相关 =====
 
+export interface SearchResult {
+  title: string
+  url: string
+  snippet: string
+  content: string
+}
+
 export interface UsageData {
   prompt_tokens: number
   completion_tokens: number

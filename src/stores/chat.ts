@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch, computed, nextTick } from 'vue'
-import type { Message, UsageData } from '@/types'
+import type { Message, UsageData, SearchResult } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
@@ -15,6 +15,7 @@ export const useChatStore = defineStore('chat', () => {
   const streaming = ref('')
   const streamingThinking = ref('')
   const thinkingEnabled = ref(true)
+  const webSearchEnabled = ref(false)
   const isGenerating = ref(false)
 
   const sessionStore = useSessionStore()
@@ -48,6 +49,72 @@ export const useChatStore = defineStore('chat', () => {
 
   function toggleThinking() {
     thinkingEnabled.value = !thinkingEnabled.value
+  }
+
+  function toggleWebSearch() {
+    webSearchEnabled.value = !webSearchEnabled.value
+  }
+
+  async function buildSearchQuery(userText: string): Promise<string> {
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
+
+    if (!settingsStore.apiKey) return userText
+
+    try {
+      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${settingsStore.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-v4-flash',
+          messages: [
+            { role: 'system', content: `你是一个搜索词优化助手。将用户的自然语言问题转化为最适合搜索引擎的关键词（10字以内）。当前日期：${dateStr}。只输出搜索词，不要任何解释。` },
+            { role: 'user', content: userText },
+          ],
+          thinking: { type: 'disabled' },
+          max_tokens: 30,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const query = data.choices?.[0]?.message?.content?.trim()
+        if (query && query.length > 0) {
+          console.log('[Search] AI 优化搜索词:', userText, '→', query)
+          return query
+        }
+      }
+    } catch (e) {
+      console.warn('[Search] 搜索词优化失败，使用原文:', e)
+    }
+    return userText
+  }
+
+  function extractUrls(text: string): string[] {
+    const re = /https?:\/\/[^\s,，。；;！!？?)]+/g
+    const matches = text.match(re)
+    if (!matches) return []
+    return [...new Set(matches)]
+  }
+
+  function buildSearchContext(results: SearchResult[]): string {
+    if (results.length === 0) return ''
+    const lines = ['[系统提示] 以下是与问题相关的网络搜索结果，请基于这些信息回答：', '']
+    results.forEach((r, i) => {
+      lines.push(`【来源 ${i + 1}】${r.title}`)
+      lines.push(`URL: ${r.url}`)
+      if (r.snippet) lines.push(`摘要: ${r.snippet}`)
+      if (r.content) lines.push(`页面内容: ${r.content}`)
+      lines.push('')
+    })
+    return lines.join('\n')
+  }
+
+  function buildFetchContext(url: string, content: string): string {
+    if (!content) return ''
+    return `[系统提示] 以下是从 ${url} 获取的网页内容，请基于这些信息回答：\n\n${content}\n\n`
   }
 
   function stopGenerating() {
@@ -121,16 +188,89 @@ export const useChatStore = defineStore('chat', () => {
     streaming.value = ''
     streamingThinking.value = ''
 
+    // ===== 联网搜索 + URL 抓取 =====
+    let injectedContext = ''
+    let searchSucceeded = false
+
+    console.log('[Search] ===== 开始搜索流程 =====')
+    console.log('[Search] webSearchEnabled:', webSearchEnabled.value)
+    console.log('[Search] electronAPI 存在:', !!window.electronAPI)
+    console.log('[Search] electronAPI.webSearch 存在:', !!window.electronAPI?.webSearch)
+
+    // URL 自动检测抓取
+    const urls = extractUrls(text)
+    if (urls.length > 0 && window.electronAPI?.fetchUrl) {
+      console.log('[Search] 检测到 URL:', urls)
+      for (const url of urls) {
+        try {
+          const content = await window.electronAPI.fetchUrl(url)
+          if (content) {
+            injectedContext += buildFetchContext(url, content)
+            console.log('[Search] URL 抓取成功:', url, '内容长度:', content.length)
+          }
+        } catch {
+          // 抓取失败，跳过
+        }
+      }
+    }
+
+    // 联网搜索
+    if (webSearchEnabled.value && window.electronAPI?.webSearch) {
+      const searchQuery = await buildSearchQuery(text)
+      console.log('[Search] 开始联网搜索, 搜索词:', searchQuery)
+      try {
+        const results = await Promise.race([
+          window.electronAPI.webSearch(searchQuery),
+          new Promise<SearchResult[]>((_, reject) =>
+            setTimeout(() => reject(new Error('搜索超时')), 25000)
+          ),
+        ])
+        console.log('[Search] 搜索结果数:', results.length)
+        if (results.length > 0) {
+          results.forEach((r, i) => console.log(`[Search] 结果${i+1}: ${r.title} | ${r.url} | 内容长度:${r.content.length}`))
+          injectedContext += buildSearchContext(results)
+          searchSucceeded = true
+        } else {
+          console.warn('[Search] 搜索返回空结果')
+        }
+      } catch (e) {
+        console.warn('[Search] 联网搜索失败，继续普通对话:', e)
+      }
+    } else if (webSearchEnabled.value) {
+      console.warn('[Search] electronAPI 不可用，跳过搜索（是否在浏览器开发模式？）')
+    }
+
+    console.log('[Search] injectedContext 长度:', injectedContext.length)
+    const userContent = injectedContext
+      ? `${injectedContext}\n\n用户问题：${text}`
+      : text
+    console.log('[Search] 最终 userContent 前500字:', userContent.substring(0, 500))
+
+    const today = new Date()
+    const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`
+    const weekDay = ['日', '一', '二', '三', '四', '五', '六'][today.getDay()]
+
+    // 根据实际搜索状态构建 system prompt
+    let systemPrompt = `当前日期：${dateStr} 星期${weekDay}。`
+    if (searchSucceeded) {
+      systemPrompt += '\n联网搜索已获取结果并注入到用户消息中，请基于搜索结果回答，在末尾标注来源。'
+    } else if (webSearchEnabled.value) {
+      systemPrompt += '\n联网搜索已开启但本次未能获取结果。请如实告知用户搜索暂时不可用，建议稍后重试或更换关键词。'
+    } else {
+      systemPrompt += '\n用户可以使用"联网搜索"功能获取实时信息。当被问到新闻、实时数据等超出你知识范围的问题时，请告诉用户："需要实时信息，请点输入框下方"联网"按钮后再问一次。"'
+    }
+
     const historyMessages = messages.value
-      .filter(m => m.id !== userMsg.id) // 排除刚发的这条，下面单独构建
-      .slice(-50) // 限制上下文长度
+      .filter(m => m.id !== userMsg.id)
+      .slice(-50)
 
     const apiMessages = [
+      { role: 'system' as const, content: systemPrompt },
       ...historyMessages.map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       })),
-      { role: 'user' as const, content: text },
+      { role: 'user' as const, content: userContent },
     ]
 
     let fullContent = ''
@@ -230,7 +370,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, isGenerating, currentModel,
-    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage, stopGenerating,
+    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, currentModel,
+    sendMessage, clearMessages, loadFromSession, toggleThinking, toggleWebSearch, retryMessage, stopGenerating,
   }
 })

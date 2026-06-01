@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "DeepSeek 桌面聊天应用",
   "dependencies": {
+    "cheerio": "^1.2.0",
     "highlight.js": "^11.11.1",
     "katex": "^0.17.0",
     "marked": "^18.0.4",

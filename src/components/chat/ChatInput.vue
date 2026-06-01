@@ -4,6 +4,7 @@ import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
 import ModelSelector from './ModelSelector.vue'
 import ThinkingToggle from './ThinkingToggle.vue'
+import WebSearchToggle from './WebSearchToggle.vue'
 
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
@@ -49,6 +50,7 @@ function onKeydown(e: KeyboardEvent) {
         <div class="flex items-center justify-between pt-1.5 border-t border-app-border-light">
           <div class="flex gap-1.5 items-center">
             <ModelSelector />
+            <WebSearchToggle />
             <ThinkingToggle />
           </div>
           <button
