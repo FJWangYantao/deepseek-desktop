@@ -68,7 +68,7 @@ export const useStatsStore = defineStore('stats', () => {
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       let entry = map.get(key)
       if (!entry) {
-        entry = { date: key, totalTokens: 0, promptTokens: 0, completionTokens: 0, cacheHitTokens: 0, conversationCount: 0, cost: 0 }
+        entry = { date: key, totalTokens: 0, promptTokens: 0, completionTokens: 0, cacheHitTokens: 0, conversationCount: 0, cost: 0, proTokens: 0, flashTokens: 0 }
         map.set(key, entry)
       }
       entry.totalTokens += r.usage.total_tokens
@@ -77,13 +77,61 @@ export const useStatsStore = defineStore('stats', () => {
       entry.cacheHitTokens += r.usage.prompt_cache_hit_tokens
       entry.conversationCount++
       entry.cost += r.cost
+      if (r.model === 'deepseek-v4-pro') entry.proTokens += r.usage.total_tokens
+      else entry.flashTokens += r.usage.total_tokens
     }
     return map
   })
 
   const dailyStats = computed(() => [...dailyMap.value.values()].sort((a, b) => a.date.localeCompare(b.date)))
 
-  const recentStats = computed(() => dailyStats.value.slice(-30))
+  const recentStats = computed(() => {
+    const result: DailyStats[] = []
+    const now = new Date()
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const entry = dailyMap.value.get(key)
+      result.push(entry ?? { date: key, totalTokens: 0, promptTokens: 0, completionTokens: 0, cacheHitTokens: 0, conversationCount: 0, cost: 0, proTokens: 0, flashTokens: 0 })
+    }
+    return result
+  })
+
+  // 按小时聚合
+  const hourlyMap = computed(() => {
+    const map = new Map<string, DailyStats>()
+    for (const r of records.value) {
+      const d = new Date(r.timestamp)
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:00`
+      let e = map.get(key)
+      if (!e) {
+        e = { date: key, totalTokens: 0, promptTokens: 0, completionTokens: 0, cacheHitTokens: 0, conversationCount: 0, cost: 0, proTokens: 0, flashTokens: 0 }
+        map.set(key, e)
+      }
+      e.totalTokens += r.usage.total_tokens
+      e.promptTokens += r.usage.prompt_tokens
+      e.completionTokens += r.usage.completion_tokens
+      e.cacheHitTokens += r.usage.prompt_cache_hit_tokens
+      e.conversationCount++
+      e.cost += r.cost
+      if (r.model === 'deepseek-v4-pro') e.proTokens += r.usage.total_tokens
+      else e.flashTokens += r.usage.total_tokens
+    }
+    return map
+  })
+
+  const recentHours = computed(() => {
+    const result: DailyStats[] = []
+    const now = new Date()
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now)
+      d.setHours(d.getHours() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:00`
+      result.push(hourlyMap.value.get(key) ?? { date: key, totalTokens: 0, promptTokens: 0, completionTokens: 0, cacheHitTokens: 0, conversationCount: 0, cost: 0, proTokens: 0, flashTokens: 0 })
+    }
+    return result
+  })
 
   // 按会话聚合
   const sessionStats = computed(() => {
@@ -114,7 +162,7 @@ export const useStatsStore = defineStore('stats', () => {
     totalConversations, totalTokens, totalInputTokens, totalOutputTokens,
     totalCacheHits, cacheHitRate, totalCost, apiCount, estimatedCount,
     fmtTotalTokens, fmtCacheHits, fmtCost,
-    dailyMap, dailyStats, recentStats, sessionStats,
+    dailyMap, dailyStats, recentStats, hourlyMap, recentHours, sessionStats,
     addRecord, clearAllStats,
   }
 })

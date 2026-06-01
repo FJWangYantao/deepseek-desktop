@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStatsStore } from '@/stores/stats'
 import { useSettingsStore } from '@/stores/settings'
@@ -13,6 +13,7 @@ const router = useRouter()
 const stats = useStatsStore()
 const settings = useSettingsStore()
 const { balance, loading: balanceLoading, fetchBalance } = useBalance()
+const chartMode = ref<'24h' | '30d'>('24h')
 
 onMounted(() => {
   fetchBalance(settings.apiKey)
@@ -79,9 +80,23 @@ onMounted(() => {
 
       <!-- 柱状图 -->
       <div class="mb-6">
-        <h2 class="text-sm font-medium text-app-heading mb-3">近 30 天 Token 用量</h2>
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="text-sm font-medium text-app-heading">{{ chartMode === '24h' ? '近 24 小时' : '近 30 天' }} Token 用量</h2>
+          <div class="flex gap-0.5 bg-app-card border border-app-border rounded-md p-0.5">
+            <button
+              @click="chartMode = '24h'"
+              class="px-2 py-0.5 text-xs rounded transition-colors"
+              :class="chartMode === '24h' ? 'bg-app-accent text-white' : 'text-app-muted hover:text-app-text'"
+            >24h</button>
+            <button
+              @click="chartMode = '30d'"
+              class="px-2 py-0.5 text-xs rounded transition-colors"
+              :class="chartMode === '30d' ? 'bg-app-accent text-white' : 'text-app-muted hover:text-app-text'"
+            >30天</button>
+          </div>
+        </div>
         <div class="rounded-xl border border-app-border bg-app-card p-4">
-          <UsageBarChart :data="stats.recentStats" />
+          <UsageBarChart :data="chartMode === '24h' ? stats.recentHours : stats.recentStats" />
         </div>
       </div>
 

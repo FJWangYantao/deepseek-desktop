@@ -71,6 +71,8 @@ export interface DailyStats {
   cacheHitTokens: number
   conversationCount: number
   cost: number
+  proTokens: number
+  flashTokens: number
 }
 
 export interface BalanceInfo {
