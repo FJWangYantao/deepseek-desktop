@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import Sidebar from '@/components/sidebar/Sidebar.vue'
+import ChatView from '@/views/ChatView.vue'
+import SettingsView from '@/views/SettingsView.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useTheme } from '@/composables/useTheme'
-import { watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { watch, onMounted, ref } from 'vue'
 
+const route = useRoute()
 const settings = useSettingsStore()
 const theme = useTheme()
+const sidebarCollapsed = ref(false)
 
 function applyFontSize(size: number) {
   document.documentElement.style.setProperty('--app-font-size', `${size}px`)
 }
 
 onMounted(() => {
-  // 初始化主题（useTheme 已通过 watchEffect 设置属性）
   applyFontSize(settings.fontSize)
 })
 watch(() => settings.fontSize, applyFontSize)
@@ -20,11 +24,8 @@ watch(() => settings.fontSize, applyFontSize)
 
 <template>
   <div class="h-full flex">
-    <Sidebar />
-    <router-view v-slot="{ Component }">
-      <keep-alive>
-        <component :is="Component" />
-      </keep-alive>
-    </router-view>
+    <Sidebar :collapsed="sidebarCollapsed" @toggle="sidebarCollapsed = !sidebarCollapsed" />
+    <ChatView v-show="route.path === '/'" />
+    <SettingsView v-show="route.path === '/settings'" />
   </div>
 </template>

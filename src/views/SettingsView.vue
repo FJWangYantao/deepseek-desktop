@@ -28,7 +28,7 @@ const themes = [
       </button>
       <h1 class="text-base font-semibold text-app-text">设置</h1>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-8 max-w-lg">
+    <div class="flex-1 overflow-y-auto px-8 py-8">
       <!-- API Key -->
       <div class="mb-8">
         <label class="block text-sm font-medium text-app-heading mb-2">API Key</label>
