@@ -30,7 +30,7 @@ function retry() {
     <!-- 用户消息 -->
     <div v-if="message.role === 'user'" class="flex flex-col items-end">
       <div class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm">
-        <p class="text-sm text-app-text whitespace-pre-wrap leading-relaxed">{{ message.content }}</p>
+        <p class="text-app-text whitespace-pre-wrap leading-relaxed" :style="{ fontSize: 'var(--app-font-size)' }">{{ message.content }}</p>
       </div>
       <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button

@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/stores/settings'
+import { useSessionStore } from '@/stores/session'
 import { ref } from 'vue'
 
 const settingsStore = useSettingsStore()
+const sessionStore = useSessionStore()
 const showDropdown = ref(false)
 
 function selectModel(id: string) {
   settingsStore.defaultModel = id
+  const session = sessionStore.getCurrentSession()
+  if (session) session.model = id
   showDropdown.value = false
 }
 

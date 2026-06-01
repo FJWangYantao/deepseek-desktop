@@ -61,12 +61,11 @@ code {
 
 /* 内联代码样式 */
 .markdown-body code {
-  background: #f0ede5;
-  color: #b45309;
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 0.82em;
-  font-weight: 500;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.9em;
 }
 
 .markdown-body pre code {

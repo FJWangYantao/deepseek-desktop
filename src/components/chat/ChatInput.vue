@@ -41,7 +41,8 @@ function onKeydown(e: KeyboardEvent) {
           :disabled="sending"
           rows="1"
           placeholder="输入消息..."
-          class="w-full resize-none text-sm px-1.5 py-1 text-app-text placeholder-app-muted
+          :style="{ fontSize: 'var(--app-font-size)' }"
+          class="w-full resize-none px-1.5 py-1 text-app-text placeholder-app-muted
                  bg-transparent border-none outline-none leading-relaxed
                  min-h-[28px] max-h-[160px]"
         ></textarea>
@@ -51,13 +52,22 @@ function onKeydown(e: KeyboardEvent) {
             <ThinkingToggle />
           </div>
           <button
+            v-if="chatStore.isGenerating"
+            @click="chatStore.stopGenerating()"
+            class="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors
+                   bg-red-500 hover:bg-red-600"
+          >
+            停止
+          </button>
+          <button
+            v-else
             @click="send"
             :disabled="!inputText.trim() || sending"
             class="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors
                    bg-app-accent hover:bg-app-accent-hover
                    disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {{ sending ? '...' : '发送' }}
+            发送
           </button>
         </div>
       </div>

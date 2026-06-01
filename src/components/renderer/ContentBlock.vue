@@ -93,12 +93,13 @@ function onCodeCopy(e: Event) {
 
 <template>
   <div
-    class="markdown-body text-sm text-app-text leading-relaxed prose-sm max-w-none
+    class="markdown-body text-app-text leading-relaxed prose-sm max-w-none
            prose-headings:text-app-heading prose-p:text-app-text prose-strong:text-app-text
            prose-a:text-app-accent prose-a:no-underline hover:prose-a:underline
-           prose-code:text-app-accent prose-code:bg-amber-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+           prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:text-xs prose-code:font-normal
            prose-pre:p-0 prose-pre:bg-transparent prose-pre:m-0
            prose-li:text-app-text prose-table:border-app-border"
+    :style="{ fontSize: 'var(--app-font-size)' }"
     v-html="html"
     @click="onCodeCopy"
   />

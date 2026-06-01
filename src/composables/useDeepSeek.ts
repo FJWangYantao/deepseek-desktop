@@ -3,12 +3,13 @@ interface ChatOptions {
   model: string
   thinking: 'enabled' | 'disabled'
   apiKey: string
+  signal?: AbortSignal
   onToken: (token: string) => void
   onThinking: (token: string) => void
 }
 
 export async function deepSeekChat(options: ChatOptions) {
-  const { messages, model, thinking, apiKey, onToken, onThinking } = options
+  const { messages, model, thinking, apiKey, signal, onToken, onThinking } = options
 
   const body: Record<string, unknown> = {
     model,
@@ -30,6 +31,7 @@ export async function deepSeekChat(options: ChatOptions) {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
+    signal,
   })
 
   if (!response.ok) {

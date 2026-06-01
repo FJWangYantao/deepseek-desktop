@@ -58,6 +58,19 @@ const settings = useSettingsStore()
         </p>
       </div>
 
+      <!-- 字体大小 -->
+      <div class="mb-8">
+        <label class="block text-sm font-medium text-app-heading mb-2">字体大小</label>
+        <select
+          :value="settings.fontSize"
+          @change="settings.fontSize = Number(($event.target as HTMLSelectElement).value)"
+          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-white
+                 text-app-text focus:outline-none focus:border-app-accent transition-colors"
+        >
+          <option v-for="s in [10,12,14,16,18,20,22,24,26,28]" :key="s" :value="s">{{ s }}px</option>
+        </select>
+      </div>
+
       <!-- 数据管理 -->
       <div class="mb-8">
         <label class="block text-sm font-medium text-app-heading mb-2">数据管理</label>

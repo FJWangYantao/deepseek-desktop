@@ -43,14 +43,20 @@ export const useChatStore = defineStore('chat', () => {
     }
   }, { deep: true })
 
+  let abortController: AbortController | null = null
+
   function toggleThinking() {
     thinkingEnabled.value = !thinkingEnabled.value
   }
 
-  const currentModel = computed(() => {
-    const session = sessionStore.getCurrentSession()
-    return session?.model ?? settingsStore.defaultModel
-  })
+  function stopGenerating() {
+    if (abortController) {
+      abortController.abort()
+      abortController = null
+    }
+  }
+
+  const currentModel = computed(() => settingsStore.defaultModel)
 
   async function generateTitle(sid: string, text: string) {
     if (!settingsStore.apiKey) return
@@ -129,12 +135,15 @@ export const useChatStore = defineStore('chat', () => {
     let fullContent = ''
     let fullThinking = ''
 
+    abortController = new AbortController()
+
     try {
       await deepSeekChat({
         messages: apiMessages,
         model: currentModel.value,
         thinking: thinkingEnabled.value ? 'enabled' : 'disabled',
         apiKey: settingsStore.apiKey,
+        signal: abortController.signal,
         onToken(token) {
           fullContent += token
           streaming.value = fullContent
@@ -155,14 +164,28 @@ export const useChatStore = defineStore('chat', () => {
       }
       messages.value.push(aiMsg)
     } catch (e) {
-      const errMsg: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: `请求失败: ${e instanceof Error ? e.message : '未知错误'}`,
-        timestamp: Date.now(),
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        if (fullContent || fullThinking) {
+          const partialMsg: Message = {
+            id: generateId(),
+            role: 'assistant',
+            content: fullContent || '(已中断)',
+            thinking: fullThinking || undefined,
+            timestamp: Date.now(),
+          }
+          messages.value.push(partialMsg)
+        }
+      } else {
+        const errMsg: Message = {
+          id: generateId(),
+          role: 'assistant',
+          content: `请求失败: ${e instanceof Error ? e.message : '未知错误'}`,
+          timestamp: Date.now(),
+        }
+        messages.value.push(errMsg)
       }
-      messages.value.push(errMsg)
     } finally {
+      abortController = null
       streaming.value = ''
       streamingThinking.value = ''
       isGenerating.value = false
@@ -186,6 +209,6 @@ export const useChatStore = defineStore('chat', () => {
 
   return {
     messages, streaming, streamingThinking, thinkingEnabled, isGenerating, currentModel,
-    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage,
+    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage, stopGenerating,
   }
 })

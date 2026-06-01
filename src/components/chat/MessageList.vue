@@ -103,16 +103,17 @@ function isNearBottom(): boolean {
             <!-- 已闭合的 Markdown 部分：用 marked 实时渲染 -->
             <div
               v-if="streamHtml"
-              class="text-sm text-app-text leading-relaxed markdown-body prose-sm max-w-none
+              class="text-app-text leading-relaxed markdown-body prose-sm max-w-none
                      prose-headings:text-app-heading prose-p:text-app-text prose-strong:text-app-text
                      prose-a:text-app-accent prose-a:no-underline
-                     prose-code:text-app-accent prose-code:bg-amber-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+                     prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:text-xs prose-code:font-normal
                      prose-pre:p-0 prose-pre:bg-transparent prose-pre:m-0
                      prose-li:text-app-text prose-table:border-app-border"
+              :style="{ fontSize: 'var(--app-font-size)' }"
               v-html="streamHtml"
             />
             <!-- 未闭合的代码块部分：纯文本 + 光标 -->
-            <div class="text-sm text-app-text whitespace-pre-wrap leading-relaxed">
+            <div class="text-app-text whitespace-pre-wrap leading-relaxed" :style="{ fontSize: 'var(--app-font-size)' }">
               {{ streamingPending }}<StreamCursor v-if="streamingPending || !streamHtml" />
             </div>
           </div>
