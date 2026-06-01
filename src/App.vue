@@ -2,6 +2,7 @@
 import Sidebar from '@/components/sidebar/Sidebar.vue'
 import ChatView from '@/views/ChatView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import StatsView from '@/views/StatsView.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useTheme } from '@/composables/useTheme'
 import { useRoute } from 'vue-router'
@@ -27,5 +28,6 @@ watch(() => settings.fontSize, applyFontSize)
     <Sidebar :collapsed="sidebarCollapsed" @toggle="sidebarCollapsed = !sidebarCollapsed" />
     <ChatView v-show="route.path === '/'" />
     <SettingsView v-show="route.path === '/settings'" />
+    <StatsView v-show="route.path === '/stats'" />
   </div>
 </template>

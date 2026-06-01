@@ -41,3 +41,46 @@ export interface ThemeDefinition {
   light: ThemeColors
   dark: ThemeColors
 }
+
+// ===== 统计相关 =====
+
+export interface UsageData {
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  prompt_cache_hit_tokens: number
+  prompt_cache_miss_tokens: number
+}
+
+export interface UsageRecord {
+  id: string
+  model: string
+  sessionId: string
+  sessionTitle: string
+  usage: UsageData
+  timestamp: number
+  cost: number
+  source: 'api' | 'estimated'
+}
+
+export interface DailyStats {
+  date: string
+  totalTokens: number
+  promptTokens: number
+  completionTokens: number
+  cacheHitTokens: number
+  conversationCount: number
+  cost: number
+}
+
+export interface BalanceInfo {
+  currency: string
+  total_balance: string
+  granted_balance: string
+  topped_up_balance: string
+}
+
+export interface BalanceResponse {
+  is_available: boolean
+  balance_infos: BalanceInfo[]
+}

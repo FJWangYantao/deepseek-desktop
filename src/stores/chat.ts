@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, watch, computed, nextTick } from 'vue'
-import type { Message } from '@/types'
+import type { Message, UsageData } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
+import { useStatsStore } from './stats'
 import { deepSeekChat } from '@/composables/useDeepSeek'
 
 function generateId() {
@@ -134,6 +135,7 @@ export const useChatStore = defineStore('chat', () => {
 
     let fullContent = ''
     let fullThinking = ''
+    let usageFromApi: UsageData | null = null
 
     abortController = new AbortController()
 
@@ -152,6 +154,9 @@ export const useChatStore = defineStore('chat', () => {
           fullThinking += token
           streamingThinking.value = fullThinking
         },
+        onUsage(usage) {
+          usageFromApi = usage
+        },
       })
 
       // 完成，归档消息
@@ -163,6 +168,23 @@ export const useChatStore = defineStore('chat', () => {
         timestamp: Date.now(),
       }
       messages.value.push(aiMsg)
+
+      // 记录统计（仅使用 API 返回的真实数据）
+      if (usageFromApi) {
+        const statsStore = useStatsStore()
+        statsStore.addRecord({
+          id: generateId(),
+          model: currentModel.value,
+          sessionId: sid,
+          sessionTitle: session?.title ?? '',
+          usage: usageFromApi,
+          timestamp: Date.now(),
+          cost: 0,
+          source: 'api',
+        })
+      } else {
+        console.warn('[Stats] 未收到 API usage 数据，跳过记录')
+      }
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         if (fullContent || fullThinking) {

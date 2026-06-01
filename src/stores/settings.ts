@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { ModelOption } from '@/types'
+import { useStatsStore } from './stats'
 
 export const useSettingsStore = defineStore('settings', () => {
   const apiKey = ref(localStorage.getItem('ds_api_key') ?? '')
@@ -25,6 +26,7 @@ export const useSettingsStore = defineStore('settings', () => {
   })
 
   function clearAllData() {
+    useStatsStore().clearAllStats()
     localStorage.clear()
     apiKey.value = ''
     defaultModel.value = 'deepseek-v4-pro'
