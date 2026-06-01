@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
-import { fixCjkEmphasis } from '@/composables/useMarkdown'
+import { fixCjkEmphasis, renderMarkdown } from '@/composables/useMarkdown'
 
 const props = defineProps<{
   content: string
@@ -45,12 +45,12 @@ renderer.code = function({ text, lang }: { text: string; lang?: string }) {
 
 renderer.table = function({ header, rows }: { header: { text: string }[]; rows: { text: string }[][] }) {
   const thead = header.map(cell =>
-    `<th class="px-3 py-2 text-left text-xs font-medium text-app-heading bg-app-hover border-b border-app-border">${cell.text}</th>`
+    `<th class="px-3 py-2 text-left text-xs font-medium text-app-heading bg-app-hover border-b border-app-border">${marked.parseInline(cell.text)}</th>`
   ).join('')
 
   const tbody = rows.map((row, i) =>
     `<tr class="${i % 2 === 0 ? 'bg-app-input' : 'bg-app-surface-alt'} border-b border-app-border-light last:border-b-0">
-      ${row.map(cell => `<td class="px-3 py-2 text-sm text-app-text border-r border-app-border-light last:border-r-0">${cell.text}</td>`).join('')}
+      ${row.map(cell => `<td class="px-3 py-2 text-sm text-app-text border-r border-app-border-light last:border-r-0">${marked.parseInline(cell.text)}</td>`).join('')}
     </tr>`
   ).join('')
 
@@ -71,7 +71,7 @@ marked.setOptions({
 
 const html = computed(() => {
   if (!props.content) return ''
-  return marked.parse(fixCjkEmphasis(props.content)) as string
+  return renderMarkdown(fixCjkEmphasis(props.content))
 })
 
 // 事件委托：处理复制按钮点击

@@ -2,9 +2,8 @@
 import { computed } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { nextTick, ref, watch } from 'vue'
-import { marked } from 'marked'
 import { useStreamRender } from '@/composables/useStreamRender'
-import { fixCjkEmphasis } from '@/composables/useMarkdown'
+import { fixCjkEmphasis, renderMarkdown } from '@/composables/useMarkdown'
 import MessageItem from './MessageItem.vue'
 import StreamCursor from '@/components/renderer/StreamCursor.vue'
 
@@ -26,7 +25,7 @@ const streamingPending = computed(() => {
 
 const streamHtml = computed(() => {
   if (!streamingSafe.value) return ''
-  return marked.parse(fixCjkEmphasis(streamingSafe.value), { breaks: true, gfm: true }) as string
+  return renderMarkdown(fixCjkEmphasis(streamingSafe.value))
 })
 
 watch(
