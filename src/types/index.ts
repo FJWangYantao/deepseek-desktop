@@ -42,6 +42,9 @@ export interface ThemeDefinition {
   dark: ThemeColors
 }
 
+// ===== 记忆相关 =====
+export type { MemoryItem, MemoryLayer, MemoryStore } from './memory'
+
 // ===== 统计相关 =====
 
 export interface SearchResult {

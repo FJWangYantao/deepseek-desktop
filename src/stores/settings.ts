@@ -7,6 +7,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const apiKey = ref(localStorage.getItem('ds_api_key') ?? '')
   const defaultModel = ref(localStorage.getItem('ds_default_model') ?? 'deepseek-v4-pro')
   const fontSize = ref(Number(localStorage.getItem('ds_font_size') ?? '14'))
+  const systemPrompt = ref(localStorage.getItem('ds_system_prompt') ?? '')
   const showKey = ref(false)
 
   const models: ModelOption[] = [
@@ -24,6 +25,9 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(fontSize, (val) => {
     try { localStorage.setItem('ds_font_size', String(val)) } catch { /* ignore */ }
   })
+  watch(systemPrompt, (val) => {
+    try { localStorage.setItem('ds_system_prompt', val) } catch { /* ignore */ }
+  })
 
   function clearAllData() {
     useStatsStore().clearAllStats()
@@ -31,10 +35,11 @@ export const useSettingsStore = defineStore('settings', () => {
     apiKey.value = ''
     defaultModel.value = 'deepseek-v4-pro'
     fontSize.value = 14
+    systemPrompt.value = ''
   }
 
   return {
-    apiKey, defaultModel, fontSize, showKey, models,
+    apiKey, defaultModel, fontSize, systemPrompt, showKey, models,
     clearAllData,
   }
 })

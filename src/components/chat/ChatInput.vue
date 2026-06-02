@@ -33,9 +33,9 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="px-5 pb-4 pt-2 border-t border-app-border-light">
+  <div class="px-4 pb-4 pt-2">
     <div class="max-w-[768px] mx-auto">
-      <div class="bg-app-input border border-app-border rounded-xl p-2.5">
+      <div class="bg-app-input border border-app-border rounded-2xl overflow-hidden">
         <textarea
           v-model="inputText"
           @keydown="onKeydown"
@@ -43,11 +43,11 @@ function onKeydown(e: KeyboardEvent) {
           rows="1"
           placeholder="输入消息..."
           :style="{ fontSize: 'var(--app-font-size)' }"
-          class="w-full resize-none px-1.5 py-1 text-app-text placeholder-app-muted
+          class="w-full resize-none px-4 py-3 text-app-text placeholder-app-muted
                  bg-transparent border-none outline-none leading-[1.8]
-                 min-h-[28px] max-h-[160px]"
+                 min-h-[64px] max-h-[200px]"
         ></textarea>
-        <div class="flex items-center justify-between pt-1.5 border-t border-app-border-light">
+        <div class="flex items-center justify-between px-3 pb-2.5">
           <div class="flex gap-1.5 items-center">
             <ModelSelector />
             <WebSearchToggle />

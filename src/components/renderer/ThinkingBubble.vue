@@ -5,7 +5,7 @@ const props = defineProps<{
   thinking: string
 }>()
 
-const expanded = ref(true)
+const expanded = ref(false)
 
 const thinkCount = computed(() => {
   const lines = props.thinking.trim().split('\n').length

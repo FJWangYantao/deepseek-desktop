@@ -1,12 +1,25 @@
 import katex from 'katex'
 import { marked } from 'marked'
 
-// 修复 CJK 标点紧贴 **/__ 导致 CommonMark 无法解析加粗/斜体
+const ZWSP = '​'
+
+// 修复 CJK 字符紧贴 **/__/*/_ 导致 marked 无法解析加粗/斜体
+// 核心原理：marked 遵循 CommonMark，要求左界符前面是空白/标点/行首。
+// CJK 字符（Unicode Lo 类）既非空白也非 ASCII 标点，会导致左界符识别失败。
+// 在 CJK 字符与界符之间插入零宽空格，使界符前出现"空白"，从而被正确识别。
+// 注意：绝不能在界符内侧插入 ZWSP，否则 marked 认为界符后跟空格，同样失败。
 export function fixCjkEmphasis(text: string): string {
-  const punct = '‘-‟　-〿＀-￯，。、；：！？'
+  // 先清除已有零宽空格，防止重复处理累积
+  text = text.replace(/​/g, '')
+
+  // 只匹配「非ASCII字符 + 紧接界符」的模式，在外侧插入 ZWSP
+  const C = '[^\\x00-\\x7F\\s]'
+
   return text
-    .replace(new RegExp(`\\*\\*([${punct}])`, 'g'), '**​$1')
-    .replace(new RegExp(`([${punct}])\\*\\*`, 'g'), '$1​**')
+    .replace(new RegExp(`(${C})(\\*\\*)`, 'g'), `$1${ZWSP}$2`)
+    .replace(new RegExp(`(${C})(__)`, 'g'), `$1${ZWSP}$2`)
+    .replace(new RegExp(`(${C})(\\*)(?!\\*)`, 'g'), `$1${ZWSP}$2`)
+    .replace(new RegExp(`(${C})(_)(?!_)`, 'g'), `$1${ZWSP}$2`)
 }
 
 // 在 marked 之前：提取 LaTeX 公式，用 KaTeX 渲染，生成占位符

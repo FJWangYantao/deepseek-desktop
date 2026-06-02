@@ -20,5 +20,7 @@ interface Window {
     deleteStore: (key: string) => Promise<boolean>
     webSearch: (query: string) => Promise<SearchResult[]>
     fetchUrl: (url: string) => Promise<string>
+    selectAvatar: () => Promise<string | null>
+    getAvatar: () => Promise<string | null>
   }
 }

@@ -4,6 +4,7 @@ import type { Message, UsageData, SearchResult } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
+import { useMemory } from '@/composables/useMemory'
 import { deepSeekChat } from '@/composables/useDeepSeek'
 
 function generateId() {
@@ -20,6 +21,7 @@ export const useChatStore = defineStore('chat', () => {
 
   const sessionStore = useSessionStore()
   const settingsStore = useSettingsStore()
+  const memory = useMemory()
 
   // 切换到当前会话时加载消息
   function loadFromSession() {
@@ -27,6 +29,8 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = session?.messages ?? []
     streaming.value = ''
     streamingThinking.value = ''
+    memory.promoteShortTerm()
+    memory.checkAutoDream(settingsStore.apiKey)
   }
 
   // 监听会话切换
@@ -308,8 +312,23 @@ export const useChatStore = defineStore('chat', () => {
     const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`
     const weekDay = ['日', '一', '二', '三', '四', '五', '六'][today.getDay()]
 
-    // 根据实际结果构建 system prompt
-    let systemPrompt = `当前日期：${dateStr} 星期${weekDay}。`
+    // ===== 构建 system prompt =====
+    // 1. 用户自定义 system prompt
+    let systemPrompt = ''
+    if (settingsStore.systemPrompt) {
+      systemPrompt += settingsStore.systemPrompt + '\n\n'
+    }
+
+    // 2. 记忆上下文
+    const memoryContext = memory.buildMemoryContext(text)
+    if (memoryContext) {
+      systemPrompt += memoryContext + '\n\n'
+    }
+
+    // 3. 日期信息
+    systemPrompt += `当前日期：${dateStr} 星期${weekDay}。`
+
+    // 4. 搜索状态
     if (injectedContext.length > 0) {
       systemPrompt += '\n联网搜索/URL抓取已获取内容并注入到用户消息中，请基于这些内容回答，在末尾标注来源。'
     } else if (webSearchEnabled.value) {
@@ -366,6 +385,9 @@ export const useChatStore = defineStore('chat', () => {
         timestamp: Date.now(),
       }
       messages.value.push(aiMsg)
+
+      // 记忆提取（fire-and-forget）
+      memory.extractFromExchange(text, fullContent, settingsStore.apiKey)
 
       // 记录统计（仅使用 API 返回的真实数据）
       if (usageFromApi) {

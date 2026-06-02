@@ -47,6 +47,21 @@ const themes = [
         </label>
       </div>
 
+      <!-- 系统提示词 -->
+      <div class="mb-8">
+        <label class="block text-sm font-medium text-app-heading mb-2">系统提示词</label>
+        <textarea
+          :value="settings.systemPrompt"
+          @input="settings.systemPrompt = ($event.target as HTMLTextAreaElement).value"
+          placeholder="设定 AI 的行为规则、角色、回答风格等..."
+          rows="5"
+          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
+                 text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
+                 transition-colors resize-y min-h-[100px]"
+        ></textarea>
+        <p class="text-xs text-app-muted mt-1.5">自定义提示词将注入到每轮对话的开头，用于设定 AI 角色、行为规则和回答风格。</p>
+      </div>
+
       <!-- 默认模型 -->
       <div class="mb-8">
         <label class="block text-sm font-medium text-app-heading mb-2">默认模型</label>

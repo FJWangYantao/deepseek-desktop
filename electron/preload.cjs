@@ -6,4 +6,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteStore: (key) => ipcRenderer.invoke('store:delete', key),
   webSearch: (query) => ipcRenderer.invoke('search:web', query),
   fetchUrl: (url) => ipcRenderer.invoke('fetch:url', url),
+  selectAvatar: () => ipcRenderer.invoke('avatar:select'),
+  getAvatar: () => ipcRenderer.invoke('avatar:get'),
 })

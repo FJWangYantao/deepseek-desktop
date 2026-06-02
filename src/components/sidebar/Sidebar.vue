@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useSessionStore } from '@/stores/session'
+import { useAvatar } from '@/composables/useAvatar'
 import SessionList from './SessionList.vue'
 import SidebarFooter from './SidebarFooter.vue'
 
@@ -7,6 +9,9 @@ defineProps<{ collapsed: boolean }>()
 defineEmits<{ toggle: [] }>()
 
 const sessionStore = useSessionStore()
+const { avatarUrl, loadAvatar, changeAvatar } = useAvatar()
+
+onMounted(() => { loadAvatar() })
 
 function createSession() {
   sessionStore.createSession()
@@ -22,9 +27,19 @@ function createSession() {
     <div class="px-3 py-2.5 border-b border-app-border flex items-center" :class="collapsed ? 'justify-center' : 'justify-between'">
       <template v-if="!collapsed">
         <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-app-accent flex items-center justify-center text-white text-xs font-bold">
-            D
-          </div>
+          <button
+            @click="changeAvatar"
+            :class="[
+              'w-7 h-7 rounded-lg shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold',
+              avatarUrl
+                ? 'bg-transparent hover:opacity-80 transition-opacity'
+                : 'bg-app-accent text-white'
+            ]"
+            title="更换头像"
+          >
+            <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-contain" />
+            <span v-else>D</span>
+          </button>
           <span class="text-sm font-medium text-app-heading">DeepSeek Desktop</span>
         </div>
       </template>
