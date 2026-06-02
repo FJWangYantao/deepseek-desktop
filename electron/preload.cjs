@@ -11,4 +11,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectFiles: () => ipcRenderer.invoke('file:select'),
   parseFiles: (paths) => ipcRenderer.invoke('file:parse', paths),
   getFilePath: (file) => webUtils.getPathForFile(file),
+  exportSession: (session, format) => ipcRenderer.invoke('export:session', session, format),
 })

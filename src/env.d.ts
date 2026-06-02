@@ -38,5 +38,6 @@ interface Window {
     selectFiles: () => Promise<FileInfo[]>
     parseFiles: (paths: string[]) => Promise<ParsedFile[]>
     getFilePath: (file: File) => string
+    exportSession: (session: any, format: 'md' | 'html') => Promise<boolean>
   }
 }

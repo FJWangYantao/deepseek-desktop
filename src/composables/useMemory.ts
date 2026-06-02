@@ -107,19 +107,18 @@ function mergeMemories(existing: MemoryItem[], incoming: MemoryItem[]): MemoryIt
 
 // ---------- 提取 prompt ----------
 
-const EXTRACTION_PROMPT = `你是记忆提取助手。从对话中提取"关于用户"的关键信息，分三层输出：
+const EXTRACTION_PROMPT = `从对话中提取值得记住的信息，分三层输出：
 
-[短期] 本次对话中用户明确的偏好、临时决定、当前任务目标
-[中期] 用户的技术偏好、项目背景、工作习惯（几周内有用）
-[长期] 用户的身份角色、持久偏好、核心知识领域
+[短期] 当前任务目标、临时的偏好或决定
+[中期] 技术栈偏好、项目背景、工作习惯、审美偏好
+[长期] 用户身份角色、知识领域、长期不变的偏好
 
-重要规则：
-- 只提取关于用户本人的信息，不要提取对话中讨论的技术知识点
-- 不要提取代码片段、技术概念解释、bug分析等（这些不是"关于用户"的信息）
-- 只提取用户明确表达的偏好/习惯/决定/身份，或者可从上下文可靠推断的信息
-- 每层一行一条，每条15-40字
-- 不确定是否该提取的，一律不提取
-- 某层确实无信息时输出"无"`
+规则：
+- 每层一行一条，每条5-60字
+- 提取真正有用的信息：身份、偏好、项目背景、技术选型
+- 不提取：纯技术知识点（API用法、语法细节）、bug描述、代码片段
+- 举例：可提"用户用Electron开发桌面应用"；不提"__getattr__用于属性委托"
+- 无信息写"无"`
 
 // ---------- Dreaming prompt ----------
 
@@ -246,17 +245,18 @@ export function useMemory() {
             { role: 'user', content: exchangeText },
           ],
           thinking: { type: 'disabled' },
-          max_tokens: 500,
+          max_tokens: 800,
         }),
       })
 
       if (!res.ok) return
       const data = await res.json()
       const text = data.choices?.[0]?.message?.content?.trim()
-      if (!text) return
+      if (!text) { console.log('[Memory] 提取结果为空'); return }
+      console.log('[Memory] 原始提取:\n', text)
 
       const parsed = parseExtraction(text)
-      if (parsed.length === 0) return
+      if (parsed.length === 0) { console.log('[Memory] 解析后无有效条目'); return }
 
       const now = Date.now()
       const incoming: MemoryItem[] = parsed.map(p => ({
@@ -302,7 +302,7 @@ export function useMemory() {
       const lines = section.split('\n').slice(1)
       for (const line of lines) {
         const cleaned = line.replace(/^[-*•\d.]+\s*/, '').trim()
-        if (cleaned && cleaned !== '无' && cleaned.length >= 10 && cleaned.length <= 80) {
+        if (cleaned && cleaned !== '无' && cleaned.length >= 5 && cleaned.length <= 80) {
           result.push({ layer, content: cleaned })
         }
       }

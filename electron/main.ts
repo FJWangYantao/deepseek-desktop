@@ -6,6 +6,7 @@ import { registerStorageHandlers } from './ipc/storage'
 import { registerSearchHandlers } from './ipc/search'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
+import { registerExportHandlers } from './ipc/export'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -45,6 +46,7 @@ registerStorageHandlers()
 registerSearchHandlers()
 registerAvatarHandlers()
 registerFileHandlers()
+registerExportHandlers()
 
 app.whenReady().then(() => {
   createWindow()
