@@ -1,5 +1,6 @@
 import * as http from 'http'
 import * as https from 'https'
+import * as cheerio from 'cheerio'
 
 export interface SearchResult {
   title: string
@@ -48,25 +49,18 @@ function httpGet(url: string, timeout = 8000): Promise<string> {
 
 function extractText(html: string): string {
   try {
-    // 用正则移除不可见标签后提取可见文本（避免 cheerio 在大文件上的性能问题）
-    const cleaned = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
-      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
-      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
-      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
-      .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
-      .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-    const text = cleaned
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#x27;/g, "'")
-      .replace(/&nbsp;/g, ' ')
-    return text.replace(/\s{3,}/g, '\n\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 3000)
+    const $ = cheerio.load(html)
+    // 移除不可见/干扰元素
+    $('script, style, nav, footer, header, noscript, iframe, aside, [role="navigation"], .sidebar, .nav, .footer, .header, .ad, .advertisement, .menu, [aria-hidden="true"]').remove()
+    // 获取 body 文本，回退 html
+    const raw = ($('body').text() || $('html').text() || '').trim()
+    if (!raw) return ''
+    // 规范化空白
+    const text = raw
+      .replace(/[ \t]{3,}/g, '  ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+    return text.slice(0, 30000)
   } catch {
     return ''
   }
@@ -110,7 +104,7 @@ async function searchBing(query: string): Promise<SearchResult[]> {
   if (raw.length === 0) return []
 
   const results: SearchResult[] = []
-  for (const r of raw.slice(0, 3)) {
+  for (const r of raw.slice(0, 4)) {
     let content = ''
     try {
       const pageHtml = await httpGet(r.url, 8000)
@@ -160,7 +154,7 @@ async function searchDDG(query: string): Promise<SearchResult[]> {
   if (raw.length === 0) return []
 
   const results: SearchResult[] = []
-  for (const r of raw.slice(0, 3)) {
+  for (const r of raw.slice(0, 4)) {
     let content = ''
     try {
       const pageHtml = await httpGet(r.url, 8000)

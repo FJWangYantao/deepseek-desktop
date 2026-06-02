@@ -55,11 +55,11 @@ export const useChatStore = defineStore('chat', () => {
     webSearchEnabled.value = !webSearchEnabled.value
   }
 
-  async function buildSearchQuery(userText: string): Promise<string> {
+  async function buildSearchQueries(userText: string): Promise<string[]> {
     const now = new Date()
     const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
 
-    if (!settingsStore.apiKey) return userText
+    if (!settingsStore.apiKey) return [userText]
 
     try {
       const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -71,25 +71,57 @@ export const useChatStore = defineStore('chat', () => {
         body: JSON.stringify({
           model: 'deepseek-v4-flash',
           messages: [
-            { role: 'system', content: `你是一个搜索词优化助手。将用户的自然语言问题转化为最适合搜索引擎的关键词（10字以内）。当前日期：${dateStr}。只输出搜索词，不要任何解释。` },
+            { role: 'system', content: `你是一个搜索词生成助手。根据用户的自然语言问题，生成2-3个不同角度的英文或中文搜索关键词（每个15字以内），一行一个，不要编号、不要解释。当前日期：${dateStr}。` },
             { role: 'user', content: userText },
           ],
           thinking: { type: 'disabled' },
-          max_tokens: 30,
+          max_tokens: 80,
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        const query = data.choices?.[0]?.message?.content?.trim()
-        if (query && query.length > 0) {
-          console.log('[Search] AI 优化搜索词:', userText, '→', query)
-          return query
+        const text = data.choices?.[0]?.message?.content?.trim()
+        if (text) {
+          const queries = text.split('\n').map((s: string) => s.trim()).filter((s: string) => s.length > 0)
+          if (queries.length > 0) {
+            console.log('[Search] AI 生成搜索词:', userText, '→', queries)
+            return queries
+          }
         }
       }
     } catch (e) {
-      console.warn('[Search] 搜索词优化失败，使用原文:', e)
+      console.warn('[Search] 搜索词生成失败，使用原文:', e)
     }
-    return userText
+    return [userText]
+  }
+
+  async function shouldSearch(userText: string): Promise<boolean> {
+    if (!settingsStore.apiKey) return true
+    try {
+      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${settingsStore.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-v4-flash',
+          messages: [
+            { role: 'system', content: '判断用户问题是否需要联网搜索最新信息。需要搜索（实时新闻、最新数据、当前事件、价格查询、天气等）回复Y，不需要（基础知识、数学计算、翻译、编程语法等）回复N。只输出一个字母。' },
+            { role: 'user', content: userText },
+          ],
+          thinking: { type: 'disabled' },
+          max_tokens: 1,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const answer = data.choices?.[0]?.message?.content?.trim().toUpperCase()
+        console.log('[Search] AI 判断是否需要搜索:', userText, '→', answer === 'Y')
+        return answer === 'Y'
+      }
+    } catch {}
+    return true // 判断失败默认搜索
   }
 
   function extractUrls(text: string): string[] {
@@ -190,7 +222,6 @@ export const useChatStore = defineStore('chat', () => {
 
     // ===== 联网搜索 + URL 抓取 =====
     let injectedContext = ''
-    let searchSucceeded = false
 
     console.log('[Search] ===== 开始搜索流程 =====')
     console.log('[Search] webSearchEnabled:', webSearchEnabled.value)
@@ -214,28 +245,55 @@ export const useChatStore = defineStore('chat', () => {
       }
     }
 
-    // 联网搜索
-    if (webSearchEnabled.value && window.electronAPI?.webSearch) {
-      const searchQuery = await buildSearchQuery(text)
-      console.log('[Search] 开始联网搜索, 搜索词:', searchQuery)
+    // 联网搜索（多词并行）—— AI自行判断是否需要搜索
+    if (webSearchEnabled.value && window.electronAPI?.webSearch && urls.length === 0) {
+      const needSearch = await shouldSearch(text)
+      if (!needSearch) {
+        console.log('[Search] AI 判断无需搜索，跳过')
+      } else {
+        // 1. AI 生成多角度搜索词
+        const queries = await buildSearchQueries(text)
+      console.log('[Search] 准备并行搜索，词数:', queries.length)
+
+      // 2. 所有搜索词并行执行
       try {
-        const results = await Promise.race([
-          window.electronAPI.webSearch(searchQuery),
-          new Promise<SearchResult[]>((_, reject) =>
-            setTimeout(() => reject(new Error('搜索超时')), 25000)
-          ),
-        ])
-        console.log('[Search] 搜索结果数:', results.length)
-        if (results.length > 0) {
-          results.forEach((r, i) => console.log(`[Search] 结果${i+1}: ${r.title} | ${r.url} | 内容长度:${r.content.length}`))
-          injectedContext += buildSearchContext(results)
-          searchSucceeded = true
-        } else {
-          console.warn('[Search] 搜索返回空结果')
+        const allResults = await Promise.all(
+          queries.map(q =>
+            Promise.race([
+              window.electronAPI!.webSearch(q),
+              new Promise<SearchResult[]>((_, reject) =>
+                setTimeout(() => reject(new Error('搜索超时')), 25000)
+              ),
+            ]).catch((e) => {
+              console.warn(`[Search] 搜索词 "${q}" 失败:`, e)
+              return [] as SearchResult[]
+            })
+          )
+        )
+
+        // 3. 合并 + URL去重
+        const seen = new Set<string>()
+        const merged: SearchResult[] = []
+        for (const batch of allResults) {
+          for (const r of batch) {
+            if (!seen.has(r.url)) {
+              seen.add(r.url)
+              merged.push(r)
+            }
+          }
         }
-      } catch (e) {
-        console.warn('[Search] 联网搜索失败，继续普通对话:', e)
-      }
+
+        console.log('[Search] 合并去重后结果数:', merged.length)
+        if (merged.length > 0) {
+          merged.forEach((r, i) => console.log(`[Search] 结果${i+1}: ${r.title} | ${r.url}`))
+          injectedContext += buildSearchContext(merged.slice(0, 10))
+        } else {
+          console.warn('[Search] 全部搜索返回空结果')
+        }
+        } catch (e) {
+          console.warn('[Search] 联网搜索失败，继续普通对话:', e)
+        }
+      } // end if needSearch
     } else if (webSearchEnabled.value) {
       console.warn('[Search] electronAPI 不可用，跳过搜索（是否在浏览器开发模式？）')
     }
@@ -250,10 +308,10 @@ export const useChatStore = defineStore('chat', () => {
     const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`
     const weekDay = ['日', '一', '二', '三', '四', '五', '六'][today.getDay()]
 
-    // 根据实际搜索状态构建 system prompt
+    // 根据实际结果构建 system prompt
     let systemPrompt = `当前日期：${dateStr} 星期${weekDay}。`
-    if (searchSucceeded) {
-      systemPrompt += '\n联网搜索已获取结果并注入到用户消息中，请基于搜索结果回答，在末尾标注来源。'
+    if (injectedContext.length > 0) {
+      systemPrompt += '\n联网搜索/URL抓取已获取内容并注入到用户消息中，请基于这些内容回答，在末尾标注来源。'
     } else if (webSearchEnabled.value) {
       systemPrompt += '\n联网搜索已开启但本次未能获取结果。请如实告知用户搜索暂时不可用，建议稍后重试或更换关键词。'
     } else {
