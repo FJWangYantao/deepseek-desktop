@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer, webUtils } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   setStore: (key, value) => ipcRenderer.invoke('store:set', key, value),
@@ -8,4 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fetchUrl: (url) => ipcRenderer.invoke('fetch:url', url),
   selectAvatar: () => ipcRenderer.invoke('avatar:select'),
   getAvatar: () => ipcRenderer.invoke('avatar:get'),
+  selectFiles: () => ipcRenderer.invoke('file:select'),
+  parseFiles: (paths) => ipcRenderer.invoke('file:parse', paths),
+  getFilePath: (file) => webUtils.getPathForFile(file),
 })

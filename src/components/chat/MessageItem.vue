@@ -35,6 +35,20 @@ function retry() {
     <div v-if="message.role === 'user'" class="flex flex-col items-end">
       <div class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm overflow-hidden">
         <p class="text-app-text whitespace-pre-wrap break-words leading-[1.8]" :style="{ fontSize: 'var(--app-font-size)' }">{{ message.content }}</p>
+        <div v-if="message.attachments?.length" class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-app-border">
+          <span
+            v-for="a in message.attachments"
+            :key="a.name"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full
+                   bg-app-accent-soft text-app-accent border border-app-accent-soft-border"
+          >
+            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span class="truncate max-w-[120px]">{{ a.name }}</span>
+            <span class="text-[10px] opacity-60">{{ a.size < 1024 ? a.size + 'B' : a.size < 1048576 ? (a.size / 1024).toFixed(1) + 'KB' : (a.size / 1048576).toFixed(1) + 'MB' }}</span>
+          </span>
+        </div>
       </div>
       <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
@@ -74,7 +88,7 @@ function retry() {
         <span v-else>D</span>
       </div>
       <div class="min-w-0 flex-1">
-        <ThinkingBubble v-if="message.thinking" :thinking="message.thinking" />
+        <ThinkingBubble v-if="message.thinking" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
         <ContentBlock :content="message.content" />
         <div class="flex mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button

@@ -12,6 +12,18 @@ const listRef = ref<HTMLElement>()
 
 const { processChunk } = useStreamRender()
 
+const isThinkingActive = computed(() =>
+  !!chatStore.streamingThinking && !chatStore.streaming
+)
+
+function onThinkingToggle(e: Event) {
+  const el = e.target as HTMLDetailsElement
+  // 只在思考已结束、正文输出中时记录用户的手动操作
+  if (!isThinkingActive.value) {
+    chatStore.thinkingManuallyExpanded = el.open
+  }
+}
+
 // 将流式内容分离为可安全渲染和待处理两部分
 const streamingSafe = computed(() => {
   if (!chatStore.streaming) return ''
@@ -92,8 +104,10 @@ function isNearBottom(): boolean {
           </div>
           <div class="min-w-0 flex-1">
             <div v-if="chatStore.streamingThinking" class="mb-3">
-              <details open class="text-xs">
-                <summary class="text-app-muted hover:text-app-heading cursor-pointer font-medium">思考中...</summary>
+              <details :open="isThinkingActive || chatStore.thinkingManuallyExpanded" @toggle="onThinkingToggle" class="text-xs">
+                <summary class="text-app-muted hover:text-app-heading cursor-pointer font-medium">
+                  {{ isThinkingActive ? '思考中...' : '思考过程' }}
+                </summary>
                 <div class="mt-2 pl-4 border-l-2 border-app-accent-soft-border text-app-muted leading-[1.8] whitespace-pre-wrap">
                   {{ chatStore.streamingThinking }}
                 </div>

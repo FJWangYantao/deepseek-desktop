@@ -3,9 +3,10 @@ import { ref, computed } from 'vue'
 
 const props = defineProps<{
   thinking: string
+  thinkingExpanded?: boolean
 }>()
 
-const expanded = ref(false)
+const expanded = ref(props.thinkingExpanded ?? false)
 
 const thinkCount = computed(() => {
   const lines = props.thinking.trim().split('\n').length

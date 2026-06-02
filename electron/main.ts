@@ -5,6 +5,7 @@ import { existsSync } from 'fs'
 import { registerStorageHandlers } from './ipc/storage'
 import { registerSearchHandlers } from './ipc/search'
 import { registerAvatarHandlers } from './ipc/avatar'
+import { registerFileHandlers } from './ipc/files'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -43,6 +44,7 @@ Menu.setApplicationMenu(null)
 registerStorageHandlers()
 registerSearchHandlers()
 registerAvatarHandlers()
+registerFileHandlers()
 
 app.whenReady().then(() => {
   createWindow()

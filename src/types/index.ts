@@ -3,6 +3,8 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   thinking?: string
+  thinkingExpanded?: boolean
+  attachments?: { name: string; size: number }[]
   timestamp: number
 }
 

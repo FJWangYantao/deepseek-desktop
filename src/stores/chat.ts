@@ -18,6 +18,8 @@ export const useChatStore = defineStore('chat', () => {
   const thinkingEnabled = ref(true)
   const webSearchEnabled = ref(false)
   const isGenerating = ref(false)
+  const generatingSessionId = ref<string | null>(null)
+  const thinkingManuallyExpanded = ref(false)
 
   const sessionStore = useSessionStore()
   const settingsStore = useSettingsStore()
@@ -25,6 +27,10 @@ export const useChatStore = defineStore('chat', () => {
 
   // 切换到当前会话时加载消息
   function loadFromSession() {
+    // 如有正在进行的生成，中止并确保内容留在原会话
+    if (isGenerating.value && generatingSessionId.value) {
+      stopGenerating()
+    }
     const session = sessionStore.getCurrentSession()
     messages.value = session?.messages ?? []
     streaming.value = ''
@@ -148,6 +154,16 @@ export const useChatStore = defineStore('chat', () => {
     return lines.join('\n')
   }
 
+  function buildFileContext(files: {name: string, text: string}[]): string {
+    const lines = ['[系统提示] 用户上传了以下文件，请基于这些内容回答用户问题：', '']
+    for (const f of files) {
+      lines.push(`=== ${f.name} ===`)
+      lines.push(f.text)
+      lines.push('')
+    }
+    return lines.join('\n')
+  }
+
   function buildFetchContext(url: string, content: string): string {
     if (!content) return ''
     return `[系统提示] 以下是从 ${url} 获取的网页内容，请基于这些信息回答：\n\n${content}\n\n`
@@ -197,8 +213,9 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, files?: {name: string, text: string, size: number}[]) {
     const sid = sessionStore.ensureSession()
+    generatingSessionId.value = sid
     if (!settingsStore.apiKey) {
       alert('请先在设置页面配置 API Key')
       return
@@ -215,6 +232,7 @@ export const useChatStore = defineStore('chat', () => {
       id: generateId(),
       role: 'user',
       content: text,
+      attachments: files?.map(f => ({ name: f.name, size: f.size })),
       timestamp: Date.now(),
     }
     messages.value.push(userMsg)
@@ -223,9 +241,16 @@ export const useChatStore = defineStore('chat', () => {
     isGenerating.value = true
     streaming.value = ''
     streamingThinking.value = ''
+    thinkingManuallyExpanded.value = false
 
-    // ===== 联网搜索 + URL 抓取 =====
+    // ===== 文件内容 + 联网搜索 + URL 抓取 =====
     let injectedContext = ''
+
+    // 文件内容注入
+    if (files && files.length > 0) {
+      injectedContext += buildFileContext(files)
+      console.log('[File] 注入文件内容，长度:', injectedContext.length)
+    }
 
     console.log('[Search] ===== 开始搜索流程 =====')
     console.log('[Search] webSearchEnabled:', webSearchEnabled.value)
@@ -382,6 +407,7 @@ export const useChatStore = defineStore('chat', () => {
         role: 'assistant',
         content: fullContent,
         thinking: fullThinking || undefined,
+        thinkingExpanded: thinkingManuallyExpanded.value || undefined,
         timestamp: Date.now(),
       }
       messages.value.push(aiMsg)
@@ -415,7 +441,13 @@ export const useChatStore = defineStore('chat', () => {
             thinking: fullThinking || undefined,
             timestamp: Date.now(),
           }
-          messages.value.push(partialMsg)
+          // 确保保存到生成所属的会话（切换会话时可能已变更）
+          if (generatingSessionId.value === sessionStore.currentId) {
+            messages.value.push(partialMsg)
+          } else {
+            const origSession = sessionStore.sessions.find(s => s.id === generatingSessionId.value)
+            if (origSession) origSession.messages.push(partialMsg)
+          }
         }
       } else {
         const errMsg: Message = {
@@ -431,6 +463,7 @@ export const useChatStore = defineStore('chat', () => {
       streaming.value = ''
       streamingThinking.value = ''
       isGenerating.value = false
+      generatingSessionId.value = null
     }
   }
 
@@ -450,7 +483,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, currentModel,
+    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, currentModel,
     sendMessage, clearMessages, loadFromSession, toggleThinking, toggleWebSearch, retryMessage, stopGenerating,
   }
 })

@@ -13,6 +13,19 @@ interface SearchResult {
   content: string
 }
 
+interface FileInfo {
+  path: string
+  name: string
+  size: number
+  ext: string
+}
+
+interface ParsedFile {
+  name: string
+  ext: string
+  text: string
+}
+
 interface Window {
   electronAPI?: {
     setStore: (key: string, value: string) => Promise<boolean>
@@ -22,5 +35,8 @@ interface Window {
     fetchUrl: (url: string) => Promise<string>
     selectAvatar: () => Promise<string | null>
     getAvatar: () => Promise<string | null>
+    selectFiles: () => Promise<FileInfo[]>
+    parseFiles: (paths: string[]) => Promise<ParsedFile[]>
+    getFilePath: (file: File) => string
   }
 }
