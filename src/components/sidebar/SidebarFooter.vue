@@ -5,13 +5,7 @@ const router = useRouter()
 </script>
 
 <template>
-  <div class="p-3 border-t border-app-border flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-lg bg-app-accent flex items-center justify-center text-white text-xs font-bold">
-        D
-      </div>
-      <span class="text-sm text-app-heading">DeepSeek Chat</span>
-    </div>
+  <div class="p-3 border-t border-app-border flex items-center justify-end">
     <div class="flex items-center gap-1">
       <button
         @click="router.push('/stats')"

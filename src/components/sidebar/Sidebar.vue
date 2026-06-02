@@ -18,8 +18,16 @@ function createSession() {
     class="h-full bg-app-sidebar border-r border-app-border flex flex-col transition-all duration-200"
     :class="collapsed ? 'w-[48px] min-w-[48px]' : 'w-[250px] min-w-[250px]'"
   >
-    <!-- 收起/展开按钮 -->
-    <div class="px-2 py-2.5 border-b border-app-border flex" :class="collapsed ? 'justify-center' : 'justify-end'">
+    <!-- 顶部：品牌 + 收起按钮 -->
+    <div class="px-3 py-2.5 border-b border-app-border flex items-center" :class="collapsed ? 'justify-center' : 'justify-between'">
+      <template v-if="!collapsed">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-app-accent flex items-center justify-center text-white text-xs font-bold">
+            D
+          </div>
+          <span class="text-sm font-medium text-app-heading">DeepSeek Desktop</span>
+        </div>
+      </template>
       <button
         @click="$emit('toggle')"
         class="w-7 h-7 rounded-md hover:bg-app-hover flex items-center justify-center text-app-muted

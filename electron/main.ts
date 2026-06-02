@@ -8,9 +8,8 @@ import { registerSearchHandlers } from './ipc/search'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const preloadPath = join(__dirname, 'preload.cjs')
+const iconPath = join(__dirname, '../electron/icon_dl.ico')
 console.log('[Main] __dirname:', __dirname)
-console.log('[Main] preloadPath:', preloadPath)
-console.log('[Main] preloadPath 存在:', existsSync(preloadPath))
 
 let mainWindow: BrowserWindow | null = null
 
@@ -20,7 +19,8 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    title: 'DeepSeek Chat',
+    title: 'DeepSeek Desktop',
+    icon: existsSync(iconPath) ? iconPath : undefined,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#fdfcf9',
     webPreferences: {

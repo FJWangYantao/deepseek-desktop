@@ -93,7 +93,7 @@ function onCodeCopy(e: Event) {
 
 <template>
   <div
-    class="markdown-body text-app-text leading-[1.8] prose-sm max-w-none
+    class="markdown-body text-app-text leading-[1.8] prose-sm max-w-none break-words
            prose-headings:text-app-heading prose-p:text-app-text prose-strong:text-app-text
            prose-a:text-app-accent prose-a:no-underline hover:prose-a:underline
            prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:text-xs prose-code:font-normal

@@ -1,5 +1,5 @@
 {
-  "name": "deepseek-chat",
+  "name": "deepseek-desktop",
   "version": "1.5.1",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "DeepSeek 桌面聊天应用",
+  "description": "DeepSeek Desktop",
   "dependencies": {
     "cheerio": "^1.2.0",
     "highlight.js": "^11.11.1",

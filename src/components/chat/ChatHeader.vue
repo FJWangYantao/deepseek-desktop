@@ -5,7 +5,7 @@ import { computed } from 'vue'
 const sessionStore = useSessionStore()
 const title = computed(() => {
   const session = sessionStore.sessions.find(s => s.id === sessionStore.currentId)
-  return session?.title ?? 'DeepSeek Chat'
+  return session?.title ?? 'DeepSeek Desktop'
 })
 </script>
 
