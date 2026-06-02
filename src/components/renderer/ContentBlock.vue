@@ -39,24 +39,24 @@ renderer.code = function({ text, lang }: { text: string; lang?: string }) {
       复制
     </button>
   </div>
-  <pre class="p-4 overflow-x-auto text-[13px] leading-[1.8] font-mono text-app-text"><code>${highlighted}</code></pre>
+  <pre class="p-4 overflow-x-auto leading-[1.8] font-mono text-app-text"><code>${highlighted}</code></pre>
 </div>`
 }
 
 renderer.table = function({ header, rows }: { header: { text: string }[]; rows: { text: string }[][] }) {
   const thead = header.map(cell =>
-    `<th class="px-3 py-2 text-left text-xs font-medium text-app-heading bg-app-hover border-b border-app-border">${marked.parseInline(cell.text)}</th>`
+    `<th class="px-4 py-2 text-center font-medium text-app-heading border-b border-app-border">${marked.parseInline(cell.text)}</th>`
   ).join('')
 
-  const tbody = rows.map((row, i) =>
-    `<tr class="${i % 2 === 0 ? 'bg-app-input' : 'bg-app-surface-alt'} border-b border-app-border-light last:border-b-0">
-      ${row.map(cell => `<td class="px-3 py-2 text-sm text-app-text border-r border-app-border-light last:border-r-0">${marked.parseInline(cell.text)}</td>`).join('')}
+  const tbody = rows.map(row =>
+    `<tr>
+      ${row.map(cell => `<td class="px-4 py-2 text-center text-app-text">${marked.parseInline(cell.text)}</td>`).join('')}
     </tr>`
   ).join('')
 
   return `
-<div class="my-4 overflow-x-auto rounded-lg border border-app-border">
-  <table class="w-full border-collapse text-sm">
+<div class="my-4 mx-auto w-fit overflow-x-auto border-t border-b border-app-border">
+  <table class="border-collapse">
     <thead><tr>${thead}</tr></thead>
     <tbody>${tbody}</tbody>
   </table>

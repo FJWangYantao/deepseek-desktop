@@ -107,17 +107,19 @@ function mergeMemories(existing: MemoryItem[], incoming: MemoryItem[]): MemoryIt
 
 // ---------- 提取 prompt ----------
 
-const EXTRACTION_PROMPT = `分析对话，提取关键信息，分三层输出：
+const EXTRACTION_PROMPT = `你是记忆提取助手。从对话中提取"关于用户"的关键信息，分三层输出：
 
-[短期] 本次对话的临时上下文（当前任务、调试状态、临时决定等）
-[中期] 接下来几天/几周有用的信息（用户偏好、项目背景、技术选型等）
-[长期] 用户身份、持久偏好、核心知识（不会频繁变化的信息）
+[短期] 本次对话中用户明确的偏好、临时决定、当前任务目标
+[中期] 用户的技术偏好、项目背景、工作习惯（几周内有用）
+[长期] 用户的身份角色、持久偏好、核心知识领域
 
-规则：
-- 每层一行一条，每条不超过30字
-- 只提取有价值的信息，琐碎对话不提取
-- 无相关信息则输出"无"
-- 不要编号，不要解释`
+重要规则：
+- 只提取关于用户本人的信息，不要提取对话中讨论的技术知识点
+- 不要提取代码片段、技术概念解释、bug分析等（这些不是"关于用户"的信息）
+- 只提取用户明确表达的偏好/习惯/决定/身份，或者可从上下文可靠推断的信息
+- 每层一行一条，每条15-40字
+- 不确定是否该提取的，一律不提取
+- 某层确实无信息时输出"无"`
 
 // ---------- Dreaming prompt ----------
 
@@ -300,7 +302,7 @@ export function useMemory() {
       const lines = section.split('\n').slice(1)
       for (const line of lines) {
         const cleaned = line.replace(/^[-*•\d.]+\s*/, '').trim()
-        if (cleaned && cleaned !== '无' && cleaned.length >= 4 && cleaned.length <= 80) {
+        if (cleaned && cleaned !== '无' && cleaned.length >= 10 && cleaned.length <= 80) {
           result.push({ layer, content: cleaned })
         }
       }

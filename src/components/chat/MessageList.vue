@@ -9,6 +9,7 @@ import StreamCursor from '@/components/renderer/StreamCursor.vue'
 
 const chatStore = useChatStore()
 const listRef = ref<HTMLElement>()
+const showScrollBtn = ref(false)
 
 const { processChunk } = useStreamRender()
 
@@ -59,12 +60,21 @@ function scrollToBottom() {
 function isNearBottom(): boolean {
   if (!listRef.value) return true
   const el = listRef.value
-  return el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 200
 }
+
+function onScroll() {
+  showScrollBtn.value = !isNearBottom()
+}
+
+// 消息变化后检查是否需要显示按钮
+watch(() => chatStore.messages.length, () => {
+  nextTick(() => onScroll())
+})
 </script>
 
 <template>
-  <div ref="listRef" class="flex-1 overflow-y-auto px-6 py-6">
+  <div ref="listRef" class="flex-1 overflow-y-auto px-6 py-6 relative" @scroll="onScroll">
     <div
       v-if="chatStore.messages.length === 0 && !chatStore.streaming"
       class="flex items-center justify-center h-full"
@@ -75,7 +85,7 @@ function isNearBottom(): boolean {
         </svg>
       </div>
     </div>
-    <div class="max-w-[768px] mx-auto">
+    <div class="max-w-[860px] mx-auto">
       <MessageItem
         v-for="msg in chatStore.messages"
         :key="msg.id"
@@ -132,6 +142,20 @@ function isNearBottom(): boolean {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- 滚动到底按钮 -->
+    <div v-if="showScrollBtn" class="sticky bottom-4 flex justify-end pointer-events-none z-10">
+      <button
+        @click="scrollToBottom()"
+        class="pointer-events-auto w-9 h-9 rounded-full bg-app-card border border-app-border
+               flex items-center justify-center text-app-muted hover:text-app-accent hover:border-app-accent
+               shadow-md transition-all -mr-2"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>

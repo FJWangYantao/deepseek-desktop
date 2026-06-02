@@ -18,10 +18,18 @@ function applyFontSize(size: number) {
   document.documentElement.style.setProperty('--app-font-size', `${size}px`)
 }
 
+function applyFontFamily(family: string) {
+  document.documentElement.style.setProperty('--app-font-family', family)
+  // 等宽字体：如果用户选了 JetBrains Mono 就用它，否则保持默认
+  document.documentElement.style.setProperty('--app-font-mono', family || '"JetBrains Mono", "Fira Code", "Consolas", monospace')
+}
+
 onMounted(() => {
   applyFontSize(settings.fontSize)
+  applyFontFamily(settings.fontFamily)
 })
 watch(() => settings.fontSize, applyFontSize)
+watch(() => settings.fontFamily, applyFontFamily)
 </script>
 
 <template>

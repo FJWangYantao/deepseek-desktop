@@ -45,6 +45,6 @@ async function copy() {
         {{ copied ? '已复制' : '复制' }}
       </button>
     </div>
-    <pre class="p-4 overflow-x-auto text-[13px] leading-relaxed font-mono text-app-text"><code v-html="highlighted" /></pre>
+    <pre class="p-4 overflow-x-auto leading-relaxed font-mono text-app-text"><code v-html="highlighted" /></pre>
   </div>
 </template>

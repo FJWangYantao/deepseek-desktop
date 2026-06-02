@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
 import ModelSelector from './ModelSelector.vue'
@@ -19,6 +19,10 @@ async function send() {
   if (!text || sending.value) return
   sending.value = true
   inputText.value = ''
+  nextTick(() => {
+    const el = document.querySelector('.chat-textarea') as HTMLTextAreaElement
+    if (el) { el.style.height = '' }
+  })
   try {
     const parsed = await fileAttachRef.value?.parseAll() ?? []
     const fileInfos = fileAttachRef.value?.files ?? []
@@ -31,6 +35,12 @@ async function send() {
   } finally {
     sending.value = false
   }
+}
+
+function autoResize(e: Event) {
+  const el = e.target as HTMLTextAreaElement
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 400) + 'px'
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -65,7 +75,7 @@ function onPaste(e: ClipboardEvent) {
 
 <template>
   <div class="px-4 pb-4 pt-2">
-    <div class="max-w-[768px] mx-auto">
+    <div class="max-w-[860px] mx-auto">
       <div class="bg-app-input border border-app-border rounded-2xl overflow-hidden">
         <!-- 文件标签：左上角椭形 -->
         <div v-if="fileAttachRef?.files?.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
@@ -84,13 +94,14 @@ function onPaste(e: ClipboardEvent) {
           v-model="inputText"
           @keydown="onKeydown"
           @paste="onPaste"
+          @input="autoResize"
           :disabled="sending"
           rows="1"
           placeholder="输入消息..."
           :style="{ fontSize: 'var(--app-font-size)' }"
-          class="w-full resize-none px-4 py-3 text-app-text placeholder-app-muted
+          class="chat-textarea w-full resize-none px-4 py-3 text-app-text placeholder-app-muted
                  bg-transparent border-none outline-none leading-[1.8]
-                 min-h-[64px] max-h-[200px]"
+                 min-h-[64px] max-h-[400px]"
         ></textarea>
         <div class="flex items-center justify-between px-3 pb-2.5">
           <div class="flex gap-1.5 items-center">
@@ -111,7 +122,7 @@ function onPaste(e: ClipboardEvent) {
             <button
               v-else
               @click="send"
-              :disabled="!inputText.trim() || sending"
+              :disabled="!inputText.trim() || sending || chatStore.isGenerating"
               class="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors
                      bg-app-accent hover:bg-app-accent-hover
                      disabled:opacity-40 disabled:cursor-not-allowed"

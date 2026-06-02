@@ -96,6 +96,20 @@ const themes = [
         </select>
       </div>
 
+      <!-- 字体族 -->
+      <div class="mb-8">
+        <label class="block text-sm font-medium text-app-heading mb-2">字体</label>
+        <select
+          :value="settings.fontFamily"
+          @change="settings.fontFamily = ($event.target as HTMLSelectElement).value"
+          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
+                 text-app-text focus:outline-none focus:border-app-accent transition-colors"
+          :style="{ fontFamily: settings.fontFamily || 'inherit' }"
+        >
+          <option v-for="f in settings.fontOptions" :key="f.value" :value="f.value">{{ f.label }}</option>
+        </select>
+      </div>
+
       <!-- 主题颜色 -->
       <div class="mb-8">
         <label class="block text-sm font-medium text-app-heading mb-2">主题颜色</label>

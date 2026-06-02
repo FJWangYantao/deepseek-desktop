@@ -16,7 +16,7 @@ html, body, #app {
 }
 
 body {
-  font-family: "Inter", "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--app-font-family, "Inter", "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif);
   background-color: var(--app-bg);
   color: var(--app-text);
   -webkit-font-smoothing: antialiased;
@@ -48,12 +48,31 @@ html.theme-ready *::after {
 pre {
   border-radius: 10px;
   overflow-x: auto;
-  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
-  font-size: 13px;
-  line-height: 1.6;
+  font-family: var(--app-font-mono, "JetBrains Mono", "Fira Code", "Consolas", monospace);
+  font-size: calc(var(--app-font-size) - 3px);
+  line-height: 1.8;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  word-spacing: 0.18em;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 30%;
 }
 code {
-  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-family: var(--app-font-mono, "JetBrains Mono", "Fira Code", "Consolas", monospace);
+  font-size: 0.9em;
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+
+/* ===== 表格 ===== */
+table {
+  font-size: var(--app-font-size);
+}
+.markdown-body table th,
+.markdown-body table td {
+  border-left: none;
+  border-right: none;
 }
 
 /* ===== Markdown 覆盖 ===== */

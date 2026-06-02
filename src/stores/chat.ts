@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch, computed, nextTick } from 'vue'
+import { ref, reactive, watch, computed, nextTick } from 'vue'
 import type { Message, UsageData, SearchResult } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
@@ -20,6 +20,9 @@ export const useChatStore = defineStore('chat', () => {
   const isGenerating = ref(false)
   const generatingSessionId = ref<string | null>(null)
   const thinkingManuallyExpanded = ref(false)
+  const bgStreams = reactive<Record<string, { content: string; thinking: string }>>({})
+  const generatingSessions = ref<Record<string, boolean>>({})
+  const unreadSessions = ref<Record<string, boolean>>({})
 
   const sessionStore = useSessionStore()
   const settingsStore = useSettingsStore()
@@ -27,14 +30,37 @@ export const useChatStore = defineStore('chat', () => {
 
   // 切换到当前会话时加载消息
   function loadFromSession() {
-    // 如有正在进行的生成，中止并确保内容留在原会话
-    if (isGenerating.value && generatingSessionId.value) {
-      stopGenerating()
+    const newSid = sessionStore.currentId
+
+    // 离开正在生成的会话时，保存当前流式内容到后台
+    if (isGenerating.value && generatingSessionId.value && generatingSessionId.value !== newSid) {
+      bgStreams[generatingSessionId.value] = {
+        content: streaming.value,
+        thinking: streamingThinking.value,
+      }
     }
+
     const session = sessionStore.getCurrentSession()
     messages.value = session?.messages ?? []
-    streaming.value = ''
-    streamingThinking.value = ''
+
+    // 切换到正在后台生成的会话时，恢复流式内容
+    if (generatingSessionId.value === newSid) {
+      const bg = bgStreams[newSid]
+      streaming.value = bg?.content ?? ''
+      streamingThinking.value = bg?.thinking ?? ''
+      isGenerating.value = true
+    } else {
+      streaming.value = ''
+      streamingThinking.value = ''
+      isGenerating.value = false
+    }
+
+    // 清除未读标记
+    if (unreadSessions.value[newSid]) {
+      unreadSessions.value = { ...unreadSessions.value }
+      delete unreadSessions.value[newSid]
+    }
+
     memory.promoteShortTerm()
     memory.checkAutoDream(settingsStore.apiKey)
   }
@@ -55,7 +81,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }, { deep: true })
 
-  let abortController: AbortController | null = null
+  const abortControllers = reactive<Record<string, AbortController>>({})
 
   function toggleThinking() {
     thinkingEnabled.value = !thinkingEnabled.value
@@ -170,10 +196,9 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function stopGenerating() {
-    if (abortController) {
-      abortController.abort()
-      abortController = null
-    }
+    const sid = sessionStore.currentId
+    abortControllers[sid]?.abort()
+    delete abortControllers[sid]
   }
 
   const currentModel = computed(() => settingsStore.defaultModel)
@@ -216,8 +241,10 @@ export const useChatStore = defineStore('chat', () => {
   async function sendMessage(text: string, files?: {name: string, text: string, size: number}[]) {
     const sid = sessionStore.ensureSession()
     generatingSessionId.value = sid
+    generatingSessions.value = { ...generatingSessions.value, [sid]: true }
     if (!settingsStore.apiKey) {
       alert('请先在设置页面配置 API Key')
+      generatingSessionId.value = null
       return
     }
 
@@ -379,7 +406,8 @@ export const useChatStore = defineStore('chat', () => {
     let fullThinking = ''
     let usageFromApi: UsageData | null = null
 
-    abortController = new AbortController()
+    const abortCtrl = new AbortController()
+    abortControllers[sid] = abortCtrl
 
     try {
       await deepSeekChat({
@@ -387,21 +415,31 @@ export const useChatStore = defineStore('chat', () => {
         model: currentModel.value,
         thinking: thinkingEnabled.value ? 'enabled' : 'disabled',
         apiKey: settingsStore.apiKey,
-        signal: abortController.signal,
+        signal: abortCtrl.signal,
         onToken(token) {
           fullContent += token
-          streaming.value = fullContent
+          if (sessionStore.currentId === sid) {
+            streaming.value = fullContent
+          } else {
+            if (!bgStreams[sid]) bgStreams[sid] = { content: '', thinking: '' }
+            bgStreams[sid].content = fullContent
+          }
         },
         onThinking(token) {
           fullThinking += token
-          streamingThinking.value = fullThinking
+          if (sessionStore.currentId === sid) {
+            streamingThinking.value = fullThinking
+          } else {
+            if (!bgStreams[sid]) bgStreams[sid] = { content: '', thinking: '' }
+            bgStreams[sid].thinking = fullThinking
+          }
         },
         onUsage(usage) {
           usageFromApi = usage
         },
       })
 
-      // 完成，归档消息
+      // 完成，归档消息到目标会话
       const aiMsg: Message = {
         id: generateId(),
         role: 'assistant',
@@ -410,7 +448,16 @@ export const useChatStore = defineStore('chat', () => {
         thinkingExpanded: thinkingManuallyExpanded.value || undefined,
         timestamp: Date.now(),
       }
-      messages.value.push(aiMsg)
+      const targetSession = sessionStore.sessions.find(s => s.id === sid)
+      if (targetSession) {
+        targetSession.messages.push(aiMsg)
+      }
+      // 如果是当前会话，同步显示；否则标记为未读
+      if (sessionStore.currentId === sid) {
+        messages.value = targetSession?.messages ?? messages.value
+      } else {
+        unreadSessions.value = { ...unreadSessions.value, [sid]: true }
+      }
 
       // 记忆提取（fire-and-forget）
       memory.extractFromExchange(text, fullContent, settingsStore.apiKey)
@@ -441,11 +488,10 @@ export const useChatStore = defineStore('chat', () => {
             thinking: fullThinking || undefined,
             timestamp: Date.now(),
           }
-          // 确保保存到生成所属的会话（切换会话时可能已变更）
-          if (generatingSessionId.value === sessionStore.currentId) {
+          if (sid === sessionStore.currentId) {
             messages.value.push(partialMsg)
           } else {
-            const origSession = sessionStore.sessions.find(s => s.id === generatingSessionId.value)
+            const origSession = sessionStore.sessions.find(s => s.id === sid)
             if (origSession) origSession.messages.push(partialMsg)
           }
         }
@@ -459,7 +505,13 @@ export const useChatStore = defineStore('chat', () => {
         messages.value.push(errMsg)
       }
     } finally {
-      abortController = null
+      delete abortControllers[sid]
+      const doneSid = sid
+      if (doneSid) {
+        generatingSessions.value = { ...generatingSessions.value }
+        delete generatingSessions.value[doneSid]
+        delete bgStreams[doneSid]
+      }
       streaming.value = ''
       streamingThinking.value = ''
       isGenerating.value = false
@@ -483,7 +535,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, currentModel,
+    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, currentModel,
     sendMessage, clearMessages, loadFromSession, toggleThinking, toggleWebSearch, retryMessage, stopGenerating,
   }
 })
