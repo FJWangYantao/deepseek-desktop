@@ -58,5 +58,11 @@ export function renderMarkdown(raw: string): string {
   // 还原占位符
   html = html.replace(/\x00M(\d+)\x00/g, (_, i) => blocks[+i] ?? '')
 
+  // 来源引用样式化
+  html = html.replace(/【来源\s*(\d+)】/g, '<span class="cite-tag">[$1]</span>')
+
+  // 明文 URL → 可点击链接（跳过已在 <a> 标签内的）
+  html = html.replace(/(?<!href="|">)(https?:\/\/[^\s<>"')\]]+)/g, '<a href="$1" target="_blank" rel="noopener" class="cite-link">$1</a>')
+
   return html
 }

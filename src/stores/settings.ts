@@ -8,12 +8,19 @@ export const useSettingsStore = defineStore('settings', () => {
   const defaultModel = ref(localStorage.getItem('ds_default_model') ?? 'deepseek-v4-pro')
   const fontSize = ref(Number(localStorage.getItem('ds_font_size') ?? '14'))
   const fontFamily = ref(localStorage.getItem('ds_font_family') ?? '')
+  const codeTheme = ref(localStorage.getItem('ds_code_theme') ?? 'dark')
   const systemPrompt = ref(localStorage.getItem('ds_system_prompt') ?? '')
   const showKey = ref(false)
 
   const models: ModelOption[] = [
     { id: 'deepseek-v4-pro', name: 'V4 Pro', description: '旗舰模型，最强性能' },
     { id: 'deepseek-v4-flash', name: 'V4 Flash', description: '快速模型，高性价比' },
+  ]
+
+  const codeThemes = [
+    { value: 'dark', label: '暗色' },
+    { value: 'light', label: '亮色' },
+    { value: 'minimal', label: '极简' },
   ]
 
   const fontOptions = [
@@ -59,6 +66,9 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(fontFamily, (val) => {
     try { localStorage.setItem('ds_font_family', val) } catch { /* ignore */ }
   })
+  watch(codeTheme, (val) => {
+    try { localStorage.setItem('ds_code_theme', val) } catch { /* ignore */ }
+  })
   watch(systemPrompt, (val) => {
     try { localStorage.setItem('ds_system_prompt', val) } catch { /* ignore */ }
   })
@@ -70,11 +80,12 @@ export const useSettingsStore = defineStore('settings', () => {
     defaultModel.value = 'deepseek-v4-pro'
     fontSize.value = 14
     fontFamily.value = ''
+    codeTheme.value = 'dark'
     systemPrompt.value = ''
   }
 
   return {
-    apiKey, defaultModel, fontSize, fontFamily, systemPrompt, showKey, models, fontOptions, roleTemplates, activeRoleId, selectRole,
+    apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, models, codeThemes, fontOptions, roleTemplates, activeRoleId, selectRole,
     clearAllData,
   }
 })

@@ -110,6 +110,19 @@ const themes = [
         </select>
       </div>
 
+      <!-- 代码块样式 -->
+      <div class="mb-8">
+        <label class="block text-sm font-medium text-app-heading mb-2">代码块样式</label>
+        <select
+          :value="settings.codeTheme"
+          @change="settings.codeTheme = ($event.target as HTMLSelectElement).value"
+          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
+                 text-app-text focus:outline-none focus:border-app-accent transition-colors"
+        >
+          <option v-for="t in settings.codeThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
+        </select>
+      </div>
+
       <!-- 主题颜色 -->
       <div class="mb-8">
         <label class="block text-sm font-medium text-app-heading mb-2">主题颜色</label>

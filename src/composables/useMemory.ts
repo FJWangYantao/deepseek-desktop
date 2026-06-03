@@ -142,11 +142,13 @@ const DREAM_PROMPT = `你是记忆整理助手。用户记忆分三层：短期(
 [删除]
 id1, id2`
 
+// ---------- 单例状态（模块级，避免多实例不同步）----------
+const store = ref<MemoryStore>(loadStore())
+let dreaming = false
+
 // ---------- Composable ----------
 
 export function useMemory() {
-  const store = ref<MemoryStore>(loadStore())
-  let dreaming = false // 防止并发 dreaming
 
   function getByLayer(layer: MemoryLayer): MemoryItem[] {
     const threshold = getPromotionThreshold(layer)

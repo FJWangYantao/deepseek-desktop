@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onUnmounted } from 'vue'
 import type { DailyStats } from '@/types'
 
 const props = defineProps<{ data: DailyStats[] }>()
 
 const maxTokens = computed(() => Math.max(...props.data.map(d => d.totalTokens), 1))
 const tooltip = ref<{ show: boolean; d: DailyStats | null; x: number; y: number; right: boolean }>({ show: false, d: null, x: 0, y: 0, right: false })
+onUnmounted(() => { tooltip.value.show = false })
 
 function pct(tokens: number): string {
   if (tokens === 0) return '4px'

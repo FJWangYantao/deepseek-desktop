@@ -12,4 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   parseFiles: (paths: string[]) => ipcRenderer.invoke('file:parse', paths),
   getFilePath: (file: File) => webUtils.getPathForFile(file),
   exportSession: (session: any, format: 'md' | 'html') => ipcRenderer.invoke('export:session', session, format),
+  listSkills: () => ipcRenderer.invoke('skills:list'),
+  importSkill: (url: string) => ipcRenderer.invoke('skills:import', url),
+  saveSkill: (skill: any) => ipcRenderer.invoke('skills:save', skill),
+  deleteSkill: (id: string) => ipcRenderer.invoke('skills:delete', id),
 })

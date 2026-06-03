@@ -1,4 +1,4 @@
-import { ipcMain, dialog } from 'electron'
+import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { writeFileSync } from 'fs'
 import type { ChatSession } from '../../src/types'
 
@@ -79,7 +79,8 @@ export function registerExportHandlers() {
       ? [{ name: 'HTML 文件', extensions: ['html'] }]
       : [{ name: 'Markdown 文件', extensions: ['md'] }]
 
-    const result = await dialog.showSaveDialog({
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    const result = await dialog.showSaveDialog(win!, {
       title: '导出对话',
       defaultPath: `${session.title.replace(/[\\/:*?"<>|]/g, '_')}.${ext}`,
       filters,

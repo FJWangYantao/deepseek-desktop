@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionStore } from '@/stores/session'
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onUnmounted } from 'vue'
 
 const settingsStore = useSettingsStore()
 const sessionStore = useSessionStore()
 const showDropdown = ref(false)
 const btnRef = ref<HTMLElement>()
+onUnmounted(() => { showDropdown.value = false })
 const dropdownStyle = ref<Record<string, string>>({})
 
 function toggleDropdown() {

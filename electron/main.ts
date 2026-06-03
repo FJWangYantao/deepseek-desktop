@@ -7,6 +7,7 @@ import { registerSearchHandlers } from './ipc/search'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
 import { registerExportHandlers } from './ipc/export'
+import { registerSkillHandlers } from './ipc/skills'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -40,22 +41,41 @@ function createWindow() {
   }
 }
 
-Menu.setApplicationMenu(null)
+Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: 'View',
+        submenu: [
+          {
+            label: 'Toggle DevTools',
+            accelerator: 'F12',
+            click: () => {
+              const win = BrowserWindow.getFocusedWindow() ?? mainWindow
+              if (win && !win.isDestroyed()) win.webContents.toggleDevTools()
+            }
+          }
+        ]
+      }
+    ])
+  )
 
 registerStorageHandlers()
 registerSearchHandlers()
 registerAvatarHandlers()
 registerFileHandlers()
 registerExportHandlers()
+registerSkillHandlers()
 
 app.whenReady().then(() => {
   createWindow()
 
-  // F12 切换 DevTools
-  globalShortcut.register('F12', () => {
-    const win = BrowserWindow.getFocusedWindow()
-    if (win) win.webContents.toggleDevTools()
-  })
+  // F12 / Ctrl+Shift+I 切换 DevTools
+  const toggleDevTools = () => {
+    const win = BrowserWindow.getFocusedWindow() ?? mainWindow
+    if (win && !win.isDestroyed()) win.webContents.toggleDevTools()
+  }
+  globalShortcut.register('F12', toggleDevTools)
+  globalShortcut.register('CommandOrControl+Shift+I', toggleDevTools)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onUnmounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 
 const settings = useSettingsStore()
 const show = ref(false)
 const btnRef = ref<HTMLElement>()
+onUnmounted(() => { show.value = false })
 const dropdownStyle = ref<Record<string, string>>({})
 
 const activeTemplate = settings.roleTemplates.find(r => r.id === settings.activeRoleId)

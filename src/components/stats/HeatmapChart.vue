@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onUnmounted } from 'vue'
 import type { DailyStats } from '@/types'
 
 const props = defineProps<{ data: Map<string, DailyStats> }>()
 
 const tooltip = ref<{ show: boolean; date: string; tokens: number; cost: number; x: number; y: number; right: boolean }>({ show: false, date: '', tokens: 0, cost: 0, x: 0, y: 0, right: false })
+onUnmounted(() => { tooltip.value.show = false })
 
 const TT_W = 200
 

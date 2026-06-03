@@ -45,24 +45,132 @@ html.theme-ready *::after {
 }
 
 /* ===== 代码块 ===== */
-pre {
-  border-radius: 10px;
-  overflow-x: auto;
-  font-family: var(--app-font-mono, "JetBrains Mono", "Fira Code", "Consolas", monospace);
-  font-size: calc(var(--app-font-size) - 3px);
-  line-height: 1.8;
-  tab-size: 4;
-  -moz-tab-size: 4;
-  word-spacing: 0.18em;
-  width: fit-content;
-  max-width: 100%;
-  min-width: 30%;
+/* ===== 代码块 ===== */
+.code-block-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 1em 0;
+  width: 100%;
 }
-code {
-  font-family: var(--app-font-mono, "JetBrains Mono", "Fira Code", "Consolas", monospace);
-  font-size: 0.9em;
+.code-block-wrapper pre {
+  border-radius: 0;
+  overflow-x: auto;
+  font-family: var(--app-font-mono, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', 'SF Mono', 'Menlo', 'Monaco', monospace);
+  font-size: calc(var(--app-font-size) - 2px);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.7;
   tab-size: 4;
   -moz-tab-size: 4;
+  padding: 16px 20px;
+  margin: 0;
+  border: none;
+  width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.code-block-wrapper > div:first-child {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+}
+.code-block-wrapper > div:first-child::before {
+  content: '';
+  display: block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  margin-right: 46px;
+  flex-shrink: 0;
+}
+
+/* --- 暗色 (dark) --- */
+html[data-code-theme="dark"] .code-block-wrapper,
+html[data-code-theme="dark"] pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-color: #2d2d2d;
+}
+html[data-code-theme="dark"] .code-block-wrapper > div:first-child {
+  background: #2d2d2d;
+  border-bottom: 1px solid #333;
+}
+html[data-code-theme="dark"] .code-block-wrapper > div:first-child::before {
+  background: #ff5f57;
+  box-shadow: 18px 0 0 #febc2e, 36px 0 0 #28c840;
+}
+
+/* --- 亮色 (light) --- */
+html[data-code-theme="light"] .code-block-wrapper,
+html[data-code-theme="light"] pre {
+  background: #fafafa;
+  color: #383a42;
+  border-color: #ddd;
+}
+html[data-code-theme="light"] .code-block-wrapper > div:first-child {
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+}
+html[data-code-theme="light"] .code-block-wrapper > div:first-child::before {
+  background: #ff5f57;
+  box-shadow: 18px 0 0 #febc2e, 36px 0 0 #28c840;
+}
+
+/* --- 极简 (minimal) --- */
+html[data-code-theme="minimal"] .code-block-wrapper,
+html[data-code-theme="minimal"] pre {
+  background: transparent;
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+html[data-code-theme="minimal"] .code-block-wrapper > div:first-child {
+  background: var(--app-hover);
+  border-bottom: 1px solid var(--app-border);
+}
+html[data-code-theme="minimal"] .code-block-wrapper > div:first-child::before {
+  display: none;
+}
+
+/* 默认（无 data-code-theme 设置时）= dark */
+.code-block-wrapper,
+pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #2d2d2d;
+}
+pre {
+  border-radius: 12px;
+  overflow-x: auto;
+  font-family: var(--app-font-mono, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', 'SF Mono', 'Menlo', 'Monaco', monospace);
+  font-size: calc(var(--app-font-size) - 2px);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.7;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  padding: 16px 20px;
+  margin: 1em 0;
+  width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+pre code {
+  background: transparent !important;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+/* 内联代码 */
+code {
+  font-family: var(--app-font-mono, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', 'SF Mono', 'Menlo', 'Monaco', monospace);
+  font-size: 0.9em;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+.markdown-body :not(pre) > code {
+  background: var(--app-hover);
+  color: var(--app-accent);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 /* ===== 表格 ===== */
@@ -75,7 +183,102 @@ table {
   border-right: none;
 }
 
+/* ===== 来源引用 ===== */
+.cite-tag {
+  display: inline;
+  font-size: 0.7em;
+  color: var(--app-muted);
+  background: var(--app-hover);
+  padding: 0 4px;
+  border-radius: 2px;
+  font-weight: 400;
+  vertical-align: super;
+  margin: 0 1px;
+}
+.cite-link {
+  color: var(--app-accent);
+  text-decoration: none;
+  font-size: 0.8em;
+  word-break: break-all;
+}
+.cite-link:hover {
+  text-decoration: underline;
+}
+.markdown-body a[href^="http"] {
+  color: var(--app-accent);
+  text-decoration: none;
+  font-size: 0.85em;
+}
+.markdown-body a[href^="http"]:hover {
+  text-decoration: underline;
+}
+
 /* ===== Markdown 覆盖 ===== */
+.markdown-body p {
+  margin-bottom: 0.8em;
+}
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.8em !important;
+  margin: 0.6em 0 !important;
+  list-style-position: outside;
+}
+.markdown-body ul {
+  list-style-type: disc;
+}
+.markdown-body ul ul {
+  list-style-type: circle;
+}
+.markdown-body ul ul ul {
+  list-style-type: square;
+}
+.markdown-body ol {
+  list-style-type: decimal;
+}
+.markdown-body li {
+  margin-bottom: 0.3em;
+  padding-left: 0.2em;
+}
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin-top: 0.3em !important;
+  margin-bottom: 0 !important;
+}
+.markdown-body blockquote {
+  border-left: 3px solid var(--app-border);
+  padding: 0.5em 1em;
+  margin: 0.8em 0;
+  color: var(--app-muted);
+  background: var(--app-surface-alt);
+  border-radius: 0 6px 6px 0;
+}
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  color: var(--app-heading);
+  line-height: 1.4;
+}
+.prose-sm h1, .prose-sm .h1,
+.markdown-body h1 {
+  font-size: 1.5em !important;
+  font-weight: 700 !important;
+  margin: 1.2em 0 0.6em !important;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--app-border);
+}
+.prose-sm h2, .prose-sm .h2,
+.markdown-body h2 {
+  font-size: 1.25em !important;
+  font-weight: 600 !important;
+  margin: 1em 0 0.5em !important;
+}
+.prose-sm h3, .prose-sm .h3,
+.markdown-body h3 {
+  font-size: 1.1em !important;
+  font-weight: 600 !important;
+  margin: 0.8em 0 0.4em !important;
+}
 .markdown-body strong {
   font-weight: 600;
   color: var(--app-heading);
@@ -95,7 +298,25 @@ table {
   font-size: inherit;
   font-weight: inherit;
 }
-.markdown-body hr { display: none; }
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--app-border);
+  margin: 1.5em 0;
+}
+.markdown-body img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.5em 0;
+}
+.markdown-body del,
+.markdown-body s {
+  color: var(--app-muted);
+  text-decoration: line-through;
+}
+.markdown-body em {
+  font-style: italic;
+  color: var(--app-heading);
+}
 
 /* ===== KaTeX ===== */
 .katex-display {

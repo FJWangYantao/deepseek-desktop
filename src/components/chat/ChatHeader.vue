@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
-import { computed } from 'vue'
+import { computed, toRaw } from 'vue'
 import RoleSelector from './RoleSelector.vue'
 
 const sessionStore = useSessionStore()
@@ -18,8 +18,11 @@ const currentSession = computed(() =>
 
 async function exportSession(format: 'md' | 'html') {
   const session = currentSession.value
-  if (!session || !window.electronAPI?.exportSession) return
-  await window.electronAPI.exportSession(session, format)
+  if (!session) { console.warn('[Export] 无当前会话'); return }
+  if (!window.electronAPI?.exportSession) { console.warn('[Export] electronAPI 不可用，可能在浏览器开发模式'); return }
+  console.log('[Export] 开始导出:', session.title)
+  const ok = await window.electronAPI.exportSession(toRaw(session), format)
+  console.log('[Export] 导出结果:', ok)
 }
 </script>
 

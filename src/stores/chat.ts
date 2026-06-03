@@ -5,6 +5,7 @@ import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
 import { useMemory } from '@/composables/useMemory'
+import { useSkillStore } from './skills'
 import { deepSeekChat } from '@/composables/useDeepSeek'
 
 function generateId() {
@@ -23,6 +24,14 @@ export const useChatStore = defineStore('chat', () => {
   const bgStreams = reactive<Record<string, { content: string; thinking: string }>>({})
   const generatingSessions = ref<Record<string, boolean>>({})
   const unreadSessions = ref<Record<string, boolean>>({})
+
+  interface SearchStatus {
+    phase: 'idle' | 'searching' | 'fetched'
+    queries: string[]
+    resultCount: number
+    topTitles: string[]
+  }
+  const searchStatus = ref<SearchStatus>({ phase: 'idle', queries: [], resultCount: 0, topTitles: [] })
 
   const sessionStore = useSessionStore()
   const settingsStore = useSettingsStore()
@@ -91,13 +100,22 @@ export const useChatStore = defineStore('chat', () => {
     webSearchEnabled.value = !webSearchEnabled.value
   }
 
-  async function buildSearchQueries(userText: string): Promise<string[]> {
+  async function buildSearchQueries(userText: string, contextMessages: { role: string; content: string }[]): Promise<string[]> {
     const now = new Date()
     const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
 
     if (!settingsStore.apiKey) return [userText]
 
     try {
+      const apiMessages: { role: string; content: string }[] = [
+        { role: 'system', content: `将用户最新问题转化为3个搜索引擎关键词。参考对话历史理解指代和上下文。至少1条英文。保持核心概念组合。每条20字内。一行一个。当前日期：${dateStr}。` },
+      ]
+      // 注入最近4条对话历史作为上下文
+      for (const m of contextMessages.slice(-4)) {
+        apiMessages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content.slice(0, 200) })
+      }
+      apiMessages.push({ role: 'user', content: userText })
+
       const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -106,12 +124,9 @@ export const useChatStore = defineStore('chat', () => {
         },
         body: JSON.stringify({
           model: 'deepseek-v4-flash',
-          messages: [
-            { role: 'system', content: `你是一个搜索词生成助手。根据用户的自然语言问题，生成2-3个不同角度的英文或中文搜索关键词（每个15字以内），一行一个，不要编号、不要解释。当前日期：${dateStr}。` },
-            { role: 'user', content: userText },
-          ],
+          messages: apiMessages,
           thinking: { type: 'disabled' },
-          max_tokens: 80,
+          max_tokens: 100,
         }),
       })
       if (res.ok) {
@@ -131,9 +146,17 @@ export const useChatStore = defineStore('chat', () => {
     return [userText]
   }
 
-  async function shouldSearch(userText: string): Promise<boolean> {
+  async function shouldSearch(userText: string, contextMessages: { role: string; content: string }[]): Promise<boolean> {
     if (!settingsStore.apiKey) return true
     try {
+      const apiMessages: { role: string; content: string }[] = [
+        { role: 'system', content: '用户开启了联网搜索，判断此问题是否能从搜索结果中获益。需要搜索（概念解释、最新信息、事件、数据、教程、对比、评测、新闻等）回复Y，不需要（纯数学计算、纯翻译、纯代码语法纠错等）回复N。倾向回复Y。只输出一个字母。' },
+      ]
+      for (const m of contextMessages.slice(-4)) {
+        apiMessages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content.slice(0, 200) })
+      }
+      apiMessages.push({ role: 'user', content: userText })
+
       const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -142,10 +165,7 @@ export const useChatStore = defineStore('chat', () => {
         },
         body: JSON.stringify({
           model: 'deepseek-v4-flash',
-          messages: [
-            { role: 'system', content: '判断用户问题是否需要联网搜索最新信息。需要搜索（实时新闻、最新数据、当前事件、价格查询、天气等）回复Y，不需要（基础知识、数学计算、翻译、编程语法等）回复N。只输出一个字母。' },
-            { role: 'user', content: userText },
-          ],
+          messages: apiMessages,
           thinking: { type: 'disabled' },
           max_tokens: 1,
         }),
@@ -171,10 +191,9 @@ export const useChatStore = defineStore('chat', () => {
     if (results.length === 0) return ''
     const lines = ['[系统提示] 以下是与问题相关的网络搜索结果，请基于这些信息回答：', '']
     results.forEach((r, i) => {
-      lines.push(`【来源 ${i + 1}】${r.title}`)
-      lines.push(`URL: ${r.url}`)
-      if (r.snippet) lines.push(`摘要: ${r.snippet}`)
-      if (r.content) lines.push(`页面内容: ${r.content}`)
+      lines.push(`【来源 ${i + 1}】${r.title}\n  URL: ${r.url}`)
+      if (r.snippet) lines.push(`  摘要: ${r.snippet}`)
+      if (r.content) lines.push(`  内容: ${r.content}`)
       lines.push('')
     })
     return lines.join('\n')
@@ -270,6 +289,12 @@ export const useChatStore = defineStore('chat', () => {
     streamingThinking.value = ''
     thinkingManuallyExpanded.value = false
 
+    // 提前准备对话历史（搜索判断需要上下文）
+    const historyMsgs = messages.value
+      .filter(m => m.id !== userMsg.id)
+      .slice(-10)
+      .map(m => ({ role: m.role, content: m.content }))
+
     // ===== 文件内容 + 联网搜索 + URL 抓取 =====
     let injectedContext = ''
 
@@ -303,13 +328,14 @@ export const useChatStore = defineStore('chat', () => {
 
     // 联网搜索（多词并行）—— AI自行判断是否需要搜索
     if (webSearchEnabled.value && window.electronAPI?.webSearch && urls.length === 0) {
-      const needSearch = await shouldSearch(text)
+      const needSearch = await shouldSearch(text, historyMsgs)
       if (!needSearch) {
         console.log('[Search] AI 判断无需搜索，跳过')
       } else {
         // 1. AI 生成多角度搜索词
-        const queries = await buildSearchQueries(text)
+        const queries = await buildSearchQueries(text, historyMsgs)
       console.log('[Search] 准备并行搜索，词数:', queries.length)
+      searchStatus.value = { phase: 'searching', queries, resultCount: 0, topTitles: [] }
 
       // 2. 所有搜索词并行执行
       try {
@@ -340,6 +366,12 @@ export const useChatStore = defineStore('chat', () => {
         }
 
         console.log('[Search] 合并去重后结果数:', merged.length)
+        searchStatus.value = {
+          phase: 'fetched',
+          queries,
+          resultCount: merged.length,
+          topTitles: merged.slice(0, 8).map(r => r.title),
+        }
         if (merged.length > 0) {
           merged.forEach((r, i) => console.log(`[Search] 结果${i+1}: ${r.title} | ${r.url}`))
           injectedContext += buildSearchContext(merged.slice(0, 10))
@@ -365,10 +397,16 @@ export const useChatStore = defineStore('chat', () => {
     const weekDay = ['日', '一', '二', '三', '四', '五', '六'][today.getDay()]
 
     // ===== 构建 system prompt =====
-    // 1. 用户自定义 system prompt
+    // 1. 用户自定义 system prompt（含角色模板）
     let systemPrompt = ''
     if (settingsStore.systemPrompt) {
       systemPrompt += settingsStore.systemPrompt + '\n\n'
+    }
+
+    // 1.5 Skill prompt
+    const skillStore = useSkillStore()
+    if (skillStore.activeSkill) {
+      systemPrompt += `[Skill: ${skillStore.activeSkill.name}]\n${skillStore.activeSkill.content}\n\n`
     }
 
     // 2. 记忆上下文
@@ -382,20 +420,16 @@ export const useChatStore = defineStore('chat', () => {
 
     // 4. 搜索状态
     if (injectedContext.length > 0) {
-      systemPrompt += '\n联网搜索/URL抓取已获取内容并注入到用户消息中，请基于这些内容回答，在末尾标注来源。'
+      systemPrompt += '\n联网搜索结果已注入。正文中用【来源 N】标注，末尾列出所有来源，每条格式：\n【来源 N】标题\nURL\n（URL必须单独一行，以http开头）'
     } else if (webSearchEnabled.value) {
       systemPrompt += '\n联网搜索已开启但本次未能获取结果。请如实告知用户搜索暂时不可用，建议稍后重试或更换关键词。'
     } else {
       systemPrompt += '\n用户可以使用"联网搜索"功能获取实时信息。当被问到新闻、实时数据等超出你知识范围的问题时，请告诉用户："需要实时信息，请点输入框下方"联网"按钮后再问一次。"'
     }
 
-    const historyMessages = messages.value
-      .filter(m => m.id !== userMsg.id)
-      .slice(-50)
-
     const apiMessages = [
       { role: 'system' as const, content: systemPrompt },
-      ...historyMessages.map(m => ({
+      ...historyMsgs.map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       })),
@@ -408,6 +442,9 @@ export const useChatStore = defineStore('chat', () => {
 
     const abortCtrl = new AbortController()
     abortControllers[sid] = abortCtrl
+
+    // 清除搜索状态，准备流式输出
+    searchStatus.value = { phase: 'idle', queries: [], resultCount: 0, topTitles: [] }
 
     try {
       await deepSeekChat({
@@ -535,7 +572,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, currentModel,
+    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, searchStatus, currentModel,
     sendMessage, clearMessages, loadFromSession, toggleThinking, toggleWebSearch, retryMessage, stopGenerating,
   }
 })

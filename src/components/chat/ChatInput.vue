@@ -6,6 +6,7 @@ import ModelSelector from './ModelSelector.vue'
 import ThinkingToggle from './ThinkingToggle.vue'
 import WebSearchToggle from './WebSearchToggle.vue'
 import FileAttach from './FileAttach.vue'
+import SkillSelector from './SkillSelector.vue'
 
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
@@ -16,13 +17,8 @@ const fileAttachRef = ref<InstanceType<typeof FileAttach>>()
 
 async function send() {
   const text = inputText.value.trim()
-  if (!text || sending.value) return
+  if (!text || sending.value || chatStore.isGenerating) return
   sending.value = true
-  inputText.value = ''
-  nextTick(() => {
-    const el = document.querySelector('.chat-textarea') as HTMLTextAreaElement
-    if (el) { el.style.height = '' }
-  })
   try {
     const parsed = await fileAttachRef.value?.parseAll() ?? []
     const fileInfos = fileAttachRef.value?.files ?? []
@@ -31,7 +27,14 @@ async function send() {
       return { ...pf, size: info?.size ?? 0 }
     })
     fileAttachRef.value?.clearFiles()
+    inputText.value = ''
+    nextTick(() => {
+      const el = document.querySelector('.chat-textarea') as HTMLTextAreaElement
+      if (el) { el.style.height = '' }
+    })
     await chatStore.sendMessage(text, files.length > 0 ? files : undefined)
+  } catch {
+    // sendMessage 内部已处理错误提示
   } finally {
     sending.value = false
   }
@@ -108,6 +111,7 @@ function onPaste(e: ClipboardEvent) {
             <ModelSelector />
             <WebSearchToggle />
             <ThinkingToggle />
+            <SkillSelector />
           </div>
           <div class="flex items-center gap-1.5">
             <FileAttach ref="fileAttachRef" />
