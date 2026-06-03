@@ -83,15 +83,28 @@ function saveStore(store: MemoryStore) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)) } catch {}
 }
 
+function significantTokenOverlap(a: string, b: string): boolean {
+  const tokensA = (a.match(/[a-zA-Z0-9]{2,}/g) || []).map(t => t.toLowerCase())
+  const tokensB = (b.match(/[a-zA-Z0-9]{2,}/g) || []).map(t => t.toLowerCase())
+  if (tokensA.length === 0 || tokensB.length === 0) return false
+  return tokensA.some(t => tokensB.includes(t))
+}
+
 // ---------- 记忆去重 ----------
 
 function mergeMemories(existing: MemoryItem[], incoming: MemoryItem[]): MemoryItem[] {
   const merged = [...existing]
   for (const item of incoming) {
-    const dup = merged.find(m =>
-      jaccardSimilarity(m.keywords, item.keywords) > 0.7 &&
-      jaccardSimilarity(extractKeywords(m.content), extractKeywords(item.content)) > 0.5
-    )
+    const dup = merged.find(m => {
+      // 内容中的英文/数字 token 直接重叠（如 PM2, Docker, React）
+      if (significantTokenOverlap(m.content, item.content)) return true
+      // 关键词 Jaccard（降低阈值适配中文 bigram）
+      const kwSim = jaccardSimilarity(m.keywords, item.keywords)
+      if (kwSim > 0.3) return true
+      // 内容关键词 Jaccard
+      const contentSim = jaccardSimilarity(extractKeywords(m.content), extractKeywords(item.content))
+      return contentSim > 0.25
+    })
     if (dup) {
       dup.content = item.content
       dup.keywords = item.keywords
@@ -107,40 +120,72 @@ function mergeMemories(existing: MemoryItem[], incoming: MemoryItem[]): MemoryIt
 
 // ---------- 提取 prompt ----------
 
-const EXTRACTION_PROMPT = `从对话中提取值得记住的信息，分三层输出：
+const EXTRACTION_PROMPT = `你是一个信息筛选器。只提取关于"用户本人"的实质信息——即未来对话中可能需要回忆的关于用户的事实。
 
-[短期] 当前任务目标、临时的偏好或决定
-[中期] 技术栈偏好、项目背景、工作习惯、审美偏好
-[长期] 用户身份角色、知识领域、长期不变的偏好
+严格按以下格式输出：
 
-规则：
-- 每层一行一条，每条5-60字
-- 提取真正有用的信息：身份、偏好、项目背景、技术选型
-- 不提取：纯技术知识点（API用法、语法细节）、bug描述、代码片段
-- 举例：可提"用户用Electron开发桌面应用"；不提"__getattr__用于属性委托"
-- 无信息写"无"`
+[短期]
+- 条目1
+（无则写"无"）
+
+[中期]
+- 条目1
+（无则写"无"）
+
+[长期]
+- 条目1
+（无则写"无"）
+
+什么是"关于用户的实质信息"（可提取）：
+- 身份信息：姓名、职业、公司、地点、职位、团队角色
+- 技术选型：用户使用/偏好/学习的技术栈、工具、框架
+- 项目背景：用户正在做的项目、产品、业务场景
+- 偏好习惯：用户表达过的喜好、厌恶、工作习惯
+
+什么不是"关于用户的实质信息"（不可提取）：
+- 纯技术知识点：API名称、库函数用法、语法细节、配置参数
+  例：不提"contextBridge用于主进程与渲染进程通信"
+- 社交性闲聊：关于天气、吃饭、AI本身的对话，寒暄问候
+  例：不提"用户知道AI不需要吃饭"、"用户觉得天气好"
+- 简短应答："好的谢谢"、"嗯"、"哦"、"知道了"
+- 对AI回复的评价：不提"用户认可AI的建议"
+- 代码片段、bug描述、报错信息
+- 任何不包含用户个人信息的内容
+
+层级指南：
+- 短期：本次对话中提到的临时信息、当前任务
+- 中期：近期项目、阶段性偏好、正在学习的技术
+- 长期：姓名、职业、长期偏好、核心技能
+
+无信息时每层只写"无"。不要写解释性文字。`
 
 // ---------- Dreaming prompt ----------
 
 const DREAM_PROMPT = `你是记忆整理助手。用户记忆分三层：短期(当前会话)、中期(几周内)、长期(永久)。
 
-请整理以下记忆列表：
+请按以下步骤整理记忆列表：
 
-1. 归类：将相关记忆归入主题，每个主题起一个简短的名称（如"个人身份"、"技术偏好"、"项目背景"、"工作习惯"等）
-2. 合并：同主题下重复/相似的记忆合并为一条精炼表述
-3. 分级：根据信息的重要性和持久性重新分配 short/medium/long
-4. 删除：过时、矛盾、琐碎无价值的条目
+1. 归类：将相关记忆归入2-5个主题，每个主题起简短名称（如"个人身份"、"技术栈"、"项目背景"、"部署偏好"、"工作习惯"）
+2. 合并：同一主题下内容相似/重复的记忆必须合并为一条精炼表述，不要保留多条相似内容
+3. 分级：根据重要性分配层级——身份/长期偏好→long，项目/技术→medium，临时信息→short
+4. 删除：过时、矛盾、无实质信息的条目（列出其id）
 
-输出格式：
+重要：每条记忆都必须分配一个分类。压缩比应控制在50-80%（10条整理为5-8条）。
+
+输出示例：
 [归类]
-主题名1：一句话描述
-主题名2：一句话描述
+个人身份：用户的基本身份信息
+技术栈：用户的编程语言和框架偏好
+项目背景：用户正在进行的项目
 
 [记忆]
-内容 | 层级(short/medium/long) | 所属主题名
+用户叫李明，在北京一家互联网公司担任前端工程师 | long | 个人身份
+用户主要使用React和TypeScript，也在学习Vue3 | medium | 技术栈
+用户用Electron开发内部桌面工具 | medium | 项目背景
+用户偏好PM2进行项目部署，不喜欢Docker | long | 部署偏好
 
 [删除]
-id1, id2`
+abc123, def456`
 
 // ---------- 单例状态（模块级，避免多实例不同步）----------
 const store = ref<MemoryStore>(loadStore())
@@ -223,15 +268,16 @@ export function useMemory() {
       : ''
   }
 
-  /** 从对话中提取记忆 */
+  /** 从对话中提取记忆，返回诊断信息 */
   async function extractFromExchange(
     userContent: string,
     assistantContent: string,
     apiKey: string,
-  ): Promise<void> {
-    if (!apiKey) return
+  ): Promise<{ added: number; total: number; rawText?: string; error?: string }> {
+    if (!apiKey) return { added: 0, total: store.value.items.length, error: '无 API Key' }
 
     const exchangeText = `用户：${userContent}\n\nAI：${assistantContent.slice(0, 2000)}`
+    let addedCount = 0
 
     try {
       const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -251,14 +297,19 @@ export function useMemory() {
         }),
       })
 
-      if (!res.ok) return
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '')
+        return { added: 0, total: store.value.items.length, error: `API 返回 ${res.status}: ${errBody.slice(0, 200)}` }
+      }
       const data = await res.json()
       const text = data.choices?.[0]?.message?.content?.trim()
-      if (!text) { console.log('[Memory] 提取结果为空'); return }
+      if (!text) { return { added: 0, total: store.value.items.length, error: 'API 返回内容为空' } }
       console.log('[Memory] 原始提取:\n', text)
 
       const parsed = parseExtraction(text)
-      if (parsed.length === 0) { console.log('[Memory] 解析后无有效条目'); return }
+      if (parsed.length === 0) {
+        return { added: 0, total: store.value.items.length, rawText: text, error: '解析后无有效条目（格式不匹配或内容被过滤）' }
+      }
 
       const now = Date.now()
       const incoming: MemoryItem[] = parsed.map(p => ({
@@ -272,6 +323,7 @@ export function useMemory() {
         accessCount: 0,
       }))
 
+      addedCount = incoming.length
       store.value.items = mergeMemories(store.value.items, incoming)
       store.value.lastExtractionAt = now
       store.value.newSinceLastDream += incoming.length
@@ -283,32 +335,56 @@ export function useMemory() {
         console.log('[Memory] 达到 dreaming 阈值，自动触发...')
         dream(apiKey)
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[Memory] 提取失败:', e)
+      return { added: 0, total: store.value.items.length, error: `异常: ${e.message || String(e)}` }
     }
+
+    return { added: addedCount, total: store.value.items.length }
   }
 
   function parseExtraction(text: string): { layer: MemoryLayer; content: string }[] {
     const result: { layer: MemoryLayer; content: string }[] = []
-    const sections = text.split(/\n(?=\[)/)
     const layerMap: Record<string, MemoryLayer> = {
       '短期': 'short', '中期': 'medium', '长期': 'long',
       'short': 'short', 'medium': 'medium', 'long': 'long',
     }
 
-    for (const section of sections) {
-      const headerMatch = section.match(/\[(短期|中期|长期|short|medium|long)\]/i)
-      if (!headerMatch) continue
-      const layer = layerMap[headerMatch[1].toLowerCase()] || layerMap[headerMatch[1]] || 'short'
+    // 统一处理：按层级标记 [短期]/[中期]/[长期] 分割
+    // 先尝试多行格式，再尝试单行格式
+    const hasNewlines = /\n/.test(text)
 
-      const lines = section.split('\n').slice(1)
-      for (const line of lines) {
-        const cleaned = line.replace(/^[-*•\d.]+\s*/, '').trim()
-        if (cleaned && cleaned !== '无' && cleaned.length >= 5 && cleaned.length <= 80) {
-          result.push({ layer, content: cleaned })
+    if (hasNewlines) {
+      // 多行格式：按 [xxx] 开头的行分段
+      const sections = text.split(/\n(?=\[)/)
+      for (const section of sections) {
+        const headerMatch = section.match(/\[(短期|中期|长期|short|medium|long)\]/i)
+        if (!headerMatch) continue
+        const layer = layerMap[headerMatch[1].toLowerCase()] || 'short'
+
+        const lines = section.split('\n').slice(1)
+        for (const line of lines) {
+          const cleaned = line.replace(/^[-*•\d.]+\s*/, '').trim()
+          if (cleaned && cleaned !== '无' && cleaned.length >= 4 && cleaned.length <= 80) {
+            result.push({ layer, content: cleaned })
+          }
+        }
+      }
+    } else {
+      // 单行格式：按 [xxx] 标记用正则切分
+      const parts = text.split(/(?=\[(?:短期|中期|长期|short|medium|long)\])/i)
+      for (const part of parts) {
+        const headerMatch = part.match(/\[(短期|中期|长期|short|medium|long)\]\s*/i)
+        if (!headerMatch) continue
+        const layer = layerMap[headerMatch[1].toLowerCase()] || 'short'
+        // 去掉标记前缀，获取内容
+        const content = part.replace(/\[(?:短期|中期|长期|short|medium|long)\]\s*/i, '').trim()
+        if (content && content !== '无' && content.length >= 4 && content.length <= 80) {
+          result.push({ layer, content })
         }
       }
     }
+
     return result
   }
 
@@ -422,9 +498,10 @@ export function useMemory() {
     // 保留 AI 未提及删除的旧条目
     for (const old of oldItems) {
       if (!deleteIds.has(old.id)) {
-        // 检查是否被新条目覆盖（相似度判定）
+        // 检查是否被新条目覆盖（token重叠 + 关键词相似度）
         const similar = newItems.find(n =>
-          jaccardSimilarity(n.keywords, old.keywords) > 0.6
+          significantTokenOverlap(n.content, old.content) ||
+          jaccardSimilarity(n.keywords, old.keywords) > 0.4
         )
         if (!similar) {
           newItems.push({ ...old })

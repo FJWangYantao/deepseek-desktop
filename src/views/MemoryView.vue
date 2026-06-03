@@ -2,11 +2,13 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMemory } from '@/composables/useMemory'
+import { useSettingsStore } from '@/stores/settings'
 import type { MemoryLayer, MemoryItem } from '@/types/memory'
 import MemoryCard from '@/components/memory/MemoryCard.vue'
 
 const router = useRouter()
 const memory = useMemory()
+const settings = useSettingsStore()
 
 const filterLayer = ref<MemoryLayer | 'all'>('all')
 const expandedCats = ref<Set<string>>(new Set())
@@ -160,6 +162,7 @@ function handleDelete(id: string) {
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
