@@ -4,11 +4,13 @@ import type { MemoryItem, MemoryLayer } from '@/types/memory'
 
 const props = defineProps<{
   item: MemoryItem
+  highlight?: string
 }>()
 
 const emit = defineEmits<{
   update: [id: string, updates: Partial<Pick<MemoryItem, 'content' | 'layer' | 'category'>>]
   delete: [id: string]
+  pin: [id: string]
 }>()
 
 const editing = ref(false)
@@ -43,6 +45,15 @@ function confirmDelete() {
     emit('delete', props.item.id)
   }
 }
+
+function highlightedContent(content: string): string {
+  if (!props.highlight) return content
+  const terms = props.highlight.trim().split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return content
+  const escaped = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const re = new RegExp(`(${escaped.join('|')})`, 'gi')
+  return content.replace(re, '<mark class="bg-amber-200/60 text-amber-900 rounded-sm px-px">$1</mark>')
+}
 </script>
 
 <template>
@@ -75,7 +86,7 @@ function confirmDelete() {
       </div>
     </template>
     <template v-else>
-      <p class="text-sm text-app-text leading-relaxed">{{ item.content }}</p>
+      <p class="text-sm text-app-text leading-relaxed" v-html="highlightedContent(item.content)"></p>
       <div class="flex items-center justify-between mt-2">
         <div class="flex items-center gap-1.5">
           <span
@@ -91,25 +102,39 @@ function confirmDelete() {
             {{ new Date(item.createdAt).toLocaleDateString('zh-CN') }}
           </span>
         </div>
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center gap-1">
           <button
-            @click="startEdit"
-            class="w-6 h-6 flex items-center justify-center rounded text-app-muted hover:text-app-text hover:bg-app-hover"
-            title="编辑"
+            @click="emit('pin', props.item.id)"
+            class="w-6 h-6 flex items-center justify-center rounded transition-colors"
+            :class="item.pinned
+              ? 'text-app-accent hover:bg-app-accent-soft'
+              : 'text-app-muted/40 hover:text-app-muted hover:bg-app-hover'"
+            :title="item.pinned ? '取消置顶' : '置顶'"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <svg class="w-3.5 h-3.5" :fill="item.pinned ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
           </button>
-          <button
-            @click="confirmDelete"
-            class="w-6 h-6 flex items-center justify-center rounded text-app-muted hover:text-red-500 hover:bg-red-50"
-            title="删除"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              @click="startEdit"
+              class="w-6 h-6 flex items-center justify-center rounded text-app-muted hover:text-app-text hover:bg-app-hover"
+              title="编辑"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            <button
+              @click="confirmDelete"
+              class="w-6 h-6 flex items-center justify-center rounded text-app-muted hover:text-red-500 hover:bg-red-50"
+              title="删除"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </template>

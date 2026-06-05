@@ -15,11 +15,21 @@ export function fixCjkEmphasis(text: string): string {
   // 只匹配「非ASCII字符 + 紧接界符」的模式，在外侧插入 ZWSP
   const C = '[^\\x00-\\x7F\\s]'
 
-  return text
+  text = text
     .replace(new RegExp(`(${C})(\\*\\*)`, 'g'), `$1${ZWSP}$2`)
     .replace(new RegExp(`(${C})(__)`, 'g'), `$1${ZWSP}$2`)
     .replace(new RegExp(`(${C})(\\*)(?!\\*)`, 'g'), `$1${ZWSP}$2`)
     .replace(new RegExp(`(${C})(_)(?!_)`, 'g'), `$1${ZWSP}$2`)
+
+  // 修复行首界符紧跟标点导致左界符识别失败（CommonMark 左界符规则）
+  // 例：**"迷茫"... 中 ** 在行首且紧跟 "，不满足 left-flanking 条件
+  text = text
+    .replace(/(^|\n)(\*\*)(\p{P})/gu, `$1$2${ZWSP}$3`)
+    .replace(/(^|\n)(__)(\p{P})/gu, `$1$2${ZWSP}$3`)
+    .replace(/(^|\n)(\*)(?!\*)(\p{P})/gu, `$1$2${ZWSP}$3`)
+    .replace(/(^|\n)(_)(?!_)(\p{P})/gu, `$1$2${ZWSP}$3`)
+
+  return text
 }
 
 // 在 marked 之前：提取 LaTeX 公式，用 KaTeX 渲染，生成占位符

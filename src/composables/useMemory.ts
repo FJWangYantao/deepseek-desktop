@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { MemoryItem, MemoryLayer, MemoryStore, DreamLog } from '@/types/memory'
+import type { MemoryItem, MemoryLayer, MemoryStore, DreamLog, DreamPreview, SortMode, ExportOptions, SelectiveClearOptions, GrowthPoint, LayerDistribution, TopAccessed } from '@/types/memory'
 
 const STORAGE_KEY = 'ds_memory'
 const AUTO_DREAM_THRESHOLD = 10   // 累计10条新记忆自动 dreaming
@@ -69,14 +69,20 @@ function loadStore(): MemoryStore {
       // 兼容旧数据
       if (!data.dreamLogs) data.dreamLogs = []
       if (data.newSinceLastDream === undefined) data.newSinceLastDream = data.items?.length ?? 0
-      // 兼容旧 item 无 category
+      if (data.pendingPreview === undefined) data.pendingPreview = null
+      // 兼容旧 item
       for (const item of data.items || []) {
         if (!item.category) item.category = '未分类'
+        if (item.pinned === undefined) item.pinned = false
+      }
+      // 兼容旧 dreamLog 无 manual
+      for (const log of data.dreamLogs) {
+        if (log.manual === undefined) log.manual = false
       }
       return data
     }
   } catch {}
-  return { items: [], lastExtractionAt: 0, dreamLogs: [], newSinceLastDream: 0 }
+  return { items: [], lastExtractionAt: 0, dreamLogs: [], newSinceLastDream: 0, pendingPreview: null }
 }
 
 function saveStore(store: MemoryStore) {
@@ -183,6 +189,12 @@ const DREAM_PROMPT = `你是记忆整理助手。用户记忆分三层：短期(
 用户主要使用React和TypeScript，也在学习Vue3 | medium | 技术栈
 用户用Electron开发内部桌面工具 | medium | 项目背景
 用户偏好PM2进行项目部署，不喜欢Docker | long | 部署偏好
+
+[操作]
+合并: abc123 + def456 -> 新内容 | 层级 | 分类
+重分类: ghi789 -> 新层级
+删除: jkl012
+新增: 新内容 | 层级 | 分类
 
 [删除]
 abc123, def456`
@@ -321,6 +333,7 @@ export function useMemory() {
         createdAt: now,
         lastAccessedAt: now,
         accessCount: 0,
+        pinned: false,
       }))
 
       addedCount = incoming.length
@@ -388,58 +401,173 @@ export function useMemory() {
     return result
   }
 
-  /** Dreaming：AI 驱动的记忆整理（纯自动，fire-and-forget） */
-  async function dream(apiKey: string): Promise<void> {
-    if (dreaming || store.value.items.length === 0) return
-    dreaming = true
-
-    const beforeCount = store.value.items.length
-    const memoryList = store.value.items
+  /** 内部：执行一次 dreaming API 调用，返回 DreamPreview（不修改 store） */
+  async function _runDream(apiKey: string): Promise<DreamPreview | null> {
+    const pinnedItems = store.value.items.filter(i => i.pinned)
+    const unpinnedItems = store.value.items.filter(i => !i.pinned)
+    const memoryList = unpinnedItems
       .map(i => `[${i.id}] (${i.layer}) ${i.content}`)
       .join('\n')
 
-    try {
-      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-v4-flash',
-          messages: [
-            { role: 'system', content: DREAM_PROMPT },
-            { role: 'user', content: memoryList },
-          ],
-          thinking: { type: 'disabled' },
-          max_tokens: 1000,
-        }),
-      })
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-v4-flash',
+        messages: [
+          { role: 'system', content: DREAM_PROMPT },
+          { role: 'user', content: memoryList },
+        ],
+        thinking: { type: 'disabled' },
+        max_tokens: 1000,
+      }),
+    })
 
-      if (!res.ok) { dreaming = false; return }
-      const data = await res.json()
-      const text = data.choices?.[0]?.message?.content?.trim()
-      if (!text) { dreaming = false; return }
+    if (!res.ok) return null
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content?.trim()
+    if (!text) return null
 
-      const result = parseDreamResult(text, store.value.items)
-      const afterCount = result.items.length
+    const parsed = parseDreamResult(text, unpinnedItems)
+    parsed.items = [...parsed.items, ...pinnedItems]
+    const ops = parseDreamOps(text)
 
-      const log: DreamLog = {
-        timestamp: Date.now(),
-        beforeCount,
-        afterCount,
-        categories: result.categories,
+    return {
+      timestamp: Date.now(),
+      operations: ops,
+      beforeCount: unpinnedItems.length,
+      afterCount: parsed.items.length,
+      categories: parsed.categories,
+      rawText: text,
+    }
+  }
+
+  /** 解析 [操作] 块 */
+  function parseDreamOps(text: string): DreamPreview['operations'] {
+    const ops: DreamPreview['operations'] = []
+    const opMatch = text.match(/\[操作\]([\s\S]*?)(?=\[删除\]|$)/i)
+    if (!opMatch) return ops
+    const lines = opMatch[1].trim().split('\n').filter(Boolean)
+    for (const line of lines) {
+      const trimmed = line.replace(/^[-*•\d.]+\s*/, '').trim()
+      if (trimmed.startsWith('合并')) {
+        const m = trimmed.match(/合并[：:]\s*(.+?)\s*->\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+)/)
+        if (m) {
+          ops.push({
+            type: 'merge',
+            description: trimmed,
+            targetIds: m[1].split('+').map(s => s.trim()),
+            resultContent: m[2].trim(),
+            resultLayer: (['short', 'medium', 'long'].includes(m[3].trim()) ? m[3].trim() : 'short') as MemoryLayer,
+            resultCategory: m[4].trim(),
+          })
+        }
+      } else if (trimmed.startsWith('重分类')) {
+        const m = trimmed.match(/重分类[：:]\s*(.+?)\s*->\s*(.+)/)
+        if (m) {
+          ops.push({
+            type: 'reclassify',
+            description: trimmed,
+            targetIds: [m[1].trim()],
+            resultLayer: (['short', 'medium', 'long'].includes(m[2].trim()) ? m[2].trim() : 'short') as MemoryLayer,
+          })
+        }
+      } else if (trimmed.startsWith('删除')) {
+        const m = trimmed.match(/删除[：:]\s*(.+)/)
+        if (m) {
+          ops.push({
+            type: 'delete',
+            description: trimmed,
+            targetIds: m[1].split(/[,，\s]+/).filter(Boolean),
+          })
+        }
+      } else if (trimmed.startsWith('新增')) {
+        const m = trimmed.match(/新增[：:]\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+)/)
+        if (m) {
+          ops.push({
+            type: 'new',
+            description: trimmed,
+            targetIds: [],
+            resultContent: m[1].trim(),
+            resultLayer: (['short', 'medium', 'long'].includes(m[2].trim()) ? m[2].trim() : 'short') as MemoryLayer,
+            resultCategory: m[3].trim(),
+          })
+        }
       }
+    }
+    return ops
+  }
 
-      store.value.items = result.items
-      store.value.dreamLogs.push(log)
-      store.value.newSinceLastDream = 0
-      saveStore(store.value)
-      console.log('[Dream] 梦境整理完成：', beforeCount, '→', afterCount, '条，', result.categories.length, '个分类')
+  /** Dreaming：AI 驱动的记忆整理 */
+  async function dream(apiKey: string, force = false): Promise<void> {
+    if (dreaming) return
+    if (!force && store.value.items.length === 0) return
+    dreaming = true
+
+    try {
+      const preview = await _runDream(apiKey)
+      if (!preview) { dreaming = false; return }
+      approveDream(preview, false)
     } catch (e) {
       console.warn('[Dream] 梦境整理失败:', e)
     } finally {
       dreaming = false
+    }
+  }
+
+  /** 干跑：调用 API 但不应用结果，存入 pendingPreview */
+  async function dreamDryRun(apiKey: string): Promise<DreamPreview | null> {
+    if (dreaming) return null
+    dreaming = true
+    try {
+      const preview = await _runDream(apiKey)
+      if (preview) {
+        store.value.pendingPreview = preview
+        saveStore(store.value)
+      }
+      return preview
+    } finally {
+      dreaming = false
+    }
+  }
+
+  /** 确认整理预览 */
+  function approveDream(preview: DreamPreview, isManual = true) {
+    const result = parseDreamResult(preview.rawText, store.value.items.filter(i => !i.pinned))
+    const pinnedItems = store.value.items.filter(i => i.pinned)
+    result.items = [...result.items, ...pinnedItems]
+
+    const log: DreamLog = {
+      timestamp: Date.now(),
+      beforeCount: store.value.items.length,
+      afterCount: result.items.length,
+      categories: result.categories,
+      manual: isManual,
+    }
+
+    store.value.items = result.items
+    store.value.dreamLogs.push(log)
+    store.value.newSinceLastDream = 0
+    store.value.pendingPreview = null
+    saveStore(store.value)
+    console.log('[Dream] 整理完成：', log.beforeCount, '→', log.afterCount, '条')
+  }
+
+  /** 拒绝整理预览 */
+  function rejectDream() {
+    store.value.pendingPreview = null
+    saveStore(store.value)
+  }
+
+  /** 获取 dreaming 状态 */
+  function getDreamStatus() {
+    return {
+      dreaming,
+      pendingPreview: store.value.pendingPreview !== null,
+      newSinceLastDream: store.value.newSinceLastDream,
     }
   }
 
@@ -481,6 +609,7 @@ export function useMemory() {
               createdAt: now,
               lastAccessedAt: now,
               accessCount: 0,
+              pinned: false,
             })
           }
         }
@@ -539,10 +668,176 @@ export function useMemory() {
     saveStore(store.value)
   }
 
+  /** 切换置顶状态 */
+  function togglePin(id: string) {
+    const item = store.value.items.find(i => i.id === id)
+    if (!item) return
+    item.pinned = !item.pinned
+    saveStore(store.value)
+  }
+
+  /** 搜索记忆（空格分词，每词全部命中才返回） */
+  function searchItems(query: string): MemoryItem[] {
+    if (!query.trim()) return [...store.value.items]
+    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    return store.value.items.filter(item => {
+      const content = item.content.toLowerCase()
+      const keywords = item.keywords.join(' ').toLowerCase()
+      return terms.every(t => content.includes(t) || keywords.includes(t))
+    })
+  }
+
+  /** 获取所有分类名 */
+  function getAllCategories(): string[] {
+    const cats = new Set<string>()
+    for (const item of store.value.items) {
+      if (item.category && item.category !== '未分类') cats.add(item.category)
+    }
+    return [...cats].sort()
+  }
+
+  /** 按模式排序 */
+  function sortItems(items: MemoryItem[], mode: SortMode): MemoryItem[] {
+    return [...items].sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+      if (mode === 'createdAt') return b.createdAt - a.createdAt
+      if (mode === 'lastAccessedAt') return b.lastAccessedAt - a.lastAccessedAt
+      return b.accessCount - a.accessCount
+    })
+  }
+
   /** 清除所有记忆 */
   function clearAll() {
-    store.value = { items: [], lastExtractionAt: 0, dreamLogs: [], newSinceLastDream: 0 }
+    store.value = { items: [], lastExtractionAt: 0, dreamLogs: [], newSinceLastDream: 0, pendingPreview: null }
     saveStore(store.value)
+  }
+
+  /** 导出记忆数据 */
+  function exportData(options: ExportOptions): string {
+    let items = [...store.value.items]
+    if (options.layers && options.layers.length > 0) {
+      items = items.filter(i => options.layers!.includes(i.layer))
+    }
+    if (options.categories && options.categories.length > 0) {
+      items = items.filter(i => options.categories!.includes(i.category))
+    }
+    if (options.format === 'markdown') {
+      const layerLabel: Record<string, string> = { short: '短期', medium: '中期', long: '长期' }
+      const groups = new Map<string, MemoryItem[]>()
+      for (const item of items) {
+        const cat = item.category || '未分类'
+        if (!groups.has(cat)) groups.set(cat, [])
+        groups.get(cat)!.push(item)
+      }
+      const md = [`# 记忆导出`, `> 导出时间：${new Date().toLocaleString('zh-CN')}`, `> 共 ${items.length} 条记忆`, '']
+      for (const [cat, catItems] of groups) {
+        md.push(`## ${cat}`)
+        for (const item of catItems) {
+          const layer = layerLabel[item.layer] || item.layer
+          md.push(`- [${layer}] ${item.content}${item.pinned ? ' 📌' : ''}`)
+        }
+        md.push('')
+      }
+      return md.join('\n')
+    }
+    // JSON
+    return JSON.stringify(items, null, 2)
+  }
+
+  /** 从 JSON 字符串导入记忆 */
+  function importFromJSON(jsonStr: string): { added: number; skipped: number; error?: string } {
+    try {
+      const incoming = JSON.parse(jsonStr)
+      if (!Array.isArray(incoming)) return { added: 0, skipped: 0, error: 'JSON 格式错误：需要数组' }
+      const valid = incoming.filter((item: any) => typeof item.content === 'string' && item.content.length >= 4)
+      const skipped = incoming.length - valid.length
+      const before = store.value.items.length
+      store.value.items = mergeMemories(store.value.items, valid.map((item: any) => ({
+        id: generateId(),
+        content: item.content,
+        layer: (['short', 'medium', 'long'].includes(item.layer) ? item.layer : 'short') as MemoryLayer,
+        category: item.category || '未分类',
+        keywords: extractKeywords(item.content),
+        createdAt: item.createdAt || Date.now(),
+        lastAccessedAt: item.lastAccessedAt || Date.now(),
+        accessCount: item.accessCount || 0,
+        pinned: item.pinned ?? false,
+      })))
+      const added = store.value.items.length - before
+      saveStore(store.value)
+      return { added, skipped }
+    } catch (e: any) {
+      return { added: 0, skipped: 0, error: e.message || String(e) }
+    }
+  }
+
+  /** 选择性清除记忆 */
+  function selectiveClear(options: SelectiveClearOptions): number {
+    let items = store.value.items
+    const before = items.length
+    if (options.layers && options.layers.length > 0) {
+      items = items.filter(i => !options.layers!.includes(i.layer))
+    }
+    if (options.categories && options.categories.length > 0) {
+      items = items.filter(i => !options.categories!.includes(i.category))
+    }
+    if (options.olderThanDays !== undefined && options.olderThanDays > 0) {
+      const cutoff = Date.now() - options.olderThanDays * 24 * 60 * 60 * 1000
+      items = items.filter(i => i.lastAccessedAt >= cutoff)
+    }
+    const removed = before - items.length
+    store.value.items = items
+    if (removed > 0) saveStore(store.value)
+    return removed
+  }
+
+  /** 触发文件下载 */
+  function downloadFile(filename: string, content: string) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  /** 记忆增长数据 */
+  function getGrowthData(days: 7 | 14 | 30): GrowthPoint[] {
+    const now = Date.now()
+    const result: GrowthPoint[] = []
+    for (let d = days - 1; d >= 0; d--) {
+      const dayStart = new Date(now - d * 24 * 60 * 60 * 1000)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = dayStart.getTime() + 24 * 60 * 60 * 1000
+      const count = store.value.items.filter(i => i.createdAt < dayEnd).length
+      const date = `${dayStart.getMonth() + 1}/${dayStart.getDate()}`
+      result.push({ date, count })
+    }
+    return result
+  }
+
+  /** 层级分布 */
+  function getLayerDistribution(): LayerDistribution[] {
+    const labelMap: Record<MemoryLayer, string> = { short: '短期', medium: '中期', long: '长期' }
+    return (['short', 'medium', 'long'] as MemoryLayer[]).map(layer => ({
+      layer,
+      count: store.value.items.filter(i => i.layer === layer).length,
+      label: labelMap[layer],
+    }))
+  }
+
+  /** 最常访问 Top N */
+  function getTopAccessed(limit: number): TopAccessed[] {
+    return [...store.value.items]
+      .sort((a, b) => b.accessCount - a.accessCount)
+      .slice(0, limit)
+      .map(i => ({ id: i.id, content: i.content, accessCount: i.accessCount }))
+  }
+
+  /** Dreaming 时间线 */
+  function getDreamTimeline(): DreamLog[] {
+    return [...store.value.dreamLogs].reverse()
   }
 
   /** 升级短期记忆到中期 */
@@ -564,13 +859,29 @@ export function useMemory() {
     getByLayer,
     getCategories,
     buildMemoryContext,
+    searchItems,
+    getAllCategories,
+    sortItems,
     extractFromExchange,
     dream,
     checkAutoDream,
+    dreamDryRun,
+    approveDream,
+    rejectDream,
+    getDreamStatus,
     updateItem,
     deleteItem,
+    togglePin,
     promoteShortTerm,
     clearAll,
+    exportData,
+    importFromJSON,
+    selectiveClear,
+    downloadFile,
+    getGrowthData,
+    getLayerDistribution,
+    getTopAccessed,
+    getDreamTimeline,
     tokenCount,
   }
 }
