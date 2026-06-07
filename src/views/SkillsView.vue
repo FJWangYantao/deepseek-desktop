@@ -3,11 +3,18 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSkillStore } from '@/stores/skills'
 import type { SkillMeta } from '../../electron/ipc/skills'
+import DSLStepEditor from '@/components/skills/DSLStepEditor.vue'
+import { parseDSL, isDSLContent } from '@/utils/dsl-parser'
+import { serializeDSL } from '@/utils/dsl-serializer'
+import type { DSLStep } from '@/types/dsl'
 
 const router = useRouter()
 const store = useSkillStore()
 const editing = ref<SkillMeta | null>(null)
 const showForm = ref(false)
+const formMode = ref<'text' | 'dsl'>('text')
+const formSteps = ref<DSLStep[]>([])
+const dslValidationError = ref('')
 
 const form = ref({ id: '', name: '', description: '', version: '1.0.0', tags: '', content: '' })
 const searchQuery = ref('')
@@ -26,31 +33,56 @@ onMounted(() => { store.loadSkills() })
 
 function openNew() {
   form.value = { id: Date.now().toString(36), name: '', description: '', version: '1.0.0', tags: '', content: '' }
+  formSteps.value = []
   editing.value = null
+  formMode.value = 'text'
+  dslValidationError.value = ''
   showForm.value = true
 }
 
 function openEdit(skill: SkillMeta) {
   form.value = { id: skill.id, name: skill.name, description: skill.description, version: skill.version, tags: skill.tags.join(', '), content: skill.content }
   editing.value = skill
+  formMode.value = isDSLContent(skill.content) ? 'dsl' : 'text'
+  if (formMode.value === 'dsl') {
+    const parsed = parseDSL(skill.content)
+    formSteps.value = parsed.steps || []
+    dslValidationError.value = parsed.errors.length > 0 ? `DSL 解析警告: ${parsed.errors[0].message}` : ''
+  } else {
+    formSteps.value = []
+    dslValidationError.value = ''
+  }
   showForm.value = true
 }
 
 function cancelEdit() {
   showForm.value = false
   editing.value = null
+  dslValidationError.value = ''
 }
 
 async function handleSave() {
-  const skill: SkillMeta = {
-    id: form.value.id,
+  let content = form.value.content.trim()
+  const meta = {
     name: form.value.name.trim(),
     description: form.value.description.trim(),
     version: form.value.version.trim() || '1.0.0',
     tags: form.value.tags.split(',').map(s => s.trim()).filter(Boolean),
-    content: form.value.content.trim(),
   }
-  if (!skill.name || !skill.content) return
+
+  if (formMode.value === 'dsl' && formSteps.value.length > 0) {
+    content = serializeDSL(meta, content, formSteps.value)
+  }
+
+  const skill: SkillMeta = {
+    id: form.value.id,
+    name: meta.name,
+    description: meta.description,
+    version: meta.version,
+    tags: meta.tags,
+    content,
+  }
+  if (!skill.name || !content) return
   await store.saveSkill(skill)
   showForm.value = false
   editing.value = null
@@ -158,9 +190,32 @@ const featuredRepos = [
           <input v-model="form.version" placeholder="版本" class="flex-1 px-3 py-2 text-sm rounded-lg border border-app-border bg-app-input text-app-text focus:outline-none focus:border-app-accent" />
           <input v-model="form.tags" placeholder="标签 (逗号分隔)" class="flex-[2] px-3 py-2 text-sm rounded-lg border border-app-border bg-app-input text-app-text focus:outline-none focus:border-app-accent" />
         </div>
-        <textarea v-model="form.content" placeholder="Prompt 内容（支持 Markdown）" rows="8"
+
+        <!-- 模式切换 -->
+        <div class="flex items-center gap-1 mb-3 bg-app-hover rounded-lg p-0.5 w-fit">
+          <button @click="formMode = 'text'" class="px-3 py-1 text-xs rounded-md transition-colors"
+            :class="formMode === 'text' ? 'bg-white text-app-text shadow-sm font-medium' : 'text-app-muted hover:text-app-text'"
+          >纯文本</button>
+          <button @click="formMode = 'dsl'" class="px-3 py-1 text-xs rounded-md transition-colors"
+            :class="formMode === 'dsl' ? 'bg-white text-app-text shadow-sm font-medium' : 'text-app-muted hover:text-app-text'"
+          >DSL 步骤</button>
+        </div>
+
+        <!-- DSL 验证警告 -->
+        <div v-if="dslValidationError" class="mb-3 px-3 py-2 rounded-lg text-xs bg-amber-50 text-amber-700 border border-amber-200">
+          {{ dslValidationError }}
+        </div>
+
+        <!-- 纯文本编辑器 -->
+        <textarea v-if="formMode === 'text'" v-model="form.content" placeholder="Prompt 内容（支持 Markdown）" rows="8"
           class="w-full px-3 py-2 mb-3 text-sm rounded-lg border border-app-border bg-app-input text-app-text font-mono focus:outline-none focus:border-app-accent resize-y"
         ></textarea>
+
+        <!-- DSL 步骤编辑器 -->
+        <div v-if="formMode === 'dsl'" class="mb-3">
+          <DSLStepEditor :steps="formSteps" @update:steps="formSteps = $event" />
+        </div>
+
         <div class="flex gap-2">
           <button @click="handleSave" class="px-4 py-1.5 text-xs font-medium rounded-lg text-white bg-app-accent hover:bg-app-accent-hover">保存</button>
           <button @click="cancelEdit" class="px-4 py-1.5 text-xs font-medium rounded-lg border border-app-border text-app-muted hover:bg-app-hover">取消</button>

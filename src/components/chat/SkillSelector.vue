@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useSkillStore } from '@/stores/skills'
+import { isDSLContent } from '@/utils/dsl-parser'
 
 const store = useSkillStore()
 const show = ref(false)
 const btnRef = ref<HTMLElement>()
 const dropdownStyle = ref<Record<string, string>>({})
+
+const dslIds = computed(() => {
+  const set = new Set<string>()
+  for (const s of store.skills) {
+    if (isDSLContent(s.content)) set.add(s.id)
+  }
+  return set
+})
 
 onMounted(() => { store.loadSkills() })
 onUnmounted(() => { show.value = false })
@@ -77,6 +86,7 @@ const activeLabel = store.activeSkill ? `⚡${store.activeSkill.name}` : 'Skill'
           style="width: calc(100% - 8px);"
         >
           <span>{{ s.name }}</span>
+          <span v-if="dslIds.has(s.id)" class="text-[9px] px-1 py-px rounded bg-app-accent-soft text-app-accent ml-1.5">DSL</span>
           <span class="text-[11px] text-app-muted ml-2">{{ s.description }}</span>
         </button>
       </div>

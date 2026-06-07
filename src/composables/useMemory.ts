@@ -244,19 +244,21 @@ export function useMemory() {
       const items = getByLayer(layer)
       if (items.length === 0) continue
 
-      let sorted: MemoryItem[]
+      let sorted: { item: MemoryItem; score: number }[]
       if (layer === 'short') {
-        sorted = items
+        // 短期记忆不加门槛：当前会话中提取的直接注入
+        sorted = items.map(i => ({ item: i, score: 1 }))
       } else {
+        // 中/长期记忆：需要关键词相关度达到最低门槛
         sorted = items
           .map(i => ({ item: i, score: relevanceScore(i, queryKeywords) }))
+          .filter(x => x.score >= 0.15)  // 至少 0.15 相关度才注入
           .sort((a, b) => b.score - a.score)
-          .map(x => x.item)
       }
 
       let budget = TOKEN_BUDGET[layer]
       const selected: string[] = []
-      for (const item of sorted) {
+      for (const { item } of sorted) {
         const cost = tokenCount(item.content) + 4
         if (budget - cost < 0) break
         selected.push(`- ${item.content}`)

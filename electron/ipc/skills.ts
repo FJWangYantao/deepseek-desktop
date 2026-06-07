@@ -53,25 +53,46 @@ const DEFAULT_SKILLS: { id: string; content: string }[] = [
     content: `---
 name: 代码审查
 description: 代码质量、安全、可维护性审查
-version: 1.0.0
+version: 2.0.0
 tags: [code, review]
+steps:
+- stage: analyze
+  prompt: |
+    请分析以下代码的质量、安全性和可维护性，列出所有发现的问题并按严重程度分类。
+
+    {{context.userInput}}
+- stage: check
+  condition: {{analyze.output}} 包含 "严重"
+  then:
+    - stage: deep_dive
+      prompt: |
+        上一步发现严重问题。请重点审查以下代码中的安全漏洞和严重 bug：
+
+        {{context.userInput}}
+
+        分析参考：{{analyze.output}}
+  else:
+    - stage: normal
+      prompt: |
+        上一步未发现严重问题。请进行常规代码审查，关注代码风格和最佳实践：
+
+        {{context.userInput}}
+
+        分析参考：{{analyze.output}}
+- stage: ask
+  input: 是否需要生成修复代码？
+  default: 是
+- stage: fix
+  condition: {{ask}} 等于 是
+  then:
+    - stage: generate_fix
+      prompt: |
+        基于以下审查结果，生成具体的修复代码：
+
+        审查结果：{{analyze.output}}
+
+        请对每个问题给出修复后的代码片段。
 ---
-
-# 代码审查专家
-
-## 角色
-你是一位资深代码审查员，专注于代码质量、安全性和可维护性。
-
-## 流程
-1. 理解用户提供的代码目的和上下文
-2. 检查潜在 bug、安全漏洞和边界条件
-3. 评估代码结构、命名和可读性
-4. 给出具体的改进建议和示例代码
-
-## 输出格式
-- 🔴 严重：必须修复的问题
-- 🟡 建议：值得改进的地方
-- 🟢 表扬：写得好的部分
 `,
   },
   {
@@ -131,27 +152,117 @@ tags: [writing, edit]
     content: `---
 name: 数据分析
 description: CSV/JSON 数据分析 + 洞察
-version: 1.0.0
+version: 2.0.0
 tags: [data, analysis]
+steps:
+- stage: analyze
+  prompt: |
+    解读以下数据，计算统计摘要（均值、中位数、分布），发现趋势和异常值：
+
+    {{context.userInput}}
+- stage: check
+  condition: {{analyze.output}} 包含 "异常"
+  then:
+    - stage: deep_analysis
+      prompt: |
+        上一步发现异常数据。请深入分析这些异常的原因和影响：
+
+        数据：{{context.userInput}}
+
+        初步分析：{{analyze.output}}
+- stage: ask
+  input: 是否需要生成可视化建议？
+  default: 是
+- stage: visualize
+  condition: {{ask}} 等于 是
+  then:
+    - stage: chart
+      prompt: |
+        基于以下数据分析结果，推荐合适的可视化图表类型：
+
+        数据：{{context.userInput}}
+
+        分析：{{analyze.output}}{{deep_analysis.output}}
+  else:
+    - stage: summary
+      prompt: |
+        基于以下分析生成简洁的分析报告：
+
+        分析结果：{{analyze.output}}
 ---
+`,
+  },
+  {
+    id: 'trend-analysis',
+    content: `---
+name: 热点搜索分析
+description: 搜索趋势分析、热度解读、内容策略建议
+version: 1.0.0
+tags: [search, trend, analysis]
+steps:
+- stage: parse
+  prompt: |
+    以下是搜索半导体领域新闻的结果。请分析：
 
-# 数据分析师
+    用户查询：{{context.userInput}}
 
-## 角色
-你是一位数据分析师，擅长从数据中提取洞察。
+    搜索结果：
+    {{context.searchResults}}
 
-## 流程
-1. 解读数据结构，识别关键字段
-2. 计算统计摘要（均值、中位数、分布）
-3. 发现趋势、异常值和模式
-4. 用清晰的语言和表格呈现结果
-5. 给出 actionable 的建议
+    请分析：
+    1. 主要话题和关键词是什么？
+    2. 热度趋势和相关新闻方向
+    3. 话题所属领域（科技/娱乐/社会/商业/体育等）
+    4. 各来源的主要观点差异
+- stage: check_domain
+  condition: {{parse.output}} 包含 "科技"
+  then:
+    - stage: tech_deep
+      prompt: |
+        这是一个科技领域热点。请进一步分析：
 
-## 输出格式
-**数据概览**：行数、字段、类型
-**统计摘要**：关键指标
-**发现**：洞察和异常
-**建议**：下一步行动
+        热度数据：{{parse.output}}
+
+        具体分析：
+        1. 这是新产品/政策/漏洞还是行业动态？
+        2. 对用户/开发者有什么实际影响？
+        3. 相关技术栈和竞品分析
+  else:
+    - stage: general_deep
+      prompt: |
+        请对这个热点进行通用分析：
+
+        热度数据：{{parse.output}}
+
+        具体分析：
+        1. 话题火爆的根本原因是什么？
+        2. 各方反应和舆论倾向
+        3. 后续发展预测
+- stage: ask
+  input: 是否需要生成内容策略建议（如写文章、做视频选题）？
+  default: 是
+- stage: strategy
+  condition: {{ask}} 等于 是
+  then:
+    - stage: content_plan
+      prompt: |
+        基于以下分析，生成内容策略建议：
+
+        热度分析：{{parse.output}}
+        深度解读：{{tech_deep.output}}{{general_deep.output}}
+
+        请输出：
+        1. 推荐切入角度（3个）
+        2. 目标受众
+        3. 内容形式建议
+        4. SEO关键词建议
+  else:
+    - stage: summary
+      prompt: |
+        基于以下分析生成简洁的热点摘要：
+
+        {{parse.output}}
+---
 `,
   },
   {
@@ -267,6 +378,12 @@ tags: [${skill.tags.join(', ')}]
 ${skill.content}`
     writeFileSync(join(skillsDir, `${skill.id}.md`), frontmatter, 'utf-8')
     return true
+  })
+
+  ipcMain.handle('mcp:tool-call', async (_event, request: { serverId: string; toolName: string; params: Record<string, string> }) => {
+    // TODO: 桥接到实际的 MCP 工具服务
+    console.warn('[MCP] tool-call 未实现:', request.serverId, request.toolName)
+    return { success: false, error: `MCP 工具 "${request.serverId}/${request.toolName}" 尚未实现` }
   })
 
   ipcMain.handle('skills:delete', (_event, id: string): boolean => {
