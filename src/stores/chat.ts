@@ -25,6 +25,7 @@ export const useChatStore = defineStore('chat', () => {
   const generatingSessions = ref<Record<string, boolean>>({})
   const unreadSessions = ref<Record<string, boolean>>({})
   const activeToolCalls = ref<ToolCallUIState[]>([])
+  const lastUsageData = ref<UsageData | null>(null)
 
   // 工具权限审批状态
   interface ApprovalInfo { callId: string; name: string; arguments: Record<string, unknown>; reason: string }
@@ -568,6 +569,7 @@ export const useChatStore = defineStore('chat', () => {
         },
         onUsage(usage) {
           usageFromApi = usage
+          lastUsageData.value = usage
         },
         onToolCallUpdate(calls) {
           activeToolCalls.value = [...calls]
@@ -679,7 +681,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, searchStatus, activeToolCalls, pendingApproval, currentModel,
+    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, searchStatus, activeToolCalls, pendingApproval, currentModel, lastUsageData,
     sendMessage, clearMessages, loadFromSession, toggleThinking, toggleWebSearch, retryMessage, stopGenerating, resolveApproval,
   }
 })

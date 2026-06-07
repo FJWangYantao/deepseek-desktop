@@ -13,8 +13,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const showKey = ref(false)
 
   const models: ModelOption[] = [
-    { id: 'deepseek-v4-pro', name: 'V4 Pro', description: '旗舰模型，最强性能' },
-    { id: 'deepseek-v4-flash', name: 'V4 Flash', description: '快速模型，高性价比' },
+    { id: 'deepseek-v4-pro', name: 'V4 Pro', description: '旗舰模型，最强性能', contextLength: 1000000 },
+    { id: 'deepseek-v4-flash', name: 'V4 Flash', description: '快速模型，高性价比', contextLength: 1000000 },
   ]
 
   const codeThemes = [

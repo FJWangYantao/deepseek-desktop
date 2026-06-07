@@ -49,5 +49,6 @@ interface Window {
     toolsCallApproved: (request: import('../src/types/tools').ToolCallRequest) => Promise<import('../src/types/tools').ToolCallResult>
     toolsGetPermissionConfig: () => Promise<import('../src/types/tools').ToolPermissionConfig>
     toolsSetPermissionConfig: (config: import('../src/types/tools').ToolPermissionConfig) => Promise<boolean>
+    tokenizerCount: (text: string) => Promise<number>
   }
 }

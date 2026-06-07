@@ -21,6 +21,7 @@ export interface ModelOption {
   id: string
   name: string
   description: string
+  contextLength: number
 }
 
 export type ThinkingMode = 'enabled' | 'disabled'

@@ -9,6 +9,7 @@ import { registerFileHandlers } from './ipc/files'
 import { registerExportHandlers } from './ipc/export'
 import { registerSkillHandlers } from './ipc/skills'
 import { registerToolHandlers } from './ipc/tools'
+import { registerTokenizerHandlers } from './ipc/tokenizer'
 import { registerBuiltinTools } from './tools'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -69,6 +70,7 @@ registerExportHandlers()
 registerSkillHandlers()
 registerBuiltinTools()
 registerToolHandlers()
+registerTokenizerHandlers()
 
 app.whenReady().then(() => {
   createWindow()

@@ -22,4 +22,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toolsCallApproved: (request) => ipcRenderer.invoke('tools:call-approved', request),
   toolsGetPermissionConfig: () => ipcRenderer.invoke('tools:getPermissionConfig'),
   toolsSetPermissionConfig: (config) => ipcRenderer.invoke('tools:setPermissionConfig', config),
+  tokenizerCount: (text) => ipcRenderer.invoke('tokenizer:count', text),
 })

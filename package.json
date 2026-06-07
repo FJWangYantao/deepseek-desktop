@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "DeepSeek Desktop",
   "dependencies": {
+    "@huggingface/tokenizers": "^0.1.3",
     "cheerio": "^1.2.0",
     "highlight.js": "^11.11.1",
     "jszip": "^3.10.1",

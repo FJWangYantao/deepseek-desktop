@@ -7,9 +7,12 @@ import ThinkingToggle from './ThinkingToggle.vue'
 import WebSearchToggle from './WebSearchToggle.vue'
 import FileAttach from './FileAttach.vue'
 import SkillSelector from './SkillSelector.vue'
+import ContextRing from './ContextRing.vue'
+import { useTokenCounter } from '@/composables/useTokenCounter'
 
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
+const tokenCounter = useTokenCounter()
 
 const inputText = ref('')
 const sending = ref(false)
@@ -112,6 +115,12 @@ function onPaste(e: ClipboardEvent) {
             <WebSearchToggle />
             <ThinkingToggle />
             <SkillSelector />
+            <ContextRing
+              :percentage="tokenCounter.percentage.value"
+              :token-count="tokenCounter.tokenCount.value"
+              :context-length="tokenCounter.contextLength.value"
+              :message-count="tokenCounter.messageCount.value"
+            />
           </div>
           <div class="flex items-center gap-1.5">
             <FileAttach ref="fileAttachRef" />
