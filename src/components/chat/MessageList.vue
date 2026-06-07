@@ -45,11 +45,25 @@ const streamHtml = computed(() => {
   return renderMarkdown(fixCjkEmphasis(streamingSafe.value))
 })
 
+// 新消息 → 始终滚到底
 watch(
   () => chatStore.messages.length,
   async () => { await nextTick(); scrollToBottom() }
 )
 
+// 生成开始 → 滚到底（确保等待指示器可见）
+watch(
+  () => chatStore.isGenerating,
+  async (val) => { if (val) { await nextTick(); scrollToBottom() } }
+)
+
+// 工具调用状态变化 → 近底部时滚到底
+watch(
+  () => chatStore.activeToolCalls.length,
+  async () => { await nextTick(); if (isNearBottom()) scrollToBottom() }
+)
+
+// 流式内容更新 → 近底部时滚到底
 watch(
   () => chatStore.streaming,
   async () => { await nextTick(); if (isNearBottom()) scrollToBottom() }

@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, globalShortcut } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { existsSync } from 'fs'
+import { execSync } from 'child_process'
 import { registerStorageHandlers } from './ipc/storage'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
@@ -10,6 +11,11 @@ import { registerSkillHandlers } from './ipc/skills'
 import { registerToolHandlers } from './ipc/tools'
 import { registerTokenizerHandlers } from './ipc/tokenizer'
 import { registerBuiltinTools } from './tools'
+
+// Windows 控制台 UTF-8 编码
+if (process.platform === 'win32') {
+  try { execSync('chcp 65001', { stdio: 'ignore' }) } catch {}
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

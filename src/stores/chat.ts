@@ -68,6 +68,7 @@ export const useChatStore = defineStore('chat', () => {
       streaming.value = ''
       streamingThinking.value = ''
       isGenerating.value = false
+      activeToolCalls.value = []
     }
 
     // 清除未读标记

@@ -9,6 +9,12 @@ export interface SearchResult {
   content: string
 }
 
+export interface SearchHit {
+  title: string
+  url: string
+  snippet: string
+}
+
 // ===== 底层 HTTP GET =====
 
 function httpGet(url: string, timeout = 8000): Promise<string> {
@@ -66,31 +72,22 @@ function extractText(html: string): string {
   }
 }
 
-// ===== Bing 搜索 =====
+// ===== Bing HTML 解析 =====
 
-async function searchBing(query: string): Promise<SearchResult[]> {
-  const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}`
-  console.log('[SearchBing] 请求 URL:', url)
-  const html = await httpGet(url, 10000)
-  console.log('[SearchBing] HTML 长度:', html.length)
-  if (!html) { console.warn('[SearchBing] HTML 为空'); return [] }
-
-  // 提取 b_results 容器
+function parseBingHtml(html: string): SearchHit[] {
   const olStart = html.indexOf('<ol id="b_results"')
-  console.log('[SearchBing] b_results 位置:', olStart)
   if (olStart === -1) return []
   const olEnd = html.indexOf('</ol>', olStart)
   if (olEnd === -1) return []
   const container = html.substring(olStart, olEnd)
 
-  // 按 b_algo 分割
   const parts = container.split(/<li class="b_algo"/)
   if (parts.length < 2) return []
 
   const titleRe = /<h2[^>]*><a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a><\/h2>/i
   const snippetRe = /<p[^>]*class="[^"]*b_lineclamp[^"]*"[^>]*>([\s\S]*?)<\/p>/i
 
-  const raw: { title: string; url: string; snippet: string }[] = []
+  const results: SearchHit[] = []
   for (let i = 1; i < parts.length; i++) {
     const tm = titleRe.exec(parts[i])
     if (!tm) continue
@@ -98,26 +95,39 @@ async function searchBing(query: string): Promise<SearchResult[]> {
     const url = tm[1]
     const sm = snippetRe.exec(parts[i])
     const snippet = sm ? sm[1].replace(/<[^>]+>/g, '').replace(/&ensp;|&#0183;/g, ' ').trim() : ''
-    if (title && url) raw.push({ title, url, snippet })
+    if (title && url) results.push({ title, url, snippet })
   }
-
-  if (raw.length === 0) return []
-
-  return fetchPageContents(raw.slice(0, 5))
+  return results
 }
 
-// ===== DuckDuckGo 搜索（回退） =====
+// ===== Bing 搜索（轻量版） =====
 
-async function searchDDG(query: string): Promise<SearchResult[]> {
-  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+async function searchBingLight(query: string): Promise<SearchHit[]> {
+  const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}`
   const html = await httpGet(url, 10000)
   if (!html) return []
+  return parseBingHtml(html)
+}
 
+// ===== Bing 搜索（完整版，含页面抓取） =====
+
+async function searchBing(query: string): Promise<SearchResult[]> {
+  const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}`
+  const html = await httpGet(url, 10000)
+  if (!html) return []
+  const hits = parseBingHtml(html)
+  if (hits.length === 0) return []
+  return fetchPageContents(hits.slice(0, 5))
+}
+
+// ===== DuckDuckGo HTML 解析 =====
+
+function parseDDGHtml(html: string): SearchHit[] {
   const blockRe = /<div class="result[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi
   const linkRe = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/i
   const snippetRe = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/i
 
-  const raw: { title: string; url: string; snippet: string }[] = []
+  const results: SearchHit[] = []
   let match: RegExpExecArray | null
   while ((match = blockRe.exec(html)) !== null) {
     const block = match[0]
@@ -135,43 +145,49 @@ async function searchDDG(query: string): Promise<SearchResult[]> {
     }
     const sm = snippetRe.exec(block)
     const snippet = sm ? sm[1].replace(/<[^>]+>/g, '').trim() : ''
-    if (title && url) raw.push({ title, url, snippet })
+    if (title && url) results.push({ title, url, snippet })
   }
-
-  if (raw.length === 0) return []
-
-  return fetchPageContents(raw.slice(0, 5))
+  return results
 }
 
-// ===== 国际 Bing (英文) =====
+// ===== DuckDuckGo 搜索（轻量版） =====
+
+async function searchDDGLight(query: string): Promise<SearchHit[]> {
+  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+  const html = await httpGet(url, 10000)
+  if (!html) return []
+  return parseDDGHtml(html)
+}
+
+// ===== DuckDuckGo 搜索（完整版） =====
+
+async function searchDDG(query: string): Promise<SearchResult[]> {
+  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+  const html = await httpGet(url, 10000)
+  if (!html) return []
+  const hits = parseDDGHtml(html)
+  if (hits.length === 0) return []
+  return fetchPageContents(hits.slice(0, 5))
+}
+
+// ===== 国际 Bing 搜索（轻量版） =====
+
+async function searchBingEnLight(query: string): Promise<SearchHit[]> {
+  const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en`
+  const html = await httpGetCustom(url, 10000, 'en-US,en;q=0.9')
+  if (!html) return []
+  return parseBingHtml(html)
+}
+
+// ===== 国际 Bing 搜索（完整版） =====
 
 async function searchBingEn(query: string): Promise<SearchResult[]> {
   const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en`
-  console.log('[SearchBingEn] 请求 URL:', url)
   const html = await httpGetCustom(url, 10000, 'en-US,en;q=0.9')
-  console.log('[SearchBingEn] HTML 长度:', html.length)
   if (!html) return []
-
-  const olStart = html.indexOf('<ol id="b_results"')
-  if (olStart === -1) return []
-  const olEnd = html.indexOf('</ol>', olStart)
-  if (olEnd === -1) return []
-  const container = html.substring(olStart, olEnd)
-
-  const parts = container.split(/<li class="b_algo"/)
-  if (parts.length < 2) return []
-
-  const titleRe = /<h2[^>]*><a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a><\/h2>/i
-  const snippetRe = /<p[^>]*class="[^"]*b_lineclamp[^"]*"[^>]*>([\s\S]*?)<\/p>/i
-
-  const raw: { title: string; url: string; snippet: string }[] = []
-  for (let i = 1; i < parts.length; i++) {
-    const tm = titleRe.exec(parts[i])
-    if (!tm) continue
-    raw.push({ title: tm[2].replace(/<[^>]+>/g, '').trim(), url: tm[1], snippet: (snippetRe.exec(parts[i])?.[1] || '').replace(/<[^>]+>/g, '').trim() })
-  }
-
-  return fetchPageContents(raw.slice(0, 5))
+  const hits = parseBingHtml(html)
+  if (hits.length === 0) return []
+  return fetchPageContents(hits.slice(0, 5))
 }
 
 // ===== 自定义 Accept-Language GET =====
@@ -222,21 +238,35 @@ async function fetchPageContents(items: { title: string; url: string; snippet: s
   return results
 }
 
-// ===== 多引擎搜索 =====
+// ===== 多引擎搜索（轻量版，跳过页面抓取） =====
+
+export async function searchWebLight(query: string): Promise<SearchHit[]> {
+  const [cnResults, enResults, ddgResults] = await Promise.all([
+    searchBingLight(query).catch(() => [] as SearchHit[]),
+    searchBingEnLight(query).catch(() => [] as SearchHit[]),
+    searchDDGLight(query).catch(() => [] as SearchHit[]),
+  ])
+
+  const seen = new Set<string>()
+  const merged: SearchHit[] = []
+  for (const r of [...cnResults, ...enResults, ...ddgResults]) {
+    if (!seen.has(r.url)) {
+      seen.add(r.url)
+      merged.push(r)
+    }
+  }
+  return merged
+}
+
+// ===== 多引擎搜索（完整版，含页面抓取） =====
 
 export async function searchWeb(query: string): Promise<SearchResult[]> {
-  console.log('[Search::searchWeb] 启动搜索, 查询:', query)
-
-  // 并行搜索：中文 Bing + 英文 Bing + DDG
   const [cnResults, enResults, ddgResults] = await Promise.all([
     searchBing(query).catch(() => [] as SearchResult[]),
     searchBingEn(query).catch(() => [] as SearchResult[]),
     searchDDG(query).catch(() => [] as SearchResult[]),
   ])
 
-  console.log('[Search::searchWeb] CN Bing:', cnResults.length, '| EN Bing:', enResults.length, '| DDG:', ddgResults.length)
-
-  // 去重合并
   const seen = new Set<string>()
   const merged: SearchResult[] = []
   for (const r of [...cnResults, ...enResults, ...ddgResults]) {
@@ -245,7 +275,6 @@ export async function searchWeb(query: string): Promise<SearchResult[]> {
       merged.push(r)
     }
   }
-
   return merged
 }
 
