@@ -47,6 +47,25 @@ export interface ThemeDefinition {
 // ===== 记忆相关 =====
 export type { MemoryItem, MemoryLayer, MemoryStore } from './memory'
 
+// ===== DSL 相关 =====
+export type {
+  DSLStep, DSLPromptStep, DSLConditionStep, DSLToolStep, DSLInputStep, DSLOutputStep, DSLLoopStep,
+  RunnerState, VariableEnvironment,
+  DSLParseResult, DSLValidationError,
+  MCPToolCallRequest, MCPToolCallResult,
+  DSLPauseInfo, DSLStepOutput,
+} from './dsl'
+
+// ===== 工具系统 =====
+export type {
+  ToolParameter, ToolDefinition, ToolPermission,
+  ToolCall, ToolCallResult,
+  ToolPermissionRule, ToolPermissionConfig,
+  ToolCallRequest, ToolListResponse, ToolAuthorizeRequest,
+  ToolCallStatus, ToolCallUIState,
+  StreamToolCallChunk,
+} from './tools'
+
 // ===== 统计相关 =====
 
 export interface SearchResult {

@@ -43,5 +43,11 @@ interface Window {
     importSkill: (url: string) => Promise<import('../electron/ipc/skills').SkillMeta | null>
     saveSkill: (skill: import('../electron/ipc/skills').SkillMeta) => Promise<boolean>
     deleteSkill: (id: string) => Promise<boolean>
+    mcpToolCall: (request: { serverId: string; toolName: string; params: Record<string, string> }) => Promise<{ success: boolean; data?: unknown; error?: string }>
+    toolsList: () => Promise<import('../src/types/tools').ToolListResponse>
+    toolsCall: (request: import('../src/types/tools').ToolCallRequest) => Promise<import('../src/types/tools').ToolCallResult>
+    toolsCallApproved: (request: import('../src/types/tools').ToolCallRequest) => Promise<import('../src/types/tools').ToolCallResult>
+    toolsGetPermissionConfig: () => Promise<import('../src/types/tools').ToolPermissionConfig>
+    toolsSetPermissionConfig: (config: import('../src/types/tools').ToolPermissionConfig) => Promise<boolean>
   }
 }

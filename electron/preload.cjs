@@ -16,4 +16,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importSkill: (url) => ipcRenderer.invoke('skills:import', url),
   saveSkill: (skill) => ipcRenderer.invoke('skills:save', skill),
   deleteSkill: (id) => ipcRenderer.invoke('skills:delete', id),
+  mcpToolCall: (request) => ipcRenderer.invoke('mcp:tool-call', request),
+  toolsList: () => ipcRenderer.invoke('tools:list'),
+  toolsCall: (request) => ipcRenderer.invoke('tools:call', request),
+  toolsCallApproved: (request) => ipcRenderer.invoke('tools:call-approved', request),
+  toolsGetPermissionConfig: () => ipcRenderer.invoke('tools:getPermissionConfig'),
+  toolsSetPermissionConfig: (config) => ipcRenderer.invoke('tools:setPermissionConfig', config),
 })

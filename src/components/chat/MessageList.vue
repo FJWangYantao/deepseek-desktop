@@ -7,6 +7,7 @@ import { fixCjkEmphasis, renderMarkdown } from '@/composables/useMarkdown'
 import { useAvatar } from '@/composables/useAvatar'
 import MessageItem from './MessageItem.vue'
 import StreamCursor from '@/components/renderer/StreamCursor.vue'
+import ToolCallStatus from './ToolCallStatus.vue'
 
 const chatStore = useChatStore()
 const { avatarUrl, loadAvatar } = useAvatar()
@@ -153,6 +154,9 @@ watch(() => chatStore.messages.length, () => {
           </div>
         </div>
       </div>
+
+      <!-- 工具调用状态 -->
+      <ToolCallStatus v-if="chatStore.activeToolCalls.length > 0" :calls="chatStore.activeToolCalls" />
 
       <!-- 流式输出 -->
       <div v-if="chatStore.streaming || chatStore.streamingThinking" class="mb-6">

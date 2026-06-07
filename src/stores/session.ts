@@ -18,7 +18,7 @@ function loadSessions(): ChatSession[] {
 
 export const useSessionStore = defineStore('session', () => {
   const sessions = ref<ChatSession[]>(loadSessions())
-  const currentId = ref<string>(localStorage.getItem('ds_current_session') ?? '')
+  const currentId = ref<string>('')
 
   // 持久化（仅保存有效数据，防止意外覆盖）
   watch(sessions, (val) => {
