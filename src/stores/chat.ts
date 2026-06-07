@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, watch, computed, nextTick } from 'vue'
-import type { Message, UsageData, SearchResult, ToolCallUIState } from '@/types'
+import type { Message, UsageData, ToolCallUIState } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
@@ -17,7 +17,6 @@ export const useChatStore = defineStore('chat', () => {
   const streaming = ref('')
   const streamingThinking = ref('')
   const thinkingEnabled = ref(true)
-  const webSearchEnabled = ref(false)
   const isGenerating = ref(false)
   const generatingSessionId = ref<string | null>(null)
   const thinkingManuallyExpanded = ref(false)
@@ -39,14 +38,6 @@ export const useChatStore = defineStore('chat', () => {
     }
     pendingApproval.value = null
   }
-
-  interface SearchStatus {
-    phase: 'idle' | 'searching' | 'fetched'
-    queries: string[]
-    resultCount: number
-    topTitles: string[]
-  }
-  const searchStatus = ref<SearchStatus>({ phase: 'idle', queries: [], resultCount: 0, topTitles: [] })
 
   const sessionStore = useSessionStore()
   const settingsStore = useSettingsStore()
@@ -111,109 +102,6 @@ export const useChatStore = defineStore('chat', () => {
     thinkingEnabled.value = !thinkingEnabled.value
   }
 
-  function toggleWebSearch() {
-    webSearchEnabled.value = !webSearchEnabled.value
-  }
-
-  async function buildSearchQueries(userText: string, contextMessages: { role: string; content: string }[]): Promise<string[]> {
-    const now = new Date()
-    const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
-
-    if (!settingsStore.apiKey) return [userText]
-
-    try {
-      const apiMessages: { role: string; content: string }[] = [
-        { role: 'system', content: `将用户最新问题转化为3个搜索引擎关键词。参考对话历史理解指代和上下文。至少1条英文。保持核心概念组合。每条20字内。一行一个。当前日期：${dateStr}。` },
-      ]
-      // 注入最近4条对话历史作为上下文
-      for (const m of contextMessages.slice(-4)) {
-        apiMessages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content.slice(0, 200) })
-      }
-      apiMessages.push({ role: 'user', content: userText })
-
-      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${settingsStore.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-v4-flash',
-          messages: apiMessages,
-          thinking: { type: 'disabled' },
-          max_tokens: 100,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const text = data.choices?.[0]?.message?.content?.trim()
-        if (text) {
-          const queries = text.split('\n').map((s: string) => s.trim()).filter((s: string) => s.length > 0)
-          if (queries.length > 0) {
-            console.log('[Search] AI 生成搜索词:', userText, '→', queries)
-            return queries
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[Search] 搜索词生成失败，使用原文:', e)
-    }
-    return [userText]
-  }
-
-  async function shouldSearch(userText: string, contextMessages: { role: string; content: string }[]): Promise<boolean> {
-    if (!settingsStore.apiKey) return true
-    try {
-      const apiMessages: { role: string; content: string }[] = [
-        { role: 'system', content: '用户开启了联网搜索，判断此问题是否能从搜索结果中获益。需要搜索（概念解释、最新信息、事件、数据、教程、对比、评测、新闻等）回复Y，不需要（纯数学计算、纯翻译、纯代码语法纠错等）回复N。倾向回复Y。只输出一个字母。' },
-      ]
-      for (const m of contextMessages.slice(-4)) {
-        apiMessages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content.slice(0, 200) })
-      }
-      apiMessages.push({ role: 'user', content: userText })
-
-      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${settingsStore.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-v4-flash',
-          messages: apiMessages,
-          thinking: { type: 'disabled' },
-          max_tokens: 1,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const answer = data.choices?.[0]?.message?.content?.trim().toUpperCase()
-        console.log('[Search] AI 判断是否需要搜索:', userText, '→', answer === 'Y')
-        return answer === 'Y'
-      }
-    } catch {}
-    return true // 判断失败默认搜索
-  }
-
-  function extractUrls(text: string): string[] {
-    const re = /https?:\/\/[^\s,，。；;！!？?)]+/g
-    const matches = text.match(re)
-    if (!matches) return []
-    return [...new Set(matches)]
-  }
-
-  function buildSearchContext(results: SearchResult[]): string {
-    if (results.length === 0) return ''
-    const lines = ['[系统提示] 以下是与问题相关的网络搜索结果，请基于这些信息回答：', '']
-    results.forEach((r, i) => {
-      lines.push(`【来源 ${i + 1}】${r.title}\n  URL: ${r.url}`)
-      if (r.snippet) lines.push(`  摘要: ${r.snippet}`)
-      if (r.content) lines.push(`  内容: ${r.content}`)
-      lines.push('')
-    })
-    return lines.join('\n')
-  }
-
   function buildFileContext(files: {name: string, text: string}[]): string {
     const lines = ['[系统提示] 用户上传了以下文件，请基于这些内容回答用户问题：', '']
     for (const f of files) {
@@ -222,11 +110,6 @@ export const useChatStore = defineStore('chat', () => {
       lines.push('')
     }
     return lines.join('\n')
-  }
-
-  function buildFetchContext(url: string, content: string): string {
-    if (!content) return ''
-    return `[系统提示] 以下是从 ${url} 获取的网页内容，请基于这些信息回答：\n\n${content}\n\n`
   }
 
   function stopGenerating() {
@@ -310,110 +193,25 @@ export const useChatStore = defineStore('chat', () => {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }))
 
-    // ===== 文件内容 + 联网搜索 + URL 抓取 =====
-    let injectedContext = ''
-
-    // 文件内容注入
+    // ===== 文件内容注入 =====
+    let userContent = text
     if (files && files.length > 0) {
-      injectedContext += buildFileContext(files)
-      console.log('[File] 注入文件内容，长度:', injectedContext.length)
+      userContent = buildFileContext(files) + '\n\n用户问题：' + text
     }
-
-    console.log('[Search] ===== 开始搜索流程 =====')
-    console.log('[Search] webSearchEnabled:', webSearchEnabled.value)
-    console.log('[Search] electronAPI 存在:', !!window.electronAPI)
-    console.log('[Search] electronAPI.webSearch 存在:', !!window.electronAPI?.webSearch)
-
-    // URL 自动检测抓取
-    const urls = extractUrls(text)
-    if (urls.length > 0 && window.electronAPI?.fetchUrl) {
-      console.log('[Search] 检测到 URL:', urls)
-      for (const url of urls) {
-        try {
-          const content = await window.electronAPI.fetchUrl(url)
-          if (content) {
-            injectedContext += buildFetchContext(url, content)
-            console.log('[Search] URL 抓取成功:', url, '内容长度:', content.length)
-          }
-        } catch {
-          // 抓取失败，跳过
-        }
-      }
-    }
-
-    // 联网搜索（多词并行）—— AI自行判断是否需要搜索
-    if (webSearchEnabled.value && window.electronAPI?.webSearch && urls.length === 0) {
-      const needSearch = await shouldSearch(text, historyMsgs)
-      if (!needSearch) {
-        console.log('[Search] AI 判断无需搜索，跳过')
-      } else {
-        // 1. AI 生成多角度搜索词
-        const queries = await buildSearchQueries(text, historyMsgs)
-      console.log('[Search] 准备并行搜索，词数:', queries.length)
-      searchStatus.value = { phase: 'searching', queries, resultCount: 0, topTitles: [] }
-
-      // 2. 所有搜索词并行执行
-      try {
-        const allResults = await Promise.all(
-          queries.map(q =>
-            Promise.race([
-              window.electronAPI!.webSearch(q),
-              new Promise<SearchResult[]>((_, reject) =>
-                setTimeout(() => reject(new Error('搜索超时')), 25000)
-              ),
-            ]).catch((e) => {
-              console.warn(`[Search] 搜索词 "${q}" 失败:`, e)
-              return [] as SearchResult[]
-            })
-          )
-        )
-
-        // 3. 合并 + URL去重
-        const seen = new Set<string>()
-        const merged: SearchResult[] = []
-        for (const batch of allResults) {
-          for (const r of batch) {
-            if (!seen.has(r.url)) {
-              seen.add(r.url)
-              merged.push(r)
-            }
-          }
-        }
-
-        console.log('[Search] 合并去重后结果数:', merged.length)
-        searchStatus.value = {
-          phase: 'fetched',
-          queries,
-          resultCount: merged.length,
-          topTitles: merged.slice(0, 8).map(r => r.title),
-        }
-        if (merged.length > 0) {
-          merged.forEach((r, i) => console.log(`[Search] 结果${i+1}: ${r.title} | ${r.url}`))
-          injectedContext += buildSearchContext(merged.slice(0, 10))
-        } else {
-          console.warn('[Search] 全部搜索返回空结果')
-        }
-        } catch (e) {
-          console.warn('[Search] 联网搜索失败，继续普通对话:', e)
-        }
-      } // end if needSearch
-    } else if (webSearchEnabled.value) {
-      console.warn('[Search] electronAPI 不可用，跳过搜索（是否在浏览器开发模式？）')
-    }
-
-    console.log('[Search] injectedContext 长度:', injectedContext.length)
-    const userContent = injectedContext
-      ? `${injectedContext}\n\n用户问题：${text}`
-      : text
-    console.log('[Search] 最终 userContent 前500字:', userContent.substring(0, 500))
 
     const today = new Date()
     const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`
     const weekDay = ['日', '一', '二', '三', '四', '五', '六'][today.getDay()]
 
     // ===== 构建 system prompt =====
+    // 0. 固定前缀（前缀缓存友好，不可变部分放最前面）
+    let systemPrompt = '你是一个诚实、严谨的AI助手。遵守以下行为准则：\n' +
+      '1. 当用户质疑你的回答时，先独立核实事实再决定是否修正，不要仅因用户表示惊讶或质疑就自动认错。\n' +
+      '2. 如果你确信自己的回答是正确的，应该礼貌地坚持并解释理由，而不是盲目迎合用户。\n' +
+      '3. 对不确定的内容，明确标注不确定性，而不是编造事实。\n' +
+      '4. 你可以使用 web_search 工具搜索互联网获取实时信息，使用 web_fetch 工具抓取网页内容。当用户的问题可能需要最新信息时，主动调用搜索工具。\n\n'
+
     // 1. 用户自定义 system prompt（含角色模板）
-    let systemPrompt = ''
     if (settingsStore.systemPrompt) {
       systemPrompt += settingsStore.systemPrompt + '\n\n'
     }
@@ -431,7 +229,6 @@ export const useChatStore = defineStore('chat', () => {
 
         const abortCtrl = new AbortController()
         abortControllers[sid] = abortCtrl
-        searchStatus.value = { phase: 'idle', queries: [], resultCount: 0, topTitles: [] }
 
         try {
           // 先发一条"执行中"占位消息
@@ -448,7 +245,7 @@ export const useChatStore = defineStore('chat', () => {
 
           await runner.startExecution({
             steps: dslResult.steps,
-            context: { userInput: text, files, date: `${dateStr} 星期${weekDay}`, searchResults: injectedContext },
+            context: { userInput: text, files, date: `${dateStr} 星期${weekDay}` },
             apiKey: settingsStore.apiKey,
             model: currentModel.value,
             thinking: thinkingEnabled.value ? 'enabled' : 'disabled',
@@ -512,15 +309,6 @@ export const useChatStore = defineStore('chat', () => {
     // 3. 日期信息
     systemPrompt += `当前日期：${dateStr} 星期${weekDay}。`
 
-    // 4. 搜索状态
-    if (injectedContext.length > 0) {
-      systemPrompt += '\n联网搜索结果已注入。正文中用【来源 N】标注，末尾列出所有来源，每条格式：\n【来源 N】标题\nURL\n（URL必须单独一行，以http开头）'
-    } else if (webSearchEnabled.value) {
-      systemPrompt += '\n联网搜索已开启但本次未能获取结果。请如实告知用户搜索暂时不可用，建议稍后重试或更换关键词。'
-    } else {
-      systemPrompt += '\n用户可以使用"联网搜索"功能获取实时信息。当被问到新闻、实时数据等超出你知识范围的问题时，请告诉用户："需要实时信息，请点输入框下方"联网"按钮后再问一次。"'
-    }
-
     const apiMessages = [
       { role: 'system' as const, content: systemPrompt },
       ...historyMsgs.map(m => ({
@@ -537,8 +325,7 @@ export const useChatStore = defineStore('chat', () => {
     const abortCtrl = new AbortController()
     abortControllers[sid] = abortCtrl
 
-    // 清除搜索状态，准备流式输出
-    searchStatus.value = { phase: 'idle', queries: [], resultCount: 0, topTitles: [] }
+    // 准备流式输出
     activeToolCalls.value = []
 
     try {
@@ -681,7 +468,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, webSearchEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, searchStatus, activeToolCalls, pendingApproval, currentModel, lastUsageData,
-    sendMessage, clearMessages, loadFromSession, toggleThinking, toggleWebSearch, retryMessage, stopGenerating, resolveApproval,
+    messages, streaming, streamingThinking, thinkingEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, activeToolCalls, pendingApproval, currentModel, lastUsageData,
+    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage, stopGenerating, resolveApproval,
   }
 })

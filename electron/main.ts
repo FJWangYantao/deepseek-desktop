@@ -3,7 +3,6 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { existsSync } from 'fs'
 import { registerStorageHandlers } from './ipc/storage'
-import { registerSearchHandlers } from './ipc/search'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
 import { registerExportHandlers } from './ipc/export'
@@ -63,7 +62,6 @@ Menu.setApplicationMenu(
   )
 
 registerStorageHandlers()
-registerSearchHandlers()
 registerAvatarHandlers()
 registerFileHandlers()
 registerExportHandlers()

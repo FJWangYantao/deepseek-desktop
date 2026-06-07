@@ -96,47 +96,8 @@ watch(() => chatStore.messages.length, () => {
         :message="msg"
       />
 
-      <!-- 搜索状态 -->
-      <div v-if="chatStore.searchStatus.phase !== 'idle'" class="mb-6">
-        <div class="flex items-start gap-3">
-          <div
-            :class="[
-              'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 overflow-hidden',
-              avatarUrl ? 'bg-transparent' : 'bg-app-accent text-white'
-            ]"
-          >
-            <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-contain" />
-            <span v-else>D</span>
-          </div>
-          <div class="min-w-0 flex-1 text-xs text-app-muted">
-            <!-- 搜索中 -->
-            <template v-if="chatStore.searchStatus.phase === 'searching'">
-              <span class="inline-flex items-center gap-1.5">
-                <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                搜索：{{ chatStore.searchStatus.queries.join(', ') }}
-              </span>
-            </template>
-            <!-- 搜索完成 -->
-            <template v-else>
-              <div v-if="chatStore.searchStatus.resultCount > 0">
-                <span>已获取 {{ chatStore.searchStatus.resultCount }} 条结果</span>
-                <div class="mt-1 space-y-0.5 opacity-60">
-                  <div v-for="(t, i) in chatStore.searchStatus.topTitles" :key="i" class="truncate">
-                    {{ i + 1 }}. {{ t }}
-                  </div>
-                </div>
-              </div>
-              <span v-else>未获取到有效结果</span>
-            </template>
-          </div>
-        </div>
-      </div>
-
       <!-- 等待首 token -->
-      <div v-if="chatStore.isGenerating && !chatStore.streaming && !chatStore.streamingThinking && chatStore.searchStatus.phase === 'idle'" class="mb-6">
+      <div v-if="chatStore.isGenerating && !chatStore.streaming && !chatStore.streamingThinking" class="mb-6">
         <div class="flex items-start gap-3">
           <div
             :class="[

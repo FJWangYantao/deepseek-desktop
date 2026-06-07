@@ -31,8 +31,6 @@ interface Window {
     setStore: (key: string, value: string) => Promise<boolean>
     getStore: (key: string) => Promise<string | null>
     deleteStore: (key: string) => Promise<boolean>
-    webSearch: (query: string) => Promise<SearchResult[]>
-    fetchUrl: (url: string) => Promise<string>
     selectAvatar: () => Promise<string | null>
     getAvatar: () => Promise<string | null>
     selectFiles: () => Promise<FileInfo[]>

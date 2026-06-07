@@ -4,7 +4,6 @@ import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
 import ModelSelector from './ModelSelector.vue'
 import ThinkingToggle from './ThinkingToggle.vue'
-import WebSearchToggle from './WebSearchToggle.vue'
 import FileAttach from './FileAttach.vue'
 import SkillSelector from './SkillSelector.vue'
 import ContextRing from './ContextRing.vue'
@@ -112,7 +111,6 @@ function onPaste(e: ClipboardEvent) {
         <div class="flex items-center justify-between px-3 pb-2.5">
           <div class="flex gap-1.5 items-center">
             <ModelSelector />
-            <WebSearchToggle />
             <ThinkingToggle />
             <SkillSelector />
             <ContextRing

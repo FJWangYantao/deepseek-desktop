@@ -12,9 +12,9 @@ const showPanel = ref(false)
 const ringEl = ref<HTMLElement | null>(null)
 const panelPos = ref({ x: 0, y: 0 })
 
-const radius = 10
+const radius = 7
 const circumference = 2 * Math.PI * radius
-const stroke = 2.5
+const stroke = 2
 
 const dashOffset = computed(() => {
   const pct = Math.min(100, Math.max(0, props.percentage))
@@ -43,11 +43,6 @@ const pctDisplay = computed(() => {
 })
 
 const remaining = computed(() => Math.max(0, props.contextLength - props.tokenCount))
-
-const displayPct = computed(() => {
-  if (props.percentage < 1) return '<1'
-  return Math.round(props.percentage).toString()
-})
 
 function updatePos() {
   if (!ringEl.value) return
@@ -83,18 +78,16 @@ onBeforeUnmount(() => {
     @mouseenter="onEnter"
     @mouseleave="onLeave"
   >
-    <svg width="28" height="28" viewBox="0 0 28 28" class="cursor-pointer">
-      <circle cx="14" cy="14" :r="radius" fill="none"
+    <svg width="20" height="20" viewBox="0 0 20 20" class="cursor-pointer">
+      <circle cx="10" cy="10" :r="radius" fill="none"
         stroke="var(--app-border)" :stroke-width="stroke" />
-      <circle cx="14" cy="14" :r="radius" fill="none"
+      <circle cx="10" cy="10" :r="radius" fill="none"
         :stroke="ringColor" :stroke-width="stroke"
         stroke-linecap="round"
         :stroke-dasharray="circumference"
         :stroke-dashoffset="dashOffset"
-        transform="rotate(-90 14 14)"
+        transform="rotate(-90 10 10)"
         style="transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease" />
-      <text x="14" y="17.5" text-anchor="middle"
-        font-size="7" font-weight="600" :fill="ringColor">{{ displayPct }}</text>
     </svg>
   </div>
 
