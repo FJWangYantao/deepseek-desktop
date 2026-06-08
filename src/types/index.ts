@@ -1,3 +1,8 @@
+export interface QuoteItem {
+  text: string
+  messageId: string
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -5,6 +10,8 @@ export interface Message {
   thinking?: string
   thinkingExpanded?: boolean
   attachments?: { name: string; size: number; type?: 'file' | 'image'; text?: string }[]
+  quotes?: QuoteItem[]
+  /** @deprecated 旧版单引用，仅用于历史数据渲染兼容 */
   quote?: { text: string; messageId: string }
   timestamp: number
 }

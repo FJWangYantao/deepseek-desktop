@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const chatStore = useChatStore()
 const { avatarUrl, loadAvatar } = useAvatar()
-const { setQuote } = useQuote()
+const { addQuote } = useQuote()
 const copied = ref(false)
 const contentRef = ref<HTMLElement>()
 const showQuoteBtn = ref(false)
@@ -42,7 +42,7 @@ function onContentMouseUp() {
 }
 
 function handleQuote() {
-  setQuote(selectedText.value, props.message.id)
+  addQuote(selectedText.value, props.message.id)
   showQuoteBtn.value = false
   window.getSelection()?.removeAllRanges()
 }
@@ -79,7 +79,14 @@ function retry() {
     <!-- 用户消息 -->
     <div v-if="message.role === 'user'" class="flex flex-col items-end">
       <div ref="contentRef" @mouseup="onContentMouseUp" class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm overflow-hidden">
-        <div v-if="message.quote" class="mb-2 pl-3 border-l-2 border-app-accent text-app-muted text-[13px] leading-[1.6] line-clamp-3" :style="{ fontSize: 'calc(var(--app-font-size) - 1px)' }">{{ message.quote.text }}</div>
+        <div v-if="message.quotes?.length" class="mb-2 space-y-1">
+          <div
+            v-for="(q, i) in message.quotes" :key="i"
+            class="pl-3 border-l-2 border-app-accent text-app-muted text-[13px] leading-[1.6] line-clamp-3"
+            :style="{ fontSize: 'calc(var(--app-font-size) - 1px)' }"
+          >{{ q.text }}</div>
+        </div>
+        <div v-else-if="(message as any).quote" class="mb-2 pl-3 border-l-2 border-app-accent text-app-muted text-[13px] leading-[1.6] line-clamp-3" :style="{ fontSize: 'calc(var(--app-font-size) - 1px)' }">{{ (message as any).quote.text }}</div>
         <p class="text-app-text whitespace-pre-wrap break-words leading-[1.8]" :style="{ fontSize: 'var(--app-font-size)' }">{{ message.content }}</p>
         <div v-if="message.attachments?.length" class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-app-border">
           <span

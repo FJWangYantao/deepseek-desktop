@@ -10,7 +10,17 @@ function generateId() {
 function loadSessions(): ChatSession[] {
   try {
     const raw = localStorage.getItem('ds_sessions')
-    return raw ? JSON.parse(raw) : []
+    const sessions: ChatSession[] = raw ? JSON.parse(raw) : []
+    // 迁移旧 quote 字段到 quotes
+    for (const session of sessions) {
+      for (const msg of session.messages) {
+        if ((msg as any).quote && !msg.quotes) {
+          msg.quotes = [(msg as any).quote]
+          delete (msg as any).quote
+        }
+      }
+    }
+    return sessions
   } catch {
     return []
   }

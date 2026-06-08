@@ -49,14 +49,12 @@ async function send() {
       const el = document.querySelector('.chat-textarea') as HTMLTextAreaElement
       if (el) { el.style.height = '' }
     })
-    const quoteData = quote.quoteText.value
-      ? { text: quote.quoteText.value, messageId: quote.quoteMessageId.value }
-      : undefined
-    quote.clearQuote()
+    const quotesData = quote.quotes.value.length > 0 ? [...quote.quotes.value] : undefined
+    quote.clearQuotes()
     await chatStore.sendMessage(
       text,
       normalFiles.length > 0 ? normalFiles : undefined,
-      quoteData,
+      quotesData,
       imageFiles.length > 0 ? imageFiles : undefined,
     )
   } catch {
@@ -202,13 +200,18 @@ function handleDrop(e: DragEvent) {
             <button @click="fileAttachRef.removeFile(i)" class="hover:text-red-500 transition-colors">&times;</button>
           </span>
         </div>
-        <!-- 引用预览 -->
-        <div v-if="quote.quoteText.value" class="flex items-start gap-2 px-4 py-2 border-b border-app-border bg-app-accent-soft/30">
-          <div class="flex-1 min-w-0">
-            <div class="text-[11px] text-app-accent font-medium mb-0.5">引用</div>
-            <div class="text-xs text-app-muted line-clamp-2 leading-[1.6]">{{ quote.quoteText.value }}</div>
+        <!-- 引用预览（多条） -->
+        <div v-if="quote.hasQuotes.value" class="px-4 py-2 border-b border-app-border bg-app-accent-soft/30">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] text-app-accent font-medium">引用 ({{ quote.quotes.value.length }})</span>
+            <button @click="quote.clearQuotes()" class="text-[11px] text-app-muted hover:text-red-500 transition-colors">清除全部</button>
           </div>
-          <button @click="quote.clearQuote()" class="text-app-muted hover:text-red-500 text-lg leading-none mt-0.5">&times;</button>
+          <div class="space-y-1">
+            <div v-for="(q, i) in quote.quotes.value" :key="q.messageId + '-' + i" class="flex items-start gap-2">
+              <div class="flex-1 min-w-0 text-xs text-app-muted line-clamp-2 leading-[1.6]">{{ q.text }}</div>
+              <button @click="quote.removeQuote(i)" class="text-app-muted hover:text-red-500 text-sm leading-none mt-0.5 shrink-0">&times;</button>
+            </div>
+          </div>
         </div>
         <textarea
           v-model="inputText"

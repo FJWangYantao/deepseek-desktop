@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, watch, computed, nextTick } from 'vue'
-import type { Message, UsageData, ToolCallUIState } from '@/types'
+import type { Message, QuoteItem, UsageData, ToolCallUIState } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
@@ -164,7 +164,7 @@ export const useChatStore = defineStore('chat', () => {
   async function sendMessage(
     text: string,
     files?: {name: string, text: string, size: number}[],
-    quote?: { text: string; messageId: string },
+    quotes?: QuoteItem[],
     imageFiles?: { path: string; name: string; ext: string; size: number }[],
   ) {
     const sid = sessionStore.ensureSession()
@@ -196,7 +196,7 @@ export const useChatStore = defineStore('chat', () => {
         const ext = f.ext ?? '.' + (f.name.split('.').pop() ?? '').toLowerCase()
         return { name: f.name, size: f.size, type: IMAGE_EXTS.has(ext) ? 'image' as const : 'file' as const, text: f.text }
       }),
-      quote: quote ? { text: quote.text, messageId: quote.messageId } : undefined,
+      quotes: quotes && quotes.length > 0 ? [...quotes] : undefined,
       timestamp: Date.now(),
     }
     const sess = sessionStore.sessions.find(s => s.id === sid)
@@ -280,12 +280,20 @@ export const useChatStore = defineStore('chat', () => {
     if (allFiles.length > 0) {
       userContent = buildFileContext(allFiles) + '\n\n用户问题：' + text
     }
-    if (quote && quote.text) {
-      const quoteBlock = `[用户引用了对话中的以下内容]\n> ${quote.text.replace(/\n/g, '\n> ')}\n\n`
+    if (quotes && quotes.length > 0) {
+      const count = quotes.length
+      const header = count === 1
+        ? '[用户引用了对话中的以下内容]\n'
+        : `[用户引用了对话中的以下 ${count} 段内容]\n`
+      const quoteBlocks = quotes.map((q, i) => {
+        const label = count === 1 ? '' : `引用 ${i + 1}：\n`
+        return label + `> ${q.text.replace(/\n/g, '\n> ')}`
+      }).join('\n\n')
+      const quoteSection = header + quoteBlocks + '\n\n'
       if (allFiles.length > 0) {
-        userContent = buildFileContext(allFiles) + '\n\n' + quoteBlock + '用户问题：' + text
+        userContent = buildFileContext(allFiles) + '\n\n' + quoteSection + '用户问题：' + text
       } else {
-        userContent = quoteBlock + '用户问题：' + text
+        userContent = quoteSection + '用户问题：' + text
       }
     }
 
@@ -561,11 +569,17 @@ export const useChatStore = defineStore('chat', () => {
     const files = userMsg.attachments?.filter(a => a.text).map(a => ({
       name: a.name, size: a.size, text: a.text!,
     }))
-    const quoteData = userMsg.quote
+    // 兼容旧 quote 字段：优先使用 quotes，回退到 quote（转为单元素数组）
+    let quotesData = userMsg.quotes
+    if (!quotesData || quotesData.length === 0) {
+      if ((userMsg as any).quote) {
+        quotesData = [(userMsg as any).quote]
+      }
+    }
     // 删除这条用户消息及之后的所有回复
     messages.value = messages.value.slice(0, idx)
     await nextTick()
-    sendMessage(userMsg.content, files && files.length > 0 ? files : undefined, quoteData)
+    sendMessage(userMsg.content, files && files.length > 0 ? files : undefined, quotesData)
   }
 
   return {
