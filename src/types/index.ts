@@ -1,3 +1,5 @@
+import type { ToolCallUIState } from './tools'
+
 export interface QuoteItem {
   text: string
   messageId: string
@@ -13,6 +15,8 @@ export interface Message {
   quotes?: QuoteItem[]
   /** @deprecated 旧版单引用，仅用于历史数据渲染兼容 */
   quote?: { text: string; messageId: string }
+  /** 工具调用记录（生成完成后持久化到消息上） */
+  toolCalls?: ToolCallUIState[]
   timestamp: number
 }
 

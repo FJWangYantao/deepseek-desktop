@@ -480,13 +480,17 @@ export const useChatStore = defineStore('chat', () => {
       fullContent = loopResult.content
       fullThinking = loopResult.thinking
 
-      // 完成，归档消息到目标会话
+      // 完成，归档消息到目标会话（含工具调用记录）
+      const finalToolCalls = sessionStore.currentId === sid
+        ? [...activeToolCalls.value]
+        : (bgToolCalls[sid] ? [...bgToolCalls[sid]] : [])
       const aiMsg: Message = {
         id: generateId(),
         role: 'assistant',
         content: fullContent,
         thinking: fullThinking || undefined,
         thinkingExpanded: thinkingManuallyExpanded.value || undefined,
+        toolCalls: finalToolCalls.length > 0 ? finalToolCalls : undefined,
         timestamp: Date.now(),
       }
       const targetSession = sessionStore.sessions.find(s => s.id === sid)

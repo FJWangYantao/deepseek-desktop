@@ -21,11 +21,19 @@ export function fixCjkEmphasis(text: string): string {
     .replace(new RegExp(`(${C})(\\*)(?!\\*)`, 'g'), `$1${ZWSP}$2`)
     .replace(new RegExp(`(${C})(_)(?!_)`, 'g'), `$1${ZWSP}$2`)
 
-  // 修复行首界符紧跟标点导致左界符识别失败（CommonMark 左界符规则）
-  // 例：**"迷茫"... 中 ** 在行首且紧跟 "，不满足 left-flanking 条件
+  // 修复界符与标点相邻导致的 CommonMark 界符识别失败：
+  // - 左界符（**"...）：界符后紧跟标点 → ** 与标点间插 ZWSP
+  // - 右界符（"**）：标点紧贴界符前 → 标点与 ** 间插 ZWSP
+  // 注意：仅处理双界符 ** / __，单界符 * / _ 保留行首修复即可，
+  // 因为 * 本身是 Unicode 标点，全位置替换会误匹配 ** 自身导致拆分。
   text = text
-    .replace(/(^|\n)(\*\*)(\p{P})/gu, `$1$2${ZWSP}$3`)
-    .replace(/(^|\n)(__)(\p{P})/gu, `$1$2${ZWSP}$3`)
+    .replace(/(\*\*)(\p{P})/gu, `$1${ZWSP}$2`)
+    .replace(/(\p{P})(\*\*)/gu, `$1${ZWSP}$2`)
+    .replace(/(__)(\p{P})/gu, `$1${ZWSP}$2`)
+    .replace(/(\p{P})(__)/gu, `$1${ZWSP}$2`)
+
+  // 行首单界符修复（原始逻辑，仅行首安全）
+  text = text
     .replace(/(^|\n)(\*)(?!\*)(\p{P})/gu, `$1$2${ZWSP}$3`)
     .replace(/(^|\n)(_)(?!_)(\p{P})/gu, `$1$2${ZWSP}$3`)
 

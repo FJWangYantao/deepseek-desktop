@@ -114,37 +114,17 @@ watch(() => chatStore.messages.length, () => {
       </div>
     </div>
     <div class="max-w-[860px] mx-auto">
-      <MessageItem
-        v-for="msg in chatStore.messages"
-        :key="msg.id"
-        :message="msg"
-      />
+      <template v-for="msg in chatStore.messages" :key="msg.id">
+        <!-- AI 消息附带的工具调用：拆成独立行，排在 AI 回复之前 -->
+        <ToolCallStatus
+          v-if="msg.role === 'assistant' && msg.toolCalls?.length"
+          :calls="msg.toolCalls"
+        />
+        <MessageItem :message="msg" />
+      </template>
 
-      <!-- 等待首 token -->
-      <div v-if="chatStore.isGenerating && !chatStore.streaming && !chatStore.streamingThinking" class="mb-6">
-        <div class="flex items-start gap-3">
-          <div
-            :class="[
-              'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 overflow-hidden',
-              avatarUrl ? 'bg-transparent' : 'bg-app-accent text-white'
-            ]"
-          >
-            <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-contain" />
-            <span v-else>D</span>
-          </div>
-          <div class="flex items-center gap-1 py-1.5">
-            <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 0ms" />
-            <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 150ms" />
-            <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 300ms" />
-          </div>
-        </div>
-      </div>
-
-      <!-- 工具调用状态：仅当当前会话正在生成时显示，防止切换会话后工具结果泄漏 -->
-      <ToolCallStatus v-if="chatStore.activeToolCalls.length > 0 && chatStore.isGenerating" :calls="chatStore.activeToolCalls" />
-
-      <!-- 流式输出 -->
-      <div v-if="chatStore.streaming || chatStore.streamingThinking" class="mb-6">
+      <!-- AI 生成区域：统一头像区域，混合等待/工具调用/思考/流式内容 -->
+      <div v-if="chatStore.isGenerating || chatStore.streaming || chatStore.streamingThinking" class="mb-6">
         <div class="flex items-start gap-3">
           <div
             :class="[
@@ -156,6 +136,17 @@ watch(() => chatStore.messages.length, () => {
             <span v-else>D</span>
           </div>
           <div class="min-w-0 flex-1">
+            <!-- 等待首 token（无工具调用时） -->
+            <div v-if="chatStore.isGenerating && !chatStore.streaming && !chatStore.streamingThinking && chatStore.activeToolCalls.length === 0" class="flex items-center gap-1 py-1.5">
+              <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 0ms" />
+              <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 150ms" />
+              <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 300ms" />
+            </div>
+
+            <!-- 工具调用行：混在 AI 流中，逐行排列 -->
+            <ToolCallStatus v-if="chatStore.activeToolCalls.length > 0 && chatStore.isGenerating" :calls="chatStore.activeToolCalls" />
+
+            <!-- 思考过程 -->
             <div v-if="chatStore.streamingThinking" class="mb-3">
               <details :open="isThinkingActive || chatStore.thinkingManuallyExpanded" @toggle="onThinkingToggle" class="text-xs">
                 <summary class="text-app-muted hover:text-app-heading cursor-pointer font-medium">
@@ -166,7 +157,8 @@ watch(() => chatStore.messages.length, () => {
                 </div>
               </details>
             </div>
-            <!-- 已闭合的 Markdown 部分：用 marked 实时渲染 -->
+
+            <!-- 流式内容 -->
             <div
               v-if="streamHtml"
               class="text-app-text leading-[1.8] markdown-body prose-sm max-w-none
@@ -178,7 +170,6 @@ watch(() => chatStore.messages.length, () => {
               :style="{ fontSize: 'var(--app-font-size)' }"
               v-html="streamHtml"
             />
-            <!-- 未闭合的代码块部分：纯文本 + 光标 -->
             <div class="text-app-text whitespace-pre-wrap leading-[1.8]" :style="{ fontSize: 'var(--app-font-size)' }">
               {{ streamingPending }}<StreamCursor v-if="streamingPending || !streamHtml" />
             </div>
