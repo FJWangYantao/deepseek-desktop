@@ -378,7 +378,12 @@ export const useChatStore = defineStore('chat', () => {
             content: `DSL 执行失败: ${dslError?.message || '未知错误'}`,
             timestamp: Date.now(),
           }
-          messages.value.push(errMsg)
+          if (sid === sessionStore.currentId) {
+            messages.value.push(errMsg)
+          } else {
+            const origSession = sessionStore.sessions.find(s => s.id === sid)
+            if (origSession) origSession.messages.push(errMsg)
+          }
         } finally {
           delete abortControllers[sid]
           const doneSid = sid
@@ -538,7 +543,12 @@ export const useChatStore = defineStore('chat', () => {
           content: `请求失败: ${e instanceof Error ? e.message : '未知错误'}`,
           timestamp: Date.now(),
         }
-        messages.value.push(errMsg)
+        if (sid === sessionStore.currentId) {
+          messages.value.push(errMsg)
+        } else {
+          const origSession = sessionStore.sessions.find(s => s.id === sid)
+          if (origSession) origSession.messages.push(errMsg)
+        }
       }
     } finally {
       delete abortControllers[sid]
@@ -576,10 +586,23 @@ export const useChatStore = defineStore('chat', () => {
         quotesData = [(userMsg as any).quote]
       }
     }
+    // 图片附件：已描述的其 text 已在 files 中；未描述的（如 MiMo 未配置时）保留附件展示，
+    // 文件路径未持久化故无法重新调用 MiMo，仅保留元数据用于消息气泡中的图片标签显示
+    const imageFiles = userMsg.attachments
+      ?.filter(a => a.type === 'image' && !a.text)
+      .map(a => {
+        const ext = a.name.includes('.') ? ('.' + a.name.split('.').pop()!.toLowerCase()) : '.png'
+        return { path: '', name: a.name, ext, size: a.size }
+      })
     // 删除这条用户消息及之后的所有回复
     messages.value = messages.value.slice(0, idx)
     await nextTick()
-    sendMessage(userMsg.content, files && files.length > 0 ? files : undefined, quotesData)
+    sendMessage(
+      userMsg.content,
+      files && files.length > 0 ? files : undefined,
+      quotesData,
+      imageFiles && imageFiles.length > 0 ? imageFiles : undefined,
+    )
   }
 
   return {

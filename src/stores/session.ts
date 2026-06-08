@@ -34,7 +34,10 @@ export const useSessionStore = defineStore('session', () => {
   watch(sessions, (val) => {
     try {
       localStorage.setItem('ds_sessions', JSON.stringify(val))
-    } catch { /* quota exceeded 等 */ }
+    } catch (e) {
+      console.error('[Session] 存储写入失败:', e)
+      alert('存储空间不足，部分数据可能丢失。建议导出重要会话或清理旧对话以释放空间。')
+    }
   }, { deep: true })
 
   watch(currentId, (val) => {
