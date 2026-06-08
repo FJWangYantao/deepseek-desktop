@@ -37,6 +37,7 @@ interface Window {
     parseFiles: (paths: string[]) => Promise<ParsedFile[]>
     getFilePath: (file: File) => string
     exportSession: (session: any, format: 'md' | 'html') => Promise<boolean>
+    exportMessage: (msg: import('../src/types').Message, format: 'md' | 'html') => Promise<boolean>
     listSkills: () => Promise<import('../electron/ipc/skills').SkillMeta[]>
     importSkill: (url: string) => Promise<import('../electron/ipc/skills').SkillMeta | null>
     saveSkill: (skill: import('../electron/ipc/skills').SkillMeta) => Promise<boolean>

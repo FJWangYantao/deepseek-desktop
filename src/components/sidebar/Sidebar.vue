@@ -14,6 +14,9 @@ const { avatarUrl, loadAvatar, changeAvatar } = useAvatar()
 onMounted(() => { loadAvatar() })
 
 function createSession() {
+  // 当前会话无消息时不创建新会话，防止误触产生空对话
+  const current = sessionStore.sessions.find(s => s.id === sessionStore.currentId)
+  if (current && current.messages.length === 0) return
   sessionStore.createSession()
 }
 </script>

@@ -1,6 +1,58 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { writeFileSync } from 'fs'
-import type { ChatSession } from '../../src/types'
+import type { ChatSession, Message } from '../../src/types'
+
+function buildMessageMarkdown(msg: Message): string {
+  const lines: string[] = []
+  if (msg.role === 'user') {
+    lines.push('# 用户消息')
+    lines.push('')
+    if (msg.attachments?.length) {
+      for (const a of msg.attachments) {
+        const size = a.size < 1024 ? `${a.size}B` : a.size < 1048576 ? `${(a.size / 1024).toFixed(1)}KB` : `${(a.size / 1048576).toFixed(1)}MB`
+        lines.push(`> 📎 ${a.name} (${size})`)
+      }
+      lines.push('')
+    }
+    lines.push(msg.content)
+  } else {
+    lines.push('# AI 回复')
+    lines.push('')
+    if (msg.thinking) {
+      lines.push('> 💭 思考过程：')
+      lines.push('> ' + msg.thinking.replace(/\n/g, '\n> '))
+      lines.push('')
+    }
+    lines.push(msg.content)
+  }
+  return lines.join('\n')
+}
+
+function buildMessageHtml(msg: Message): string {
+  const md = buildMessageMarkdown(msg)
+  const { marked } = require('marked')
+  const body = marked.parse(md) as string
+  const label = msg.role === 'user' ? '用户消息' : 'AI 回复'
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${label}</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.8; color: #333; }
+  h1 { border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+  blockquote { border-left: 3px solid #ddd; margin: 8px 0; padding: 4px 16px; color: #888; background: #f9f9f9; }
+  pre { background: #f5f5f5; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 14px; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>${body}</body>
+</html>`
+}
 
 function buildMarkdown(session: ChatSession): string {
   const now = new Date()
@@ -89,6 +141,27 @@ export function registerExportHandlers() {
     if (result.canceled || !result.filePath) return false
 
     const content = format === 'html' ? buildHtml(session) : buildMarkdown(session)
+    writeFileSync(result.filePath, content, 'utf-8')
+    return true
+  })
+
+  ipcMain.handle('export:message', async (_event, msg: Message, format: 'md' | 'html') => {
+    const ext = format === 'html' ? 'html' : 'md'
+    const filters = format === 'html'
+      ? [{ name: 'HTML 文件', extensions: ['html'] }]
+      : [{ name: 'Markdown 文件', extensions: ['md'] }]
+
+    const label = msg.role === 'user' ? '用户消息' : 'AI回复'
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    const result = await dialog.showSaveDialog(win!, {
+      title: '导出消息',
+      defaultPath: `${label}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.${ext}`,
+      filters,
+    })
+
+    if (result.canceled || !result.filePath) return false
+
+    const content = format === 'html' ? buildMessageHtml(msg) : buildMessageMarkdown(msg)
     writeFileSync(result.filePath, content, 'utf-8')
     return true
   })

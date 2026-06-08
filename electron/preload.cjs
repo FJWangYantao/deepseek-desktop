@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   parseFiles: (paths) => ipcRenderer.invoke('file:parse', paths),
   getFilePath: (file) => webUtils.getPathForFile(file),
   exportSession: (session, format) => ipcRenderer.invoke('export:session', session, format),
+  exportMessage: (msg, format) => ipcRenderer.invoke('export:message', msg, format),
   listSkills: () => ipcRenderer.invoke('skills:list'),
   importSkill: (url) => ipcRenderer.invoke('skills:import', url),
   saveSkill: (skill) => ipcRenderer.invoke('skills:save', skill),

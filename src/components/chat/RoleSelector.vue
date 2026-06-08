@@ -8,7 +8,7 @@ const btnRef = ref<HTMLElement>()
 onUnmounted(() => { show.value = false })
 const dropdownStyle = ref<Record<string, string>>({})
 
-const activeTemplate = settings.roleTemplates.find(r => r.id === settings.activeRoleId)
+const activeTemplate = settings.promptTemplates.find(r => r.id === settings.activeRoleId)
 
 function toggle() {
   show.value = !show.value
@@ -57,7 +57,7 @@ function select(id: string) {
         :style="dropdownStyle"
       >
         <button
-          v-for="r in settings.roleTemplates"
+          v-for="r in settings.promptTemplates"
           :key="r.id"
           @click="select(r.id)"
           class="w-full text-left px-3 py-2.5 mx-1 rounded-lg transition-colors flex items-center gap-2.5"

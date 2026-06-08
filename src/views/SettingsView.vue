@@ -47,19 +47,48 @@ const themes = [
         </label>
       </div>
 
+      <!-- 提示词库 -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <label class="block text-sm font-medium text-app-heading">提示词库</label>
+          <a href="https://api-docs.deepseek.com/zh-cn/prompt-library/" target="_blank"
+             class="text-xs text-app-accent hover:underline">官方提示词库 →</a>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            v-for="t in settings.promptTemplates"
+            :key="t.id"
+            @click="settings.selectRole(t.id)"
+            class="text-left px-3.5 py-3 rounded-lg border transition-colors"
+            :class="settings.activeRoleId === t.id
+              ? 'border-app-accent bg-app-accent-soft'
+              : 'border-app-border bg-app-input hover:bg-app-hover'"
+            :title="t.description"
+          >
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="text-base">{{ t.icon }}</span>
+              <span class="text-sm font-medium" :class="settings.activeRoleId === t.id ? 'text-app-accent' : 'text-app-heading'">{{ t.name }}</span>
+              <span v-if="t.type === 'user'" class="text-[10px] px-1 py-0.5 rounded bg-app-border text-app-muted">示例</span>
+            </div>
+            <p class="text-[11px] text-app-muted line-clamp-2 leading-[1.5]">{{ t.description }}</p>
+          </button>
+        </div>
+        <p class="text-xs text-app-muted mt-2">点击卡片选择提示词模板，提示词将自动填入下方输入框。标注"示例"的模板为官方用户提示词示例，无官方 SYSTEM 提示词。</p>
+      </div>
+
       <!-- 系统提示词 -->
       <div class="mb-8">
         <label class="block text-sm font-medium text-app-heading mb-2">系统提示词</label>
         <textarea
           :value="settings.systemPrompt"
-          @input="settings.systemPrompt = ($event.target as HTMLTextAreaElement).value"
+          @input="settings.systemPrompt = ($event.target as HTMLTextAreaElement).value; settings.activeRoleId = 'custom'"
           placeholder="设定 AI 的行为规则、角色、回答风格等..."
           rows="5"
           class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
                  text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
                  transition-colors resize-y min-h-[100px]"
         ></textarea>
-        <p class="text-xs text-app-muted mt-1.5">自定义提示词将注入到每轮对话的开头，用于设定 AI 角色、行为规则和回答风格。</p>
+        <p class="text-xs text-app-muted mt-1.5">自定义提示词将注入到每轮对话的开头，用于设定 AI 角色、行为规则和回答风格。选择上方提示词库或手动编辑。</p>
       </div>
 
       <!-- 视觉模型（伪多模态） -->
@@ -194,7 +223,7 @@ const themes = [
       <!-- 关于 -->
       <div>
         <h3 class="text-sm font-medium text-app-heading mb-2">关于</h3>
-        <p class="text-sm text-app-muted">DeepSeek Desktop v1.5.1</p>
+        <p class="text-sm text-app-muted">DeepSeek Desktop v1.9.0</p>
         <p class="text-xs text-app-muted mt-1">Electron + Vue 3 + Tailwind CSS</p>
       </div>
     </div>

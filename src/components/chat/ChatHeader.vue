@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { useSessionStore } from '@/stores/session'
-import { useSettingsStore } from '@/stores/settings'
 import { computed, toRaw } from 'vue'
-import RoleSelector from './RoleSelector.vue'
 
 const sessionStore = useSessionStore()
-const settings = useSettingsStore()
 
 const title = computed(() => {
   const session = sessionStore.sessions.find(s => s.id === sessionStore.currentId)
@@ -30,7 +27,6 @@ async function exportSession(format: 'md' | 'html') {
   <div class="px-5 py-3 border-b border-app-border flex items-center justify-between">
     <h1 class="text-sm font-medium text-app-heading truncate">{{ title }}</h1>
     <div class="flex items-center gap-2 shrink-0 ml-4">
-      <RoleSelector />
       <button
         @click="exportSession('md')"
         class="flex items-center gap-1 px-2 py-1 text-xs rounded-md border border-app-border

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useSessionStore } from '@/stores/session'
 import { useChatStore } from '@/stores/chat'
-import ChatHeader from '@/components/chat/ChatHeader.vue'
 import MessageList from '@/components/chat/MessageList.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import InputDialog from '@/components/skills/InputDialog.vue'
@@ -31,7 +30,6 @@ function handleToolDeny() {
 
 <template>
   <div class="flex-1 flex flex-col min-w-0 bg-app-bg">
-    <ChatHeader />
     <MessageList />
     <ChatInput />
     <InputDialog
