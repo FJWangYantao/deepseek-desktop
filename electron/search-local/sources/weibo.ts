@@ -9,7 +9,7 @@ function httpsGet(url: string): Promise<string> {
         'Accept': 'application/json',
         'Referer': 'https://weibo.com',
       },
-      timeout: 8000,
+      timeout: 15000,
     }, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         resolve(httpsGet(new URL(res.headers.location, url).href))

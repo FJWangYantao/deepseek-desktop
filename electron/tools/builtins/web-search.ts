@@ -34,7 +34,7 @@ export const webSearchTool: ToolExecutor = {
       await localSearchEngine.ensureInitialized()
       const stats = localSearchEngine.getStats()
       console.log(`[web_search] 本地索引状态: ${stats.totalItems} 条, 来源: [${stats.sources.join(',')}]`)
-      const localResults = localSearchEngine.search(query, { limit: 8 })
+      const localResults = localSearchEngine.search(query, { limit: 15 })
       console.log(`[web_search] 本地命中: ${localResults.length} 条`)
       if (localResults.length >= 1) {
         return '【本地热点索引】\n' + localResults

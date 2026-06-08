@@ -8,7 +8,7 @@ function httpsGet(url: string): Promise<string> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/vnd.github.v3+json',
       },
-      timeout: 10000,
+      timeout: 15000,
     }, (res) => {
       const chunks: Buffer[] = []
       res.on('data', (c: Buffer) => chunks.push(c))

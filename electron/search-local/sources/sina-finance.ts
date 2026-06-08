@@ -8,7 +8,7 @@ function httpsGet(url: string): Promise<string> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json',
       },
-      timeout: 8000,
+      timeout: 15000,
     }, (res) => {
       const chunks: Buffer[] = []
       res.on('data', (c: Buffer) => chunks.push(c))
@@ -32,7 +32,7 @@ export const sinaFinanceSource: DataSource = {
   refreshInterval: 5 * 60 * 1000,
   dailyLimit: 0,
   async fetch() {
-    const raw = await httpsGet('https://feed.mix.sina.com.cn/api/roll/get?pageid=155&lid=2503&num=30&versionNumber=1.2.4')
+    const raw = await httpsGet('https://feed.mix.sina.com.cn/api/roll/get?pageid=153&lid=2509&num=30&versionNumber=1.2.4')
     const data = JSON.parse(raw)
     const items = data?.result?.data
     if (!Array.isArray(items)) return []

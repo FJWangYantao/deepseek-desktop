@@ -10,7 +10,7 @@ function httpsRequest(url: string, headers: Record<string, string>): Promise<str
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         ...headers,
       },
-      timeout: 8000,
+      timeout: 15000,
     }, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         httpsRequest(res.headers.location, headers).then(resolve).catch(reject)

@@ -5,7 +5,7 @@ function httpsGet(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
-      timeout: 8000,
+      timeout: 15000,
     }, (res) => {
       const chunks: Buffer[] = []
       res.on('data', (c: Buffer) => chunks.push(c))

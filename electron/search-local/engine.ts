@@ -2,6 +2,18 @@ import type { LocalSearchItem, DataSource } from './types'
 import { allSources } from './sources'
 import { deduplicateAcrossSources } from './aggregator'
 
+// 来源名 → 匹配别名列表（小写），用于识别"微博热榜"等来源级查询
+const SOURCE_ALIASES: Record<string, string[]> = {
+  weibo: ['微博', 'weibo'],
+  zhihu: ['知乎', 'zhihu'],
+  bilibili: ['b站', '哔哩哔哩', 'bilibili'],
+  baidu: ['百度', 'baidu'],
+  toutiao: ['头条', '今日头条', 'toutiao'],
+  'sina-finance': ['新浪财经', 'sina'],
+  github: ['github', 'github'],
+  hackernews: ['hacker news', 'hn', 'hackernews'],
+}
+
 export class LocalSearchEngine {
   private items: LocalSearchItem[] = []
   private keywordIndex = new Map<string, Set<number>>()
@@ -57,6 +69,18 @@ export class LocalSearchEngine {
 
   search(query: string, options?: { category?: string; limit?: number }): LocalSearchItem[] {
     const limit = options?.limit || 10
+
+    // 来源级查询识别：如果 query 包含来源名，直接返回该来源全部数据
+    const matchedSource = this.detectSource(query)
+    if (matchedSource) {
+      let results = this.items
+        .filter(i => i.source === matchedSource)
+        .sort((a, b) => b.score - a.score)
+      if (options?.category) results = results.filter(r => r.category === options.category)
+      console.log(`[LocalSearch] 来源查询 "${query}" → 命中 ${matchedSource}: ${results.length} 条`)
+      return results.slice(0, limit)
+    }
+
     const queryKws = this.extractQueryKeywords(query)
 
     if (queryKws.length === 0) {
@@ -104,6 +128,16 @@ export class LocalSearchEngine {
     const cjk = lower.match(/[一-鿿]{2,4}/g) || []
     const en = lower.match(/[a-z0-9]+/g) || []
     return [...new Set([...cjk, ...en])]
+  }
+
+  private detectSource(query: string): string | null {
+    const lower = query.toLowerCase()
+    for (const [sourceName, aliases] of Object.entries(SOURCE_ALIASES)) {
+      for (const alias of aliases) {
+        if (lower.includes(alias)) return sourceName
+      }
+    }
+    return null
   }
 
   getStats() {

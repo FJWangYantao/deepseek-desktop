@@ -172,7 +172,7 @@ export const useChatStore = defineStore('chat', () => {
       generateTitle(sid, text)
     }
 
-    // 添加用户消息
+    // 添加用户消息（直接写入 session 再同步，避免 loadFromSession 竞争覆盖）
     const userMsg: Message = {
       id: generateId(),
       role: 'user',
@@ -180,7 +180,11 @@ export const useChatStore = defineStore('chat', () => {
       attachments: files?.map(f => ({ name: f.name, size: f.size })),
       timestamp: Date.now(),
     }
-    messages.value.push(userMsg)
+    const sess = sessionStore.sessions.find(s => s.id === sid)
+    if (sess) sess.messages.push(userMsg)
+    if (sessionStore.currentId === sid) {
+      messages.value = sess?.messages ?? messages.value
+    }
 
     // 流式生成
     isGenerating.value = true
