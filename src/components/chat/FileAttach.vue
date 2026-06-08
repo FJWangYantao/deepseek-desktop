@@ -4,6 +4,12 @@ import { ref } from 'vue'
 const files = ref<FileInfo[]>([])
 const parsing = ref(false)
 
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svg'])
+
+function isImage(ext: string): boolean {
+  return IMAGE_EXTS.has(ext.toLowerCase())
+}
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes}B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`
@@ -30,8 +36,12 @@ async function parseAll(): Promise<ParsedFile[]> {
   if (files.value.length === 0) return []
   parsing.value = true
   try {
-    const paths = files.value.map(f => f.path)
-    return await window.electronAPI!.parseFiles(paths)
+    // 跳过图片文件，只解析文本文件
+    const nonImagePaths = files.value
+      .filter(f => !IMAGE_EXTS.has(f.ext.toLowerCase()))
+      .map(f => f.path)
+    if (nonImagePaths.length === 0) return []
+    return await window.electronAPI!.parseFiles(nonImagePaths)
   } finally {
     parsing.value = false
   }

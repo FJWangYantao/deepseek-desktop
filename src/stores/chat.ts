@@ -156,7 +156,12 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(text: string, files?: {name: string, text: string, size: number}[], quote?: { text: string; messageId: string }) {
+  async function sendMessage(
+    text: string,
+    files?: {name: string, text: string, size: number}[],
+    quote?: { text: string; messageId: string },
+    imageFiles?: { path: string; name: string; ext: string; size: number }[],
+  ) {
     const sid = sessionStore.ensureSession()
     generatingSessionId.value = sid
     generatingSessions.value = { ...generatingSessions.value, [sid]: true }
@@ -173,11 +178,19 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     // 添加用户消息（直接写入 session 再同步，避免 loadFromSession 竞争覆盖）
+    const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svg'])
+    const allAttachments: { name: string; size: number; ext?: string; text?: string }[] = [
+      ...(files ?? []).map(f => ({ name: f.name, size: f.size, text: f.text })),
+      ...(imageFiles ?? []).map(img => ({ name: img.name, size: img.size, ext: img.ext })),
+    ]
     const userMsg: Message = {
       id: generateId(),
       role: 'user',
       content: text,
-      attachments: files?.map(f => ({ name: f.name, size: f.size })),
+      attachments: allAttachments.map(f => {
+        const ext = f.ext ?? '.' + (f.name.split('.').pop() ?? '').toLowerCase()
+        return { name: f.name, size: f.size, type: IMAGE_EXTS.has(ext) ? 'image' as const : 'file' as const, text: f.text }
+      }),
       quote: quote ? { text: quote.text, messageId: quote.messageId } : undefined,
       timestamp: Date.now(),
     }
@@ -193,6 +206,64 @@ export const useChatStore = defineStore('chat', () => {
     streamingThinking.value = ''
     thinkingManuallyExpanded.value = false
 
+    // ===== 图片描述（在聊天区显示进度） =====
+    const imageDescriptions: { name: string; text: string; size: number }[] = []
+    if (imageFiles && imageFiles.length > 0) {
+      if (!settingsStore.mimoApiKey) {
+        for (const img of imageFiles) {
+          imageDescriptions.push({ name: img.name, text: '[未配置视觉模型 API Key，无法描述图片内容]', size: img.size })
+        }
+      } else {
+        // 并发描述所有图片，实时更新进度
+        const total = imageFiles.length
+        let done = 0
+        const updateProgress = () => {
+          if (sessionStore.currentId === sid) {
+            streaming.value = `正在识别图片（${done}/${total}）...`
+          }
+        }
+        updateProgress()
+
+        const tasks = imageFiles.map(async (img) => {
+          try {
+            const result = await window.electronAPI!.describeImage({
+              path: img.path,
+              apiKey: settingsStore.mimoApiKey,
+              baseUrl: settingsStore.mimoBaseUrl,
+              model: settingsStore.mimoModel,
+            })
+            done++
+            updateProgress()
+            if (result.error) {
+              return { name: img.name, text: `[图片描述失败: ${result.error}]`, size: img.size }
+            }
+            return { name: img.name, text: result.description, size: img.size }
+          } catch (e) {
+            done++
+            updateProgress()
+            return { name: img.name, text: `[图片描述失败: ${e instanceof Error ? e.message : '未知错误'}]`, size: img.size }
+          }
+        })
+        const results = await Promise.all(tasks)
+        imageDescriptions.push(...results)
+
+        // 更新 userMsg 的 attachments 中的 text（图片描述结果）
+        for (const desc of imageDescriptions) {
+          const att = sess?.messages.find(m => m.id === userMsg.id)?.attachments?.find(a => a.name === desc.name)
+          if (att) att.text = desc.text
+        }
+        if (sessionStore.currentId === sid) {
+          messages.value = sess?.messages ?? messages.value
+        }
+      }
+    }
+
+    // 合并所有文件内容
+    const allFiles = [
+      ...(files ?? []),
+      ...imageDescriptions,
+    ]
+
     // 提前准备对话历史（搜索判断需要上下文）
     const historyMsgs = messages.value
       .filter(m => m.id !== userMsg.id)
@@ -201,13 +272,13 @@ export const useChatStore = defineStore('chat', () => {
 
     // ===== 文件内容注入 =====
     let userContent = text
-    if (files && files.length > 0) {
-      userContent = buildFileContext(files) + '\n\n用户问题：' + text
+    if (allFiles.length > 0) {
+      userContent = buildFileContext(allFiles) + '\n\n用户问题：' + text
     }
     if (quote && quote.text) {
       const quoteBlock = `[用户引用了对话中的以下内容]\n> ${quote.text.replace(/\n/g, '\n> ')}\n\n`
-      if (files && files.length > 0) {
-        userContent = buildFileContext(files) + '\n\n' + quoteBlock + '用户问题：' + text
+      if (allFiles.length > 0) {
+        userContent = buildFileContext(allFiles) + '\n\n' + quoteBlock + '用户问题：' + text
       } else {
         userContent = quoteBlock + '用户问题：' + text
       }
@@ -475,10 +546,15 @@ export const useChatStore = defineStore('chat', () => {
     if (idx === -1) return
     const userMsg = messages.value[idx]
     if (userMsg.role !== 'user') return
+    // 保存文件和引用信息
+    const files = userMsg.attachments?.filter(a => a.text).map(a => ({
+      name: a.name, size: a.size, text: a.text!,
+    }))
+    const quoteData = userMsg.quote
     // 删除这条用户消息及之后的所有回复
     messages.value = messages.value.slice(0, idx)
     await nextTick()
-    sendMessage(userMsg.content)
+    sendMessage(userMsg.content, files && files.length > 0 ? files : undefined, quoteData)
   }
 
   return {

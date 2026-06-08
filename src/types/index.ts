@@ -4,7 +4,7 @@ export interface Message {
   content: string
   thinking?: string
   thinkingExpanded?: boolean
-  attachments?: { name: string; size: number }[]
+  attachments?: { name: string; size: number; type?: 'file' | 'image'; text?: string }[]
   quote?: { text: string; messageId: string }
   timestamp: number
 }

@@ -102,6 +102,7 @@ export function registerFileHandlers() {
             'py', 'java', 'c', 'cpp', 'h', 'rs', 'go',
             'sh', 'yaml', 'yml', 'toml', 'ini', 'cfg',
             'log', 'sql', 'svg',
+            'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico',
           ],
         },
         { name: '所有文件', extensions: ['*'] },

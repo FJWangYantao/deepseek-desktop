@@ -10,6 +10,7 @@ import { registerExportHandlers } from './ipc/export'
 import { registerSkillHandlers } from './ipc/skills'
 import { registerToolHandlers } from './ipc/tools'
 import { registerTokenizerHandlers } from './ipc/tokenizer'
+import { registerImageDescribeHandlers } from './ipc/image-describe'
 import { registerBuiltinTools } from './tools'
 
 // Windows 控制台 UTF-8 编码
@@ -75,6 +76,7 @@ registerSkillHandlers()
 registerBuiltinTools()
 registerToolHandlers()
 registerTokenizerHandlers()
+registerImageDescribeHandlers()
 
 app.whenReady().then(() => {
   createWindow()

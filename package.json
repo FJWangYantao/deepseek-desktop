@@ -1,6 +1,6 @@
 {
   "name": "deepseek-desktop",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {

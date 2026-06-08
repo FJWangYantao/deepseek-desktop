@@ -62,6 +62,39 @@ const themes = [
         <p class="text-xs text-app-muted mt-1.5">自定义提示词将注入到每轮对话的开头，用于设定 AI 角色、行为规则和回答风格。</p>
       </div>
 
+      <!-- 视觉模型（伪多模态） -->
+      <div class="mb-8">
+        <label class="block text-sm font-medium text-app-heading mb-2">视觉模型</label>
+        <p class="text-xs text-app-muted mb-3">配置图片理解模型，上传图片后自动生成文字描述注入对话。支持 MiMo、GPT-4o 等 OpenAI 兼容视觉 API。</p>
+        <div class="space-y-3">
+          <input
+            :type="settings.showKey ? 'text' : 'password'"
+            :value="settings.mimoApiKey"
+            @input="settings.mimoApiKey = ($event.target as HTMLInputElement).value"
+            placeholder="视觉模型 API Key（可选）"
+            class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
+                   text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
+                   transition-colors font-mono"
+          />
+          <input
+            :value="settings.mimoBaseUrl"
+            @input="settings.mimoBaseUrl = ($event.target as HTMLInputElement).value"
+            placeholder="API 地址"
+            class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
+                   text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
+                   transition-colors font-mono"
+          />
+          <input
+            :value="settings.mimoModel"
+            @input="settings.mimoModel = ($event.target as HTMLInputElement).value"
+            placeholder="模型名称"
+            class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
+                   text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
+                   transition-colors font-mono"
+          />
+        </div>
+      </div>
+
       <!-- 默认模型 -->
       <div class="mb-8">
         <label class="block text-sm font-medium text-app-heading mb-2">默认模型</label>

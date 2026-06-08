@@ -10,6 +10,8 @@ import ContextRing from './ContextRing.vue'
 import { useTokenCounter } from '@/composables/useTokenCounter'
 import { useQuote } from '@/composables/useQuote'
 
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svg'])
+
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
 const tokenCounter = useTokenCounter()
@@ -18,6 +20,11 @@ const quote = useQuote()
 const inputText = ref('')
 const sending = ref(false)
 const fileAttachRef = ref<InstanceType<typeof FileAttach>>()
+const isDragging = ref(false)
+
+function isImageFile(ext: string): boolean {
+  return IMAGE_EXTS.has(ext.toLowerCase())
+}
 
 async function send() {
   const text = inputText.value.trim()
@@ -26,10 +33,16 @@ async function send() {
   try {
     const parsed = await fileAttachRef.value?.parseAll() ?? []
     const fileInfos = fileAttachRef.value?.files ?? []
-    const files = parsed.map(pf => {
+
+    // 分离图片文件和普通文件
+    const imageFiles = fileInfos.filter(f => isImageFile(f.ext)).map(f => ({
+      path: f.path, name: f.name, ext: f.ext, size: f.size,
+    }))
+    const normalFiles = parsed.map(pf => {
       const info = fileInfos.find(fi => fi.name === pf.name)
       return { ...pf, size: info?.size ?? 0 }
     })
+
     fileAttachRef.value?.clearFiles()
     inputText.value = ''
     nextTick(() => {
@@ -40,7 +53,12 @@ async function send() {
       ? { text: quote.quoteText.value, messageId: quote.quoteMessageId.value }
       : undefined
     quote.clearQuote()
-    await chatStore.sendMessage(text, files.length > 0 ? files : undefined, quoteData)
+    await chatStore.sendMessage(
+      text,
+      normalFiles.length > 0 ? normalFiles : undefined,
+      quoteData,
+      imageFiles.length > 0 ? imageFiles : undefined,
+    )
   } catch {
     // sendMessage 内部已处理错误提示
   } finally {
@@ -62,11 +80,51 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 function onPaste(e: ClipboardEvent) {
-  const items = e.clipboardData?.files
-  if (!items || items.length === 0) return
+  const clipItems = e.clipboardData?.items
+  if (!clipItems || clipItems.length === 0) return
+
   const list: FileInfo[] = []
-  for (let i = 0; i < items.length; i++) {
-    const f = items[i]
+
+  // 检测剪贴板图片（截图等，没有文件路径的 Blob）
+  for (const item of clipItems) {
+    if (!item.type.startsWith('image/')) continue
+    const file = item.getAsFile()
+    if (!file) continue
+
+    e.preventDefault()
+    const ext = item.type === 'image/png' ? '.png'
+      : item.type === 'image/jpeg' ? '.jpg'
+      : item.type === 'image/gif' ? '.gif'
+      : item.type === 'image/webp' ? '.webp'
+      : '.png'
+    const name = `粘贴图片_${new Date().toLocaleTimeString('zh-CN', { hour12: false }).replace(/:/g, '')}${ext}`
+
+    // 读取为 base64 → IPC 保存为临时文件
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const base64 = (reader.result as string).split(',')[1]
+      if (!base64) return
+      try {
+        const filePath = await window.electronAPI!.saveClipboardImage({ base64, ext })
+        fileAttachRef.value?.addFiles([{
+          path: filePath,
+          name,
+          size: file.size,
+          ext,
+        }])
+      } catch (err) {
+        console.error('[Paste] 保存剪贴板图片失败:', err)
+      }
+    }
+    reader.readAsDataURL(file)
+    return // 剪贴板图片已处理，不再处理文件
+  }
+
+  // 文件粘贴（从文件管理器复制的文件）
+  const files = e.clipboardData?.files
+  if (!files || files.length === 0) return
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i]
     const path = window.electronAPI?.getFilePath?.(f)
     if (!path) continue
     const parts = f.name.split('.')
@@ -82,13 +140,50 @@ function onPaste(e: ClipboardEvent) {
     fileAttachRef.value?.addFiles(list)
   }
 }
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+  isDragging.value = true
+}
+
+function onDragLeave() {
+  isDragging.value = false
+}
+
+function handleDrop(e: DragEvent) {
+  isDragging.value = false
+  const items = e.dataTransfer?.files
+  if (!items || items.length === 0) return
+  const list: FileInfo[] = []
+  for (let i = 0; i < items.length; i++) {
+    const f = items[i]
+    const path = window.electronAPI?.getFilePath?.(f)
+    if (!path) continue
+    const parts = f.name.split('.')
+    list.push({
+      path, name: f.name, size: f.size,
+      ext: parts.length > 1 ? '.' + parts.pop()!.toLowerCase() : '',
+    })
+  }
+  if (list.length > 0) fileAttachRef.value?.addFiles(list)
+}
 </script>
 
 <template>
   <div class="px-4 pb-4 pt-2">
     <div class="max-w-[860px] mx-auto">
-      <div class="bg-app-input border border-app-border rounded-2xl overflow-hidden">
-        <!-- 文件标签：左上角椭形 -->
+      <div
+        class="bg-app-input border rounded-2xl overflow-hidden relative transition-colors"
+        :class="isDragging ? 'border-app-accent bg-app-accent-soft/10' : 'border-app-border'"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="handleDrop"
+      >
+        <!-- 拖拽高亮覆盖层 -->
+        <div v-if="isDragging" class="absolute inset-0 z-10 flex items-center justify-center bg-app-accent-soft/10 pointer-events-none">
+          <span class="text-sm text-app-accent font-medium">拖拽文件到此处</span>
+        </div>
+        <!-- 文件标签 -->
         <div v-if="fileAttachRef?.files?.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
           <span
             v-for="(f, i) in fileAttachRef.files"
@@ -96,6 +191,12 @@ function onPaste(e: ClipboardEvent) {
             class="inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] rounded-full
                    bg-app-accent-soft text-app-accent border border-app-accent-soft-border"
           >
+            <svg v-if="isImageFile(f.ext)" class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <svg v-else class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
             <span class="truncate max-w-[140px]">{{ f.name }}</span>
             <span class="text-[10px] opacity-60">{{ fileAttachRef.formatSize(f.size) }}</span>
             <button @click="fileAttachRef.removeFile(i)" class="hover:text-red-500 transition-colors">&times;</button>

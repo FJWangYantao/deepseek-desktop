@@ -48,5 +48,7 @@ interface Window {
     toolsGetPermissionConfig: () => Promise<import('../src/types/tools').ToolPermissionConfig>
     toolsSetPermissionConfig: (config: import('../src/types/tools').ToolPermissionConfig) => Promise<boolean>
     tokenizerCount: (text: string) => Promise<number>
+    describeImage: (config: { path: string; apiKey: string; baseUrl: string; model: string }) => Promise<{ description: string; error?: string }>
+    saveClipboardImage: (data: { base64: string; ext: string }) => Promise<string>
   }
 }

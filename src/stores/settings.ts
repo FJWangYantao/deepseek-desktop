@@ -12,6 +12,11 @@ export const useSettingsStore = defineStore('settings', () => {
   const systemPrompt = ref(localStorage.getItem('ds_system_prompt') ?? '')
   const showKey = ref(false)
 
+  // 视觉模型配置（伪多模态）
+  const mimoApiKey = ref(localStorage.getItem('ds_mimo_api_key') ?? '')
+  const mimoBaseUrl = ref(localStorage.getItem('ds_mimo_base_url') ?? 'https://api.xiaomimimo.com/v1')
+  const mimoModel = ref(localStorage.getItem('ds_mimo_model') ?? 'mimo-v2.5')
+
   const models: ModelOption[] = [
     { id: 'deepseek-v4-pro', name: 'V4 Pro', description: '旗舰模型，最强性能', contextLength: 1000000 },
     { id: 'deepseek-v4-flash', name: 'V4 Flash', description: '快速模型，高性价比', contextLength: 1000000 },
@@ -72,6 +77,15 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(systemPrompt, (val) => {
     try { localStorage.setItem('ds_system_prompt', val) } catch { /* ignore */ }
   })
+  watch(mimoApiKey, (val) => {
+    try { localStorage.setItem('ds_mimo_api_key', val) } catch { /* ignore */ }
+  })
+  watch(mimoBaseUrl, (val) => {
+    try { localStorage.setItem('ds_mimo_base_url', val) } catch { /* ignore */ }
+  })
+  watch(mimoModel, (val) => {
+    try { localStorage.setItem('ds_mimo_model', val) } catch { /* ignore */ }
+  })
 
   function clearAllData() {
     useStatsStore().clearAllStats()
@@ -82,10 +96,13 @@ export const useSettingsStore = defineStore('settings', () => {
     fontFamily.value = ''
     codeTheme.value = 'dark'
     systemPrompt.value = ''
+    mimoApiKey.value = ''
+    mimoBaseUrl.value = 'https://api.xiaomimimo.com/v1'
+    mimoModel.value = 'mimo-v2.5'
   }
 
   return {
-    apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, models, codeThemes, fontOptions, roleTemplates, activeRoleId, selectRole,
+    apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, roleTemplates, activeRoleId, selectRole,
     clearAllData,
   }
 })

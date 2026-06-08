@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toolsGetPermissionConfig: () => ipcRenderer.invoke('tools:getPermissionConfig'),
   toolsSetPermissionConfig: (config) => ipcRenderer.invoke('tools:setPermissionConfig', config),
   tokenizerCount: (text) => ipcRenderer.invoke('tokenizer:count', text),
+  describeImage: (config) => ipcRenderer.invoke('image:describe', config),
+  saveClipboardImage: (data) => ipcRenderer.invoke('image:saveClipboard', data),
 })

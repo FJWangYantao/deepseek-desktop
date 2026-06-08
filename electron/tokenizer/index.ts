@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-let tokenizer: { encode(text: string): { length: number } } | null = null
+let tokenizer: { encode(text: string): { ids: number[] } } | null = null
 let initFailed = false
 
 function fallbackCount(text: string): number {
@@ -25,7 +25,8 @@ function loadTokenizer() {
       initFailed = true
       return
     }
-    tokenizer = Tokenizer.fromFile(tokenizerPath)
+    const config = JSON.parse(fs.readFileSync(tokenizerPath, 'utf-8'))
+    tokenizer = new Tokenizer(config, config)
     console.log('[Tokenizer] loaded successfully')
   } catch (e) {
     console.warn('[Tokenizer] failed to load, using fallback:', (e as Error).message)
@@ -37,7 +38,7 @@ export function countTokens(text: string): number {
   loadTokenizer()
   if (!tokenizer) return fallbackCount(text)
   try {
-    return tokenizer.encode(text).length
+    return tokenizer.encode(text).ids.length
   } catch {
     return fallbackCount(text)
   }
