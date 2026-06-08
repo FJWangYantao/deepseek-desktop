@@ -45,10 +45,14 @@ const streamHtml = computed(() => {
   return renderMarkdown(fixCjkEmphasis(streamingSafe.value))
 })
 
-// 新消息 → 始终滚到底
+// 新消息 → 仅用户消息滚到底（助手回复完成时不强制滚动）
 watch(
   () => chatStore.messages.length,
-  async () => { await nextTick(); scrollToBottom() }
+  async () => {
+    await nextTick()
+    const last = chatStore.messages[chatStore.messages.length - 1]
+    if (last?.role === 'user') scrollToBottom()
+  }
 )
 
 // 生成开始 → 滚到底（确保等待指示器可见）
@@ -69,6 +73,12 @@ watch(
   async () => { await nextTick(); if (isNearBottom()) scrollToBottom() }
 )
 
+// 思考内容更新 → 近底部时滚到底
+watch(
+  () => chatStore.streamingThinking,
+  async () => { await nextTick(); if (isNearBottom()) scrollToBottom() }
+)
+
 function scrollToBottom() {
   if (listRef.value) {
     listRef.value.scrollTop = listRef.value.scrollHeight
@@ -78,7 +88,7 @@ function scrollToBottom() {
 function isNearBottom(): boolean {
   if (!listRef.value) return true
   const el = listRef.value
-  return el.scrollHeight - el.scrollTop - el.clientHeight < 200
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 60
 }
 
 function onScroll() {

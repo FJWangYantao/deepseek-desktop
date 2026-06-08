@@ -156,7 +156,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(text: string, files?: {name: string, text: string, size: number}[]) {
+  async function sendMessage(text: string, files?: {name: string, text: string, size: number}[], quote?: { text: string; messageId: string }) {
     const sid = sessionStore.ensureSession()
     generatingSessionId.value = sid
     generatingSessions.value = { ...generatingSessions.value, [sid]: true }
@@ -178,6 +178,7 @@ export const useChatStore = defineStore('chat', () => {
       role: 'user',
       content: text,
       attachments: files?.map(f => ({ name: f.name, size: f.size })),
+      quote: quote ? { text: quote.text, messageId: quote.messageId } : undefined,
       timestamp: Date.now(),
     }
     const sess = sessionStore.sessions.find(s => s.id === sid)
@@ -202,6 +203,14 @@ export const useChatStore = defineStore('chat', () => {
     let userContent = text
     if (files && files.length > 0) {
       userContent = buildFileContext(files) + '\n\n用户问题：' + text
+    }
+    if (quote && quote.text) {
+      const quoteBlock = `[用户引用了对话中的以下内容]\n> ${quote.text.replace(/\n/g, '\n> ')}\n\n`
+      if (files && files.length > 0) {
+        userContent = buildFileContext(files) + '\n\n' + quoteBlock + '用户问题：' + text
+      } else {
+        userContent = quoteBlock + '用户问题：' + text
+      }
     }
 
     const today = new Date()

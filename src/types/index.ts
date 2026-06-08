@@ -5,6 +5,7 @@ export interface Message {
   thinking?: string
   thinkingExpanded?: boolean
   attachments?: { name: string; size: number }[]
+  quote?: { text: string; messageId: string }
   timestamp: number
 }
 

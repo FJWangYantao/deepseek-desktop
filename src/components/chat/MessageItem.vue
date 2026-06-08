@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import type { Message } from '@/types'
 import { useChatStore } from '@/stores/chat'
 import { useAvatar } from '@/composables/useAvatar'
+import { useQuote } from '@/composables/useQuote'
 import ContentBlock from '@/components/renderer/ContentBlock.vue'
 import ThinkingBubble from '@/components/renderer/ThinkingBubble.vue'
 
@@ -12,9 +13,39 @@ const props = defineProps<{
 
 const chatStore = useChatStore()
 const { avatarUrl, loadAvatar } = useAvatar()
+const { setQuote } = useQuote()
 const copied = ref(false)
+const contentRef = ref<HTMLElement>()
+const showQuoteBtn = ref(false)
+const quoteBtnPos = ref({ x: 0, y: 0 })
+const selectedText = ref('')
 
 onMounted(() => { loadAvatar() })
+
+function onContentMouseUp() {
+  const sel = window.getSelection()
+  if (!sel || sel.isCollapsed || !contentRef.value) {
+    showQuoteBtn.value = false
+    return
+  }
+  const range = sel.getRangeAt(0)
+  if (!contentRef.value.contains(range.startContainer)) {
+    showQuoteBtn.value = false
+    return
+  }
+  const text = sel.toString().trim()
+  if (!text) { showQuoteBtn.value = false; return }
+  const rect = range.getBoundingClientRect()
+  selectedText.value = text
+  quoteBtnPos.value = { x: rect.left + rect.width / 2, y: rect.top - 8 }
+  showQuoteBtn.value = true
+}
+
+function handleQuote() {
+  setQuote(selectedText.value, props.message.id)
+  showQuoteBtn.value = false
+  window.getSelection()?.removeAllRanges()
+}
 
 async function copyContent() {
   try {
@@ -31,9 +62,24 @@ function retry() {
 
 <template>
   <div class="mb-6 group">
+    <!-- 浮动引用按钮 -->
+    <Teleport to="body">
+      <button
+        v-if="showQuoteBtn"
+        @click="handleQuote"
+        class="fixed z-[9999] px-3 py-1.5 text-xs font-medium rounded-lg shadow-lg
+               bg-app-accent text-white hover:bg-app-accent-hover transition-colors
+               -translate-x-1/2 -translate-y-full whitespace-nowrap"
+        :style="{ left: quoteBtnPos.x + 'px', top: quoteBtnPos.y + 'px' }"
+      >
+        引用
+      </button>
+    </Teleport>
+
     <!-- 用户消息 -->
     <div v-if="message.role === 'user'" class="flex flex-col items-end">
-      <div class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm overflow-hidden">
+      <div ref="contentRef" @mouseup="onContentMouseUp" class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm overflow-hidden">
+        <div v-if="message.quote" class="mb-2 pl-3 border-l-2 border-app-accent text-app-muted text-[13px] leading-[1.6] line-clamp-3" :style="{ fontSize: 'calc(var(--app-font-size) - 1px)' }">{{ message.quote.text }}</div>
         <p class="text-app-text whitespace-pre-wrap break-words leading-[1.8]" :style="{ fontSize: 'var(--app-font-size)' }">{{ message.content }}</p>
         <div v-if="message.attachments?.length" class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-app-border">
           <span
@@ -87,7 +133,7 @@ function retry() {
         <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-contain" />
         <span v-else>D</span>
       </div>
-      <div class="min-w-0 flex-1">
+      <div ref="contentRef" @mouseup="onContentMouseUp" class="min-w-0 flex-1">
         <ThinkingBubble v-if="message.thinking" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
         <ContentBlock :content="message.content" />
         <div class="flex mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -8,10 +8,12 @@ import FileAttach from './FileAttach.vue'
 import SkillSelector from './SkillSelector.vue'
 import ContextRing from './ContextRing.vue'
 import { useTokenCounter } from '@/composables/useTokenCounter'
+import { useQuote } from '@/composables/useQuote'
 
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
 const tokenCounter = useTokenCounter()
+const quote = useQuote()
 
 const inputText = ref('')
 const sending = ref(false)
@@ -34,7 +36,11 @@ async function send() {
       const el = document.querySelector('.chat-textarea') as HTMLTextAreaElement
       if (el) { el.style.height = '' }
     })
-    await chatStore.sendMessage(text, files.length > 0 ? files : undefined)
+    const quoteData = quote.quoteText.value
+      ? { text: quote.quoteText.value, messageId: quote.quoteMessageId.value }
+      : undefined
+    quote.clearQuote()
+    await chatStore.sendMessage(text, files.length > 0 ? files : undefined, quoteData)
   } catch {
     // sendMessage 内部已处理错误提示
   } finally {
@@ -94,6 +100,14 @@ function onPaste(e: ClipboardEvent) {
             <span class="text-[10px] opacity-60">{{ fileAttachRef.formatSize(f.size) }}</span>
             <button @click="fileAttachRef.removeFile(i)" class="hover:text-red-500 transition-colors">&times;</button>
           </span>
+        </div>
+        <!-- 引用预览 -->
+        <div v-if="quote.quoteText.value" class="flex items-start gap-2 px-4 py-2 border-b border-app-border bg-app-accent-soft/30">
+          <div class="flex-1 min-w-0">
+            <div class="text-[11px] text-app-accent font-medium mb-0.5">引用</div>
+            <div class="text-xs text-app-muted line-clamp-2 leading-[1.6]">{{ quote.quoteText.value }}</div>
+          </div>
+          <button @click="quote.clearQuote()" class="text-app-muted hover:text-red-500 text-lg leading-none mt-0.5">&times;</button>
         </div>
         <textarea
           v-model="inputText"
