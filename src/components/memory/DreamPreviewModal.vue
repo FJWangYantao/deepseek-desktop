@@ -142,16 +142,14 @@ const byType = computed(() => {
           <div v-if="expandedOps.has(idx)" class="px-4 pb-3 border-t border-gray-100">
             <div class="mt-2 space-y-1 text-[10px]">
               <template v-if="op.type === 'merge'">
-                <p class="text-gray-500">合并来源：<span class="text-gray-700">{{ op.targetIds.join(', ') }}</span></p>
-                <p class="text-gray-500">结果：<span class="text-gray-700">{{ op.resultContent }}</span></p>
+                <p class="text-gray-500">合并结果：<span class="text-gray-700">{{ op.resultContent }}</span></p>
                 <p class="text-gray-500">层级：<span class="text-gray-700">{{ layerLabel[op.resultLayer || 'short'] }}</span> · 分类：<span class="text-gray-700">{{ op.resultCategory }}</span></p>
               </template>
               <template v-if="op.type === 'reclassify'">
-                <p class="text-gray-500">目标 ID：<span class="text-gray-700">{{ op.targetIds[0] }}</span></p>
                 <p class="text-gray-500">新层级：<span class="text-gray-700">{{ layerLabel[op.resultLayer || 'short'] }}</span></p>
               </template>
               <template v-if="op.type === 'delete'">
-                <p class="text-gray-500">删除 ID：<span class="text-gray-700">{{ op.targetIds.join(', ') }}</span></p>
+                <p class="text-gray-500">删除 {{ op.targetIds.length }} 条记忆</p>
               </template>
               <template v-if="op.type === 'new'">
                 <p class="text-gray-500">新增内容：<span class="text-gray-700">{{ op.resultContent }}</span></p>

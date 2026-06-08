@@ -458,10 +458,12 @@ export function useMemory() {
       if (trimmed.startsWith('合并')) {
         const m = trimmed.match(/合并[：:]\s*(.+?)\s*->\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+)/)
         if (m) {
+          const ids = m[1].split('+').map(s => s.trim())
+          const count = ids.length
           ops.push({
             type: 'merge',
-            description: trimmed,
-            targetIds: m[1].split('+').map(s => s.trim()),
+            description: `合并 ${count} 条记忆 → ${m[2].trim()}`,
+            targetIds: ids,
             resultContent: m[2].trim(),
             resultLayer: (['short', 'medium', 'long'].includes(m[3].trim()) ? m[3].trim() : 'short') as MemoryLayer,
             resultCategory: m[4].trim(),
@@ -472,7 +474,7 @@ export function useMemory() {
         if (m) {
           ops.push({
             type: 'reclassify',
-            description: trimmed,
+            description: `重分类为 ${m[2].trim()}`,
             targetIds: [m[1].trim()],
             resultLayer: (['short', 'medium', 'long'].includes(m[2].trim()) ? m[2].trim() : 'short') as MemoryLayer,
           })
@@ -480,10 +482,11 @@ export function useMemory() {
       } else if (trimmed.startsWith('删除')) {
         const m = trimmed.match(/删除[：:]\s*(.+)/)
         if (m) {
+          const ids = m[1].split(/[,，\s]+/).filter(Boolean)
           ops.push({
             type: 'delete',
-            description: trimmed,
-            targetIds: m[1].split(/[,，\s]+/).filter(Boolean),
+            description: `删除 ${ids.length} 条记忆`,
+            targetIds: ids,
           })
         }
       } else if (trimmed.startsWith('新增')) {
@@ -491,7 +494,7 @@ export function useMemory() {
         if (m) {
           ops.push({
             type: 'new',
-            description: trimmed,
+            description: `新增：${m[1].trim()}`,
             targetIds: [],
             resultContent: m[1].trim(),
             resultLayer: (['short', 'medium', 'long'].includes(m[2].trim()) ? m[2].trim() : 'short') as MemoryLayer,
