@@ -5,6 +5,8 @@ import { preprocessQuery } from '../../search/query-preprocess'
 import { filterResults } from '../../search/site-filter'
 import { scoreAndRank } from '../../search/rank'
 import { localSearchEngine } from '../../search-local/engine'
+import { searchAll } from '../../search/zhihu-search'
+import type { ZhihuSearchResult } from '../../search/zhihu-search'
 
 const definition: ToolDefinition = {
   name: 'web_search',
@@ -48,18 +50,32 @@ export const webSearchTool: ToolExecutor = {
       console.warn('[web_search] 本地索引查询失败，回退到搜索引擎:', e)
     }
 
-    // 第二阶段：Web 搜索引擎兜底
-    console.log('[web_search] 本地未命中，走搜索引擎')
+    // 第二阶段：Bing/DDG + 知乎 API 并行兜底
+    console.log('[web_search] 本地未命中，并行调用 Bing/DDG + 知乎 API')
     const processed = preprocessQuery(query)
-    const results = await searchWebLight(processed)
+
+    const [webResults, zhihuResults] = await Promise.allSettled([
+      searchWebLight(processed),
+      searchAll(query),
+    ])
+
+    const results = webResults.status === 'fulfilled' ? webResults.value : []
     const filtered = filterResults(results)
     const ranked = scoreAndRank(filtered, query)
 
-    if (ranked.length === 0) return '未找到相关结果'
+    const zhihu = zhihuResults.status === 'fulfilled' ? zhihuResults.value : { zhihu: [], global: [] }
+    console.log(`[web_search] 知乎API: 站内${zhihu.zhihu.length}条, 全网${zhihu.global.length}条`)
 
-    return ranked
-      .slice(0, 8)
-      .map((r, i) => `[${i + 1}] ${r.title}\n    ${r.url}\n    ${r.snippet}`)
-      .join('\n\n')
+    const parts: string[] = []
+    if (ranked.length > 0) {
+      parts.push(ranked.slice(0, 8).map((r, i) => `[${i + 1}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
+    }
+    const zhihuAll = [...zhihu.zhihu, ...zhihu.global]
+    if (zhihuAll.length > 0) {
+      parts.push('【知乎搜索】\n' + zhihuAll.slice(0, 5).map(r => `[${r.source}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
+    }
+
+    if (parts.length === 0) return '未找到相关结果'
+    return parts.join('\n\n')
   },
 }
