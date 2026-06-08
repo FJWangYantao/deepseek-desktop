@@ -140,8 +140,8 @@ watch(() => chatStore.messages.length, () => {
         </div>
       </div>
 
-      <!-- 工具调用状态 -->
-      <ToolCallStatus v-if="chatStore.activeToolCalls.length > 0" :calls="chatStore.activeToolCalls" />
+      <!-- 工具调用状态：仅当当前会话正在生成时显示，防止切换会话后工具结果泄漏 -->
+      <ToolCallStatus v-if="chatStore.activeToolCalls.length > 0 && chatStore.isGenerating" :calls="chatStore.activeToolCalls" />
 
       <!-- 流式输出 -->
       <div v-if="chatStore.streaming || chatStore.streamingThinking" class="mb-6">

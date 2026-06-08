@@ -2,7 +2,7 @@ import { ref, reactive } from 'vue'
 import type { ToolCallUIState, ToolCallResult, UsageData } from '@/types'
 import { deepSeekChat } from './useDeepSeek'
 
-const MAX_TOOL_ROUNDS = 10
+const MAX_TOOL_ROUNDS = 100
 
 interface ToolLoopOptions {
   messages: { role: 'user' | 'assistant' | 'system' | 'tool'; content: string; tool_call_id?: string; tool_calls?: any[] }[]

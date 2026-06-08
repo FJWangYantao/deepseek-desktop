@@ -21,6 +21,7 @@ export const useChatStore = defineStore('chat', () => {
   const generatingSessionId = ref<string | null>(null)
   const thinkingManuallyExpanded = ref(false)
   const bgStreams = reactive<Record<string, { content: string; thinking: string }>>({})
+  const bgToolCalls = reactive<Record<string, ToolCallUIState[]>>({})
   const generatingSessions = ref<Record<string, boolean>>({})
   const unreadSessions = ref<Record<string, boolean>>({})
   const activeToolCalls = ref<ToolCallUIState[]>([])
@@ -47,22 +48,26 @@ export const useChatStore = defineStore('chat', () => {
   function loadFromSession() {
     const newSid = sessionStore.currentId
 
-    // 离开正在生成的会话时，保存当前流式内容到后台
+    // 离开正在生成的会话时，保存当前流式内容和工具状态到后台
     if (isGenerating.value && generatingSessionId.value && generatingSessionId.value !== newSid) {
       bgStreams[generatingSessionId.value] = {
         content: streaming.value,
         thinking: streamingThinking.value,
+      }
+      if (activeToolCalls.value.length > 0) {
+        bgToolCalls[generatingSessionId.value] = [...activeToolCalls.value]
       }
     }
 
     const session = sessionStore.getCurrentSession()
     messages.value = session?.messages ?? []
 
-    // 切换到正在后台生成的会话时，恢复流式内容
+    // 切换到正在后台生成的会话时，恢复流式内容和工具状态
     if (generatingSessionId.value === newSid) {
       const bg = bgStreams[newSid]
       streaming.value = bg?.content ?? ''
       streamingThinking.value = bg?.thinking ?? ''
+      activeToolCalls.value = bgToolCalls[newSid] ? [...bgToolCalls[newSid]] : []
       isGenerating.value = true
     } else {
       streaming.value = ''
@@ -373,6 +378,7 @@ export const useChatStore = defineStore('chat', () => {
             generatingSessions.value = { ...generatingSessions.value }
             delete generatingSessions.value[doneSid]
             delete bgStreams[doneSid]
+            delete bgToolCalls[doneSid]
           }
           streaming.value = ''
           streamingThinking.value = ''
@@ -444,7 +450,11 @@ export const useChatStore = defineStore('chat', () => {
           lastUsageData.value = usage
         },
         onToolCallUpdate(calls) {
-          activeToolCalls.value = [...calls]
+          if (generatingSessionId.value === sid && sessionStore.currentId === sid) {
+            activeToolCalls.value = [...calls]
+          } else {
+            bgToolCalls[sid] = [...calls]
+          }
         },
         onNeedsApproval(info) {
           return new Promise<boolean>((resolve) => {
@@ -529,6 +539,7 @@ export const useChatStore = defineStore('chat', () => {
         generatingSessions.value = { ...generatingSessions.value }
         delete generatingSessions.value[doneSid]
         delete bgStreams[doneSid]
+        delete bgToolCalls[doneSid]
       }
       streaming.value = ''
       streamingThinking.value = ''
