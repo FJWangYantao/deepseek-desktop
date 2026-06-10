@@ -105,6 +105,12 @@ export interface UsageRecord {
   timestamp: number
   cost: number
   source: 'api' | 'estimated'
+  /** 用户输入内容 */
+  userMessage?: string
+  /** AI 回复内容 */
+  assistantMessage?: string
+  /** 实际发送给 API 的完整 messages */
+  apiMessages?: { role: string; content: string }[]
 }
 
 export interface DailyStats {

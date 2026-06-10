@@ -307,7 +307,9 @@ export const useChatStore = defineStore('chat', () => {
       '1. 当用户质疑你的回答时，先独立核实事实再决定是否修正，不要仅因用户表示惊讶或质疑就自动认错。\n' +
       '2. 如果你确信自己的回答是正确的，应该礼貌地坚持并解释理由，而不是盲目迎合用户。\n' +
       '3. 对不确定的内容，明确标注不确定性，而不是编造事实。\n' +
-      '4. 你可以使用 web_search 工具搜索互联网获取实时信息，使用 web_fetch 工具抓取网页内容。当用户的问题可能需要最新信息时，主动调用搜索工具。\n\n'
+      '4. 你可以使用 web_search 工具搜索互联网获取实时信息，使用 web_fetch 工具抓取网页内容。当用户的问题可能需要最新信息时，主动调用搜索工具。\n' +
+      '5. web_search 的 queries 参数接受关键词数组，一次搜索就能覆盖多个方向（自动并行）。搜索前先想好需要哪些角度，一次性传入中英文、不同表述等变体。\n' +
+      '6. 搜索结果的摘要通常就够回答，不需要 web_fetch 抓全文（知乎等有登录墙的网站无法抓取）。\n\n'
 
     // 1. 用户自定义 system prompt（含角色模板）
     if (settingsStore.systemPrompt) {
@@ -519,6 +521,9 @@ export const useChatStore = defineStore('chat', () => {
           timestamp: Date.now(),
           cost: 0,
           source: 'api',
+          userMessage: text,
+          assistantMessage: fullContent,
+          apiMessages: apiMessages.map(m => ({ role: m.role, content: m.content })),
         })
       } else {
         console.warn('[Stats] 未收到 API usage 数据，跳过记录')

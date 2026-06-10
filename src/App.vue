@@ -6,6 +6,7 @@ import StatsView from '@/views/StatsView.vue'
 import MemoryView from '@/views/MemoryView.vue'
 import SkillsView from '@/views/SkillsView.vue'
 import SessionsView from '@/views/SessionsView.vue'
+import MessageDetailView from '@/views/MessageDetailView.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useTheme } from '@/composables/useTheme'
 import { useRoute } from 'vue-router'
@@ -48,6 +49,7 @@ watch(() => settings.codeTheme, applyCodeTheme)
     <SettingsView v-show="route.path === '/settings'" />
     <StatsView v-show="route.path === '/stats'" />
     <SessionsView v-show="route.path === '/sessions'" />
+    <MessageDetailView v-show="route.path.startsWith('/message/')" />
     <MemoryView v-show="route.path === '/memory'" />
     <SkillsView v-show="route.path === '/skills'" />
   </div>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import type { UsageRecord } from '@/types'
 
+const router = useRouter()
 const props = defineProps<{ data: UsageRecord[] }>()
 
 const sortKey = ref<string>('timestamp')
@@ -57,7 +59,7 @@ function fmtCost(c: number): string {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in sorted" :key="row.id" class="border-b border-app-border-light hover:bg-app-hover transition-colors">
+        <tr v-for="row in sorted" :key="row.id" class="border-b border-app-border-light hover:bg-app-hover transition-colors cursor-pointer" @click="router.push('/message/' + row.id)">
           <td class="py-2 px-2 text-app-muted text-xs whitespace-nowrap">{{ fmtTime(row.timestamp) }}</td>
           <td class="py-2 px-2 text-app-muted text-xs">{{ row.model === 'deepseek-v4-pro' ? 'V4 Pro' : row.model === 'deepseek-v4-flash' ? 'V4 Flash' : row.model }}</td>
           <td class="py-2 px-2 text-app-text text-right tabular-nums">{{ row.usage.prompt_tokens.toLocaleString() }}</td>
