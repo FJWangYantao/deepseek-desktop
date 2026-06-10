@@ -1,7 +1,7 @@
 import type { ToolPermissionConfig, ToolPermissionRule } from '../../src/types/tools'
 import { ipcMain, app } from 'electron'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { join, resolve, relative, isAbsolute } from 'path'
 
 const CONFIG_FILE = join(app.getPath('userData'), 'tool-permissions.json')
 
@@ -12,6 +12,7 @@ const DEFAULT_CONFIG: ToolPermissionConfig = {
     { toolName: 'web_fetch', level: 'auto' },
     { toolName: 'file_read', level: 'whitelist' },
     { toolName: 'file_write', level: 'confirm' },
+    { toolName: 'list_dir', level: 'whitelist' },
   ],
 }
 
@@ -50,11 +51,26 @@ export function checkPermission(
     case 'confirm':
       return '需要确认'
     case 'whitelist': {
-      // 文件工具检查路径白名单
-      const targetPath = (args.path as string) || ''
-      if (rule.allowedPaths?.some(p => targetPath.startsWith(p))) {
-        return null
+      // 文件工具检查路径白名单：用 path.resolve + path.relative 防止 startsWith 绕过与 ../ 穿越
+      const rawTarget = (args.path as string) || ''
+      if (!rawTarget) return '路径为空，需要确认'
+      let targetPath: string
+      try {
+        targetPath = resolve(rawTarget)
+      } catch {
+        return '路径无效，需要确认'
       }
+      const isInside = rule.allowedPaths?.some(p => {
+        try {
+          const allowed = resolve(p)
+          const rel = relative(allowed, targetPath)
+          // rel 为空表示同一路径；不以 .. 开头且不是绝对路径表示在白名单内部
+          return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+        } catch {
+          return false
+        }
+      })
+      if (isInside) return null
       return '该路径不在白名单中，需要确认'
     }
     default:

@@ -10,7 +10,8 @@ import MessageDetailView from '@/views/MessageDetailView.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useTheme } from '@/composables/useTheme'
 import { useRoute } from 'vue-router'
-import { watch, onMounted } from 'vue'
+import { watch, onMounted, onBeforeUnmount } from 'vue'
+import { recordAppExit } from '@/composables/useObservationMemory'
 
 const route = useRoute()
 const settings = useSettingsStore()
@@ -37,6 +38,22 @@ onMounted(() => {
   applyFontFamily(settings.fontFamily)
   applyCodeTheme(settings.codeTheme)
 })
+
+function handleBeforeUnload() {
+  try {
+    recordAppExit()
+    void window.electronAPI?.observationsFlush?.()
+  } catch {
+    // ignore
+  }
+}
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
 watch(() => settings.fontSize, applyFontSize)
 watch(() => settings.fontFamily, applyFontFamily)
 watch(() => settings.codeTheme, applyCodeTheme)

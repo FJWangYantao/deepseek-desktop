@@ -504,3 +504,108 @@ html[data-theme="slate"][data-mode="dark"] {
   --app-accent-soft: #1c1a3a;
   --app-accent-soft-border: #2e2854;
 }
+
+/* ===== 微交互动效 ===== */
+
+/* 按钮微交互 — Claude 风格：纯 opacity */
+.btn-interactive {
+  transition: opacity 150ms ease;
+}
+.btn-interactive:hover {
+  opacity: 0.7;
+}
+.btn-interactive:active {
+  opacity: 0.5;
+}
+
+/* 输入框 focus — Claude 风格：border 加深 */
+.input-focus-lift {
+  transition: border-color 200ms ease;
+}
+.input-focus-lift:focus-within {
+  border-color: var(--app-text);
+}
+
+/* 侧栏高亮指示条 */
+.sidebar-item-indicator {
+  position: relative;
+}
+.sidebar-item-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 3px 3px 0;
+  background: var(--app-accent);
+  transition: transform 200ms ease;
+}
+.sidebar-item-indicator:hover::before,
+.sidebar-item-indicator.active::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
+/* 思考过程脉冲边框 */
+.thinking-pulse-border {
+  animation: thinkingPulse 1.5s ease-in-out infinite;
+}
+@keyframes thinkingPulse {
+  0%, 100% { border-left-color: var(--app-accent-soft-border); }
+  50% { border-left-color: var(--app-accent); }
+}
+
+/* ===== Vue Transition 动画类 ===== */
+
+/* 滚动到底按钮 */
+.scroll-btn-enter-active {
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+.scroll-btn-leave-active {
+  transition: opacity 150ms ease-in, transform 150ms ease-in;
+}
+.scroll-btn-enter-from,
+.scroll-btn-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+}
+
+/* 工具调用展开/收起 */
+.tool-expand-enter-active,
+.tool-expand-leave-active {
+  transition: opacity 200ms ease, max-height 200ms ease;
+  overflow: hidden;
+}
+.tool-expand-enter-from,
+.tool-expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+/* 文件标签弹性入场 */
+.file-tag-enter-active {
+  transition: opacity 180ms ease-out, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.file-tag-leave-active {
+  transition: opacity 120ms ease-in, transform 120ms ease-in;
+}
+.file-tag-enter-from,
+.file-tag-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+.file-tag-move {
+  transition: transform 200ms ease;
+}
+
+/* ===== 无障碍：减弱动画偏好 ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -39,9 +39,15 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist-electron',
+            // 显式 lib 模式，强制 CJS 格式 + .cjs 扩展名 — 因为 package.json 是 "type":"module"
+            // 默认 .js 会被当 ESM，preload 必须是 CJS（Electron contextBridge 要求）
+            lib: {
+              entry: 'electron/preload.ts',
+              formats: ['cjs'],
+              fileName: () => 'preload.cjs',
+            },
             rollupOptions: {
               external: ['electron'],
-              output: { format: 'cjs' },
             }
           }
         }

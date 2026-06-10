@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { useStreamRender } from '@/composables/useStreamRender'
 import { fixCjkEmphasis, renderMarkdown } from '@/composables/useMarkdown'
@@ -96,6 +96,38 @@ function onScroll() {
 watch(() => chatStore.messages.length, () => {
   nextTick(() => onScroll())
 })
+
+// 消息入场动画：首次渲染后才启用
+const animReady = ref(false)
+onMounted(() => { nextTick(() => { animReady.value = true }) })
+
+function onBeforeEnter(el: Element) {
+  const htmlEl = el as HTMLElement
+  if (!animReady.value) { htmlEl.style.opacity = '1'; return }
+  htmlEl.style.opacity = '0'
+  const role = htmlEl.getAttribute('data-role')
+  if (role === 'user') {
+    htmlEl.style.transform = 'translateX(12px)'
+  } else {
+    htmlEl.style.transform = 'translateX(-12px)'
+  }
+}
+
+function onEnter(el: Element, done: () => void) {
+  const htmlEl = el as HTMLElement
+  if (!animReady.value) { done(); return }
+  void htmlEl.offsetHeight
+  htmlEl.style.transition = 'opacity 220ms ease-out, transform 220ms ease-out'
+  htmlEl.style.opacity = '1'
+  htmlEl.style.transform = 'translateX(0)'
+  setTimeout(done, 220)
+}
+
+function onAfterEnter(el: Element) {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.transition = ''
+  htmlEl.style.transform = ''
+}
 </script>
 
 <template>
@@ -105,20 +137,23 @@ watch(() => chatStore.messages.length, () => {
       class="flex items-center justify-center h-full"
     >
       <div class="flex flex-col items-center select-none">
-        <svg class="w-72 h-72" viewBox="0 0 512 394" fill="none">
+        <svg class="w-72 h-72 animate-float-idle" viewBox="0 0 512 394" fill="none">
           <path fill="#e8e5df" opacity="0.6" fill-rule="nonzero" d="M440.898 23.555c-4.001-1.961-5.723 1.776-8.062 3.673-.801.612-1.479 1.407-2.154 2.141-5.848 6.246-12.681 10.349-21.607 9.859-13.048-.734-24.192 3.368-34.04 13.348-2.093-12.307-9.048-19.658-19.635-24.37-5.54-2.449-11.141-4.9-15.02-10.227-2.708-3.795-3.447-8.021-4.801-12.185-.861-2.509-1.725-5.082-4.618-5.512-3.139-.49-4.372 2.142-5.601 4.349-4.925 9.002-6.833 18.921-6.647 28.962.432 22.597 9.972 40.597 28.932 53.397 2.154 1.47 2.707 2.939 2.032 5.082-1.293 4.41-2.832 8.695-4.186 13.105-.862 2.817-2.157 3.429-5.172 2.205-10.402-4.346-19.391-10.778-27.332-18.553-13.481-13.044-25.668-27.434-40.873-38.702a177.614 177.614 0 00-10.834-7.409c-15.512-15.063 2.032-27.434 6.094-28.902 4.247-1.532 1.478-6.797-12.251-6.736-13.727.061-26.285 4.653-42.288 10.777-2.34.92-4.801 1.593-7.326 2.142-14.527-2.756-29.608-3.368-45.367-1.593-29.671 3.305-53.368 17.329-70.788 41.272-20.928 28.785-25.854 61.482-19.821 95.59 6.34 35.943 24.683 65.704 52.876 88.974 29.239 24.123 62.911 35.943 101.32 33.677 23.329-1.346 49.307-4.468 78.607-29.27 7.387 3.673 15.142 5.144 28.008 6.246 9.911.92 19.452-.49 26.839-2.019 11.573-2.449 10.773-13.166 6.586-15.124-33.915-15.797-26.47-9.368-33.24-14.573 17.235-20.39 43.213-41.577 53.369-110.222.8-5.448.121-8.877 0-13.287-.061-2.692.553-3.734 3.632-4.041 8.494-.981 16.742-3.305 24.314-7.471 21.975-12.002 30.84-31.719 32.933-55.355.307-3.612-.061-7.348-3.879-9.245v-.003zM249.4 236.278c-32.872-25.838-48.814-34.352-55.4-33.984-6.155.368-5.048 7.41-3.694 12.002 1.415 4.532 3.264 7.654 5.848 11.634 1.785 2.634 3.017 6.551-1.784 9.493-10.587 6.55-28.993-2.205-29.856-2.635-21.421-12.614-39.334-29.269-51.954-52.047-12.187-21.924-19.267-45.435-20.435-70.542-.308-6.061 1.478-8.207 7.509-9.307 7.94-1.471 16.127-1.778 24.068-.615 33.547 4.9 62.108 19.902 86.054 43.66 13.666 13.531 24.007 29.699 34.658 45.496 11.326 16.778 23.514 32.761 39.026 45.865 5.479 4.592 9.848 8.083 14.035 10.656-12.62 1.407-33.673 1.714-48.075-9.676zm15.899-102.519c.521-2.111 2.421-3.658 4.722-3.658a4.74 4.74 0 011.661.305c.678.246 1.293.614 1.786 1.163.861.859 1.354 2.083 1.354 3.368 0 2.695-2.154 4.837-4.862 4.837a4.748 4.748 0 01-4.738-4.034 5.01 5.01 0 01.077-1.981zm47.208 26.915c-2.606.996-5.2 1.778-7.707 1.88-4.679.244-9.787-1.654-12.556-3.981-4.308-3.612-7.386-5.631-8.679-11.941-.554-2.695-.247-6.858.246-9.246 1.108-5.144-.124-8.451-3.754-11.451-2.954-2.449-6.711-3.122-10.834-3.122-1.539 0-2.954-.673-4.001-1.224-1.724-.856-3.139-3-1.785-5.634.432-.856 2.525-2.939 3.018-3.305 5.6-3.185 12.065-2.144 18.034.244 5.54 2.266 9.727 6.429 15.759 12.307 6.155 7.102 7.263 9.063 10.773 14.39 2.771 4.163 5.294 8.451 7.018 13.348.877 2.561.071 4.74-2.341 6.277-.981.625-2.109 1.044-3.191 1.458z"/>
         </svg>
       </div>
     </div>
     <div class="max-w-[860px] mx-auto">
-      <template v-for="msg in chatStore.messages" :key="msg.id">
-        <!-- AI 消息附带的工具调用：拆成独立行，排在 AI 回复之前 -->
-        <ToolCallStatus
-          v-if="msg.role === 'assistant' && msg.toolCalls?.length"
-          :calls="msg.toolCalls"
-        />
-        <MessageItem :message="msg" />
-      </template>
+      <TransitionGroup :css="false" @before-enter="onBeforeEnter" @enter="onEnter" @after-enter="onAfterEnter">
+        <template v-for="msg in chatStore.messages" :key="msg.id">
+          <!-- AI 消息附带的工具调用：拆成独立行，排在 AI 回复之前 -->
+          <ToolCallStatus
+            v-if="msg.role === 'assistant' && msg.toolCalls?.length"
+            :calls="msg.toolCalls"
+            :data-role="'assistant'"
+          />
+          <MessageItem :message="msg" :data-role="msg.role" />
+        </template>
+      </TransitionGroup>
 
       <!-- AI 生成区域：统一头像区域，混合等待/工具调用/思考/流式内容 -->
       <div v-if="chatStore.isGenerating || chatStore.streaming || chatStore.streamingThinking" class="mb-6">
@@ -141,7 +176,9 @@ watch(() => chatStore.messages.length, () => {
                 <summary class="text-app-muted hover:text-app-heading cursor-pointer font-medium">
                   {{ isThinkingActive ? '思考中...' : '思考过程' }}
                 </summary>
-                <div class="mt-2 pl-4 border-l-2 border-app-accent-soft-border text-app-muted leading-[1.8] whitespace-pre-wrap">
+                <div class="mt-2 pl-4 border-l-2 text-app-muted leading-[1.8] whitespace-pre-wrap"
+                  :class="isThinkingActive ? 'thinking-pulse-border' : 'border-app-accent-soft-border'"
+                >
                   {{ chatStore.streamingThinking }}
                 </div>
               </details>
@@ -168,17 +205,19 @@ watch(() => chatStore.messages.length, () => {
     </div>
 
     <!-- 滚动到底按钮 -->
-    <div v-if="showScrollBtn" class="sticky bottom-4 flex justify-end pointer-events-none z-10">
-      <button
-        @click="scrollToBottom()"
-        class="pointer-events-auto w-9 h-9 rounded-full bg-app-card border border-app-border
-               flex items-center justify-center text-app-muted hover:text-app-accent hover:border-app-accent
-               shadow-md transition-all -mr-2"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-    </div>
+    <Transition name="scroll-btn">
+      <div v-if="showScrollBtn" class="sticky bottom-4 flex justify-end pointer-events-none z-10">
+        <button
+          @click="scrollToBottom()"
+          class="pointer-events-auto w-9 h-9 rounded-full bg-app-card border border-app-border
+                 flex items-center justify-center text-app-muted hover:text-app-accent hover:border-app-accent
+                 shadow-md transition-all -mr-2 btn-interactive"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>

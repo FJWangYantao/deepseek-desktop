@@ -30,6 +30,23 @@ const tooltipStyle = computed(() => {
     ? { right: (window.innerWidth - x + 12) + 'px', top: (y - 10) + 'px' }
     : { left: (x + 12) + 'px', top: (y - 10) + 'px' }
 })
+
+// 采样：避免标签堆叠
+function shouldShowLabel(d: DailyStats, idx: number, total: number): boolean {
+  if (idx === 0 || idx === total - 1) return true
+  if (d.date.includes(' ')) {
+    // 24h 模式：每 4 小时一个
+    const hour = parseInt(d.date.slice(11, 13), 10)
+    return hour % 4 === 0
+  }
+  // 30d 模式：月初 + 每 5 天
+  return d.date.endsWith('-01') || idx % 5 === 0
+}
+
+function formatLabel(d: DailyStats): string {
+  if (d.date.includes(' ')) return d.date.slice(11, 13) // HH
+  return d.date.slice(5) // MM-DD
+}
 </script>
 
 <template>
@@ -45,11 +62,14 @@ const tooltipStyle = computed(() => {
         @mousemove="(e: MouseEvent) => updateTooltip(e, d)"
       />
     </div>
-    <div class="flex gap-[1px] mt-1">
-      <div v-for="d in data" :key="'l'+d.date" class="flex-1 text-[9px] text-app-muted text-center">
-        <template v-if="d.date.includes(' ')">{{ d.date.slice(11, 16) }}</template>
-        <template v-else>{{ d.date.endsWith('-01') || d.date === data[0]?.date || d.date === data[data.length-1]?.date ? d.date.slice(5) : '' }}</template>
-      </div>
+    <div class="relative h-4 mt-1">
+      <template v-for="(d, idx) in data" :key="'l'+d.date">
+        <span
+          v-if="shouldShowLabel(d, idx, data.length)"
+          class="absolute text-[10px] text-app-muted/60 tabular-nums -translate-x-1/2"
+          :style="{ left: ((idx + 0.5) / data.length * 100) + '%' }"
+        >{{ formatLabel(d) }}</span>
+      </template>
     </div>
 
     <!-- Tooltip -->

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import DOMPurify from 'dompurify'
 import type { MemoryItem, MemoryLayer } from '@/types/memory'
 
 const props = defineProps<{
@@ -46,13 +47,25 @@ function confirmDelete() {
   }
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function highlightedContent(content: string): string {
-  if (!props.highlight) return content
+  const safe = escapeHtml(content)
+  if (!props.highlight) return safe
   const terms = props.highlight.trim().split(/\s+/).filter(Boolean)
-  if (terms.length === 0) return content
+  if (terms.length === 0) return safe
   const escaped = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const re = new RegExp(`(${escaped.join('|')})`, 'gi')
-  return content.replace(re, '<mark class="bg-amber-200/60 text-amber-900 rounded-sm px-px">$1</mark>')
+  const highlighted = safe.replace(re, '<mark class="bg-amber-200/60 text-amber-900 rounded-sm px-px">$1</mark>')
+  // 兜底净化：只允许 <mark> 标签
+  return DOMPurify.sanitize(highlighted, { ALLOWED_TAGS: ['mark'], ALLOWED_ATTR: ['class'] })
 }
 </script>
 

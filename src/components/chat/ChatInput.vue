@@ -171,7 +171,7 @@ function handleDrop(e: DragEvent) {
   <div class="px-6 pb-6 pt-4">
     <div class="max-w-[860px] mx-auto">
       <div
-        class="bg-app-input border rounded-2xl overflow-hidden relative transition-colors"
+        class="bg-app-input border rounded-2xl overflow-hidden relative transition-colors input-focus-lift"
         :class="isDragging ? 'border-app-accent bg-app-accent-soft/10' : 'border-app-border'"
         @dragover="onDragOver"
         @dragleave="onDragLeave"
@@ -182,7 +182,7 @@ function handleDrop(e: DragEvent) {
           <span class="text-sm text-app-accent font-medium">拖拽文件到此处</span>
         </div>
         <!-- 文件标签 -->
-        <div v-if="fileAttachRef?.files?.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
+        <TransitionGroup name="file-tag" tag="div" v-if="fileAttachRef?.files?.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
           <span
             v-for="(f, i) in fileAttachRef.files"
             :key="f.path"
@@ -199,7 +199,7 @@ function handleDrop(e: DragEvent) {
             <span class="text-[10px] opacity-60">{{ fileAttachRef.formatSize(f.size) }}</span>
             <button @click="fileAttachRef.removeFile(i)" class="hover:text-red-500 transition-colors">&times;</button>
           </span>
-        </div>
+        </TransitionGroup>
         <!-- 引用预览（多条） -->
         <div v-if="quote.hasQuotes.value" class="px-4 py-2 border-b border-app-border bg-app-accent-soft/30">
           <div class="flex items-center justify-between mb-1">
@@ -243,7 +243,7 @@ function handleDrop(e: DragEvent) {
             <button
               v-if="chatStore.isGenerating"
               @click="chatStore.stopGenerating()"
-              class="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors
+              class="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors btn-interactive
                      bg-red-500 hover:bg-red-600"
             >
               停止
@@ -252,7 +252,7 @@ function handleDrop(e: DragEvent) {
               v-else
               @click="send"
               :disabled="!inputText.trim() || sending || chatStore.isGenerating"
-              class="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors
+              class="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors btn-interactive
                      bg-app-accent hover:bg-app-accent-hover
                      disabled:opacity-40 disabled:cursor-not-allowed"
             >

@@ -31,6 +31,10 @@ interface Window {
     setStore: (key: string, value: string) => Promise<boolean>
     getStore: (key: string) => Promise<string | null>
     deleteStore: (key: string) => Promise<boolean>
+    secureGet: (key: string) => Promise<string>
+    secureSet: (key: string, value: string) => Promise<boolean>
+    secureDelete: (key: string) => Promise<boolean>
+    secureAvailable: () => Promise<boolean>
     selectAvatar: () => Promise<string | null>
     getAvatar: () => Promise<string | null>
     selectFiles: () => Promise<FileInfo[]>
@@ -51,5 +55,8 @@ interface Window {
     tokenizerCount: (text: string) => Promise<number>
     describeImage: (config: { path: string; apiKey: string; baseUrl: string; model: string }) => Promise<{ description: string; error?: string }>
     saveClipboardImage: (data: { base64: string; ext: string }) => Promise<string>
+    observationsAppend: (event: import('../src/types/observation').ObservationEvent) => Promise<import('../src/types/observation').ObservationAppendResult>
+    observationsAppendBatch: (events: import('../src/types/observation').ObservationEvent[]) => Promise<import('../src/types/observation').ObservationAppendResult>
+    observationsFlush: () => Promise<{ ok: boolean }>
   }
 }

@@ -1,81 +1,208 @@
 import type { ToolDefinition } from '../../../src/types/tools'
 import type { ToolExecutor } from '../registry'
-import { searchWebLight } from '../../search/duckduckgo'
+import { searchWebLight, type SearchHit } from '../../search/duckduckgo'
 import { preprocessQuery } from '../../search/query-preprocess'
 import { filterResults } from '../../search/site-filter'
 import { scoreAndRank } from '../../search/rank'
-import { localSearchEngine } from '../../search-local/engine'
 import { searchAll } from '../../search/zhihu-search'
 import type { ZhihuSearchResult } from '../../search/zhihu-search'
 
+// ===== 查询意图分类 =====
+
+type QueryIntent = 'definitional' | 'howto' | 'comparison' | 'news' | 'factual' | 'policy' | 'generic'
+
+function classifyQuery(q: string): QueryIntent {
+  if (/什么是|是什么|定义|概念|含义|意思/.test(q)) return 'definitional'
+  if (/怎么|如何|教程|步骤|方法|怎样/.test(q)) return 'howto'
+  if (/对比|比较|区别|差异|vs|和.{1,6}哪个/.test(q)) return 'comparison'
+  if (/最新|新闻|今天|昨天|消息|动态|刚刚/.test(q)) return 'news'
+  if (/多少|几个|哪里|哪些|谁|什么时候|何时/.test(q)) return 'factual'
+  if (/政策|条例|法规|办法|通知|公告|规定|意见|标准|文件/.test(q)) return 'policy'
+  return 'generic'
+}
+
+// ===== 查询扩展：自动生成多角度变体，一轮覆盖充分 =====
+
+const NEWS_SITES = 'site:sina.com.cn OR site:163.com OR site:qq.com OR site:sohu.com OR site:36kr.com OR site:thepaper.cn'
+
+function expandQueries(query: string, sites?: string[]): string[] {
+  // 用户指定了 sites 就不做自动扩展
+  if (sites?.length) {
+    const siteStr = ' ' + sites.map(s => `site:${s}`).join(' OR ')
+    return [query.trim() + siteStr]
+  }
+
+  const variants: string[] = []
+  const q = query.trim()
+
+  // 原始查询永远保留
+  variants.push(q)
+
+  const isChinese = /[一-鿿]/.test(q)
+
+  if (!isChinese) {
+    // 英文查询不做额外扩展，三引擎并行已足够
+    return [q]
+  }
+
+  const intent = classifyQuery(q)
+
+  switch (intent) {
+    case 'definitional':
+      variants.push(q.replace(/什么是|是什么|的定义|的概念|的含义|啥意思/, '').trim() + ' 定义 解释')
+      break
+    case 'howto':
+      variants.push(q.replace(/怎么|如何|怎样/, '').trim() + ' 教程 方法')
+      break
+    case 'comparison':
+      break
+    case 'news':
+      // 新闻类：加新闻站点限定
+      variants.push(q + ' ' + NEWS_SITES)
+      break
+    case 'factual':
+      break
+    case 'policy':
+      variants.push(q + ' 全文')
+      break
+    case 'generic': {
+      // 对 generic 中文查询，追加新闻门户限定变体（热点类信息通常在这些站）
+      variants.push(q + ' ' + NEWS_SITES)
+      break
+    }
+  }
+
+  return [...new Set(variants)]
+}
+
 const definition: ToolDefinition = {
   name: 'web_search',
-  description: '搜索互联网获取信息。优先从本地索引库检索（毫秒级，聚合微博/知乎/B站/百度/头条/新浪财经/GitHub/HN等平台实时数据），未命中时自动使用搜索引擎。',
+  description: '搜索互联网获取信息。传入多个关键词方向自动并行搜索，覆盖更全面。支持 sites 参数限定域名。',
   category: 'search',
   permissions: 'auto',
   parameters: {
     type: 'object',
     properties: {
-      query: {
-        type: 'string',
-        description: '搜索关键词',
+      queries: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '搜索关键词列表，每个元素是一个搜索方向。建议传入 2-4 个不同角度的关键词（如中英文、不同表述），系统会自动并行搜索并合并结果。例如 ["黄仁勋 女儿 订婚", "Jensen Huang daughter engaged", "英伟达 高管 结婚"]',
+      },
+      sites: {
+        type: 'array',
+        description: '可选，限定搜索的域名列表。例如 ["gov.cn"] 只搜政府网站。不填则全网搜索。',
+        items: { type: 'string' },
       },
     },
-    required: ['query'],
+    required: ['queries'],
   },
 }
+
 
 export const webSearchTool: ToolExecutor = {
   definition,
   async execute(args) {
-    const query = args.query as string
-    if (!query) throw new Error('缺少搜索关键词')
+    const batchQueries = args.queries as string[] | undefined
+    const sites = args.sites as string[] | undefined
 
-    // 第一阶段：本地索引搜索
-    try {
-      await localSearchEngine.ensureInitialized()
-      const stats = localSearchEngine.getStats()
-      console.log(`[web_search] 本地索引状态: ${stats.totalItems} 条, 来源: [${stats.sources.join(',')}]`)
-      const localResults = localSearchEngine.search(query, { limit: 15 })
-      console.log(`[web_search] 本地命中: ${localResults.length} 条`)
-      if (localResults.length >= 1) {
-        return '【本地热点索引】\n' + localResults
-          .map((r, i) => {
-            const hot = r.score >= 10000 ? (r.score / 10000).toFixed(1) + '万' : String(r.score)
-            return `[${i + 1}] ${r.title}\n    来源: ${r.source} · 热度: ${hot}\n    ${r.url}`
-          })
-          .join('\n\n')
-      }
-    } catch (e) {
-      console.warn('[web_search] 本地索引查询失败，回退到搜索引擎:', e)
+    // 兼容旧的 query 参数（万一模型还是传了单个 string）
+    const singleQuery = args.query as string | undefined
+    const queryList: string[] = []
+    if (batchQueries && batchQueries.length > 0) {
+      queryList.push(...batchQueries.slice(0, 5))
+    } else if (singleQuery) {
+      queryList.push(singleQuery)
+    } else {
+      throw new Error('需要提供 queries 参数')
     }
 
-    // 第二阶段：Bing/DDG + 知乎 API 并行兜底
-    console.log('[web_search] 本地未命中，并行调用 Bing/DDG + 知乎 API')
-    const processed = preprocessQuery(query)
+    const siteFilter = sites?.length
+      ? sites.map(s => `site:${s}`).join(' OR ')
+      : ''
+    const hasSiteFilter = !!siteFilter
 
-    const [webResults, zhihuResults] = await Promise.allSettled([
-      searchWebLight(processed),
-      searchAll(query),
+    // 所有查询并行执行，每个查询内部再做变体扩展
+    const allSearchTasks: Promise<SearchHit[]>[] = []
+    const allQueryVariants: string[] = []
+
+    for (const q of queryList) {
+      const variants = expandQueries(q, sites)
+      allQueryVariants.push(...variants)
+      const processed = variants.map(v => preprocessQuery(v))
+      for (const pq of processed) {
+        allSearchTasks.push(searchWebLight(pq).catch(() => [] as SearchHit[]))
+      }
+    }
+
+    console.log(`[web_search] ${queryList.length} 个查询方向, 共 ${allQueryVariants.length} 个变体 → ${allQueryVariants.map(q => `"${q}"`).join(', ')}`)
+
+    // 知乎搜索（仅在无 site 限定时，用第一个查询）
+    const primaryQuery = queryList[0]
+    const zhihuTask = hasSiteFilter
+      ? Promise.resolve({ zhihu: [] as ZhihuSearchResult[], global: [] as ZhihuSearchResult[] })
+      : searchAll(primaryQuery).catch(() => ({ zhihu: [] as ZhihuSearchResult[], global: [] as ZhihuSearchResult[] }))
+
+    const [searchResultArrays, zhihuResults] = await Promise.all([
+      Promise.all(allSearchTasks),
+      zhihuTask,
     ])
 
-    const results = webResults.status === 'fulfilled' ? webResults.value : []
-    const filtered = filterResults(results)
-    const ranked = scoreAndRank(filtered, query)
+    // 合并去重
+    const seenUrls = new Set<string>()
+    const merged: SearchHit[] = []
+    for (const batch of searchResultArrays) {
+      for (const r of batch) {
+        if (!seenUrls.has(r.url)) {
+          seenUrls.add(r.url)
+          merged.push(r)
+        }
+      }
+    }
 
-    const zhihu = zhihuResults.status === 'fulfilled' ? zhihuResults.value : { zhihu: [], global: [] }
-    console.log(`[web_search] 知乎API: 站内${zhihu.zhihu.length}条, 全网${zhihu.global.length}条`)
+    console.log(`[web_search] ${allQueryVariants.length} 个变体共返回 ${merged.length} 条（去重后）`)
+
+    const filtered = filterResults(merged)
+    const ranked = scoreAndRank(filtered, primaryQuery)
+
+    // 片段质量过滤：去除垃圾片段，长片段优先
+    const qualityRanked = ranked.filter(r => {
+      if (!r.snippet || r.snippet.length < 20) return false
+      const navChars = (r.snippet.match(/[|>»›→·]/g) || []).length
+      if (navChars > 5) return false
+      return true
+    }).sort((a, b) => {
+      const scoreA = ranked.indexOf(a)
+      const scoreB = ranked.indexOf(b)
+      const lenBonus = (s: string) => s.length > 200 ? -2 : s.length > 100 ? -1 : 0
+      return (scoreA + lenBonus(a.snippet)) - (scoreB + lenBonus(b.snippet))
+    })
+
+    const zhihu = zhihuResults
+    console.log(`[web_search] 最终: ${qualityRanked.length} 条, 知乎: 站内${zhihu.zhihu.length}条/全网${zhihu.global.length}条`)
 
     const parts: string[] = []
-    if (ranked.length > 0) {
-      parts.push(ranked.slice(0, 8).map((r, i) => `[${i + 1}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
-    }
-    const zhihuAll = [...zhihu.zhihu, ...zhihu.global]
-    if (zhihuAll.length > 0) {
-      parts.push('【知乎搜索】\n' + zhihuAll.slice(0, 5).map(r => `[${r.source}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
+
+    if (qualityRanked.length > 0) {
+      const label = hasSiteFilter ? `【限定域名: ${sites!.join(', ')}】` : '【搜索结果】'
+      parts.push(label + ` (${queryList.length} 个查询方向, ${allQueryVariants.length} 个变体)\n` +
+        qualityRanked.slice(0, 10).map((r, i) => `[${i + 1}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
     }
 
-    if (parts.length === 0) return '未找到相关结果'
+    // 知乎结果：只保留有实质内容的（摘要≥50字符），并标注不要抓取
+    const zhihuAll = [...zhihu.zhihu, ...zhihu.global]
+      .filter(r => !seenUrls.has(r.url) && r.snippet.length >= 50)
+    if (zhihuAll.length > 0) {
+      parts.push('【知乎】⚠️ 知乎页面有登录墙无法抓取全文，以下摘要即是最佳可用内容，请勿调用 web_fetch：\n' +
+        zhihuAll.slice(0, 5).map(r => `[${r.source}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
+    }
+
+    if (parts.length === 0) {
+      if (hasSiteFilter) {
+        return `在 ${sites!.join(', ')} 内未找到与"${primaryQuery}"相关的结果。\n\n尝试了以下关键词变体：\n${allQueryVariants.map(q => `  • ${q}`).join('\n')}\n\n建议去掉网站限定扩大搜索范围。`
+      }
+      return `未找到与"${primaryQuery}"相关的结果。\n\n尝试了以下关键词变体：\n${allQueryVariants.map(q => `  • ${q}`).join('\n')}\n\n建议更换更具体的关键词重试。`
+    }
+
     return parts.join('\n\n')
   },
 }

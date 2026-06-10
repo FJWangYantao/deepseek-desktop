@@ -1,5 +1,6 @@
 import katex from 'katex'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const ZWSP = '​'
 
@@ -81,6 +82,15 @@ export function renderMarkdown(raw: string): string {
 
   // 明文 URL → 可点击链接（跳过已在 <a> 标签内的）
   html = html.replace(/(?<!href="|">)(https?:\/\/[^\s<>"')\]]+)/g, '<a href="$1" target="_blank" rel="noopener" class="cite-link">$1</a>')
+
+  // 最终统一净化：剥离 <script>/事件属性/危险协议，保留 KaTeX/常用 Markdown 标签
+  // 单点防御：useMarkdown 的所有调用方都受此保护，无需在每个 v-html 出口重复 sanitize
+  html = DOMPurify.sanitize(html, {
+    ADD_TAGS: ['math', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'msqrt', 'mtext', 'annotation', 'semantics'],
+    ADD_ATTR: ['target', 'rel', 'class', 'style'],
+    FORBID_TAGS: ['style', 'iframe', 'object', 'embed', 'form', 'input'],
+    ALLOWED_URI_REGEXP: /^(?:https?|mailto|tel|data:image\/(?:png|jpe?g|gif|webp|svg\+xml)):/i,
+  })
 
   return html
 }

@@ -24,6 +24,7 @@ export async function deepSeekChat(options: ChatOptions): Promise<ChatResult> {
     model,
     messages,
     stream: true,
+    stream_options: { include_usage: true },
   }
 
   // V4 Pro 和 V4 Flash 都支持思考模式

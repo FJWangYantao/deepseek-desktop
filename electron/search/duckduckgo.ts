@@ -17,7 +17,7 @@ export interface SearchHit {
 
 // ===== 底层 HTTP GET =====
 
-function httpGet(url: string, timeout = 8000): Promise<string> {
+function httpGet(url: string, timeout = 8000, maxRedirects = 5): Promise<string> {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https:') ? https : http
     const req = mod.get(url, {
@@ -29,8 +29,12 @@ function httpGet(url: string, timeout = 8000): Promise<string> {
       timeout,
     }, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        if (maxRedirects <= 0) {
+          reject(new Error(`Too many redirects: ${url}`))
+          return
+        }
         const redirectUrl = new URL(res.headers.location, url).href
-        resolve(httpGet(redirectUrl, timeout))
+        resolve(httpGet(redirectUrl, timeout, maxRedirects - 1))
         return
       }
       const chunks: Buffer[] = []
@@ -104,7 +108,7 @@ function parseBingHtml(html: string): SearchHit[] {
 
 async function searchBingLight(query: string): Promise<SearchHit[]> {
   const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}`
-  const html = await httpGet(url, 10000)
+  const html = await httpGet(url, 6000)
   if (!html) return []
   return parseBingHtml(html)
 }
@@ -113,7 +117,7 @@ async function searchBingLight(query: string): Promise<SearchHit[]> {
 
 async function searchBing(query: string): Promise<SearchResult[]> {
   const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}`
-  const html = await httpGet(url, 10000)
+  const html = await httpGet(url, 6000)
   if (!html) return []
   const hits = parseBingHtml(html)
   if (hits.length === 0) return []
@@ -154,7 +158,7 @@ function parseDDGHtml(html: string): SearchHit[] {
 
 async function searchDDGLight(query: string): Promise<SearchHit[]> {
   const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
-  const html = await httpGet(url, 10000)
+  const html = await httpGet(url, 6000)
   if (!html) return []
   return parseDDGHtml(html)
 }
@@ -163,7 +167,7 @@ async function searchDDGLight(query: string): Promise<SearchHit[]> {
 
 async function searchDDG(query: string): Promise<SearchResult[]> {
   const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
-  const html = await httpGet(url, 10000)
+  const html = await httpGet(url, 6000)
   if (!html) return []
   const hits = parseDDGHtml(html)
   if (hits.length === 0) return []
@@ -174,7 +178,7 @@ async function searchDDG(query: string): Promise<SearchResult[]> {
 
 async function searchBingEnLight(query: string): Promise<SearchHit[]> {
   const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en`
-  const html = await httpGetCustom(url, 10000, 'en-US,en;q=0.9')
+  const html = await httpGetCustom(url, 6000, 'en-US,en;q=0.9')
   if (!html) return []
   return parseBingHtml(html)
 }
@@ -183,7 +187,7 @@ async function searchBingEnLight(query: string): Promise<SearchHit[]> {
 
 async function searchBingEn(query: string): Promise<SearchResult[]> {
   const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en`
-  const html = await httpGetCustom(url, 10000, 'en-US,en;q=0.9')
+  const html = await httpGetCustom(url, 6000, 'en-US,en;q=0.9')
   if (!html) return []
   const hits = parseBingHtml(html)
   if (hits.length === 0) return []
@@ -192,7 +196,7 @@ async function searchBingEn(query: string): Promise<SearchResult[]> {
 
 // ===== 自定义 Accept-Language GET =====
 
-function httpGetCustom(url: string, timeout: number, acceptLang: string): Promise<string> {
+function httpGetCustom(url: string, timeout: number, acceptLang: string, maxRedirects = 5): Promise<string> {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https:') ? https : http
     const req = mod.get(url, {
@@ -204,8 +208,12 @@ function httpGetCustom(url: string, timeout: number, acceptLang: string): Promis
       timeout,
     }, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        if (maxRedirects <= 0) {
+          reject(new Error(`Too many redirects: ${url}`))
+          return
+        }
         const redirectUrl = new URL(res.headers.location, url).href
-        resolve(httpGetCustom(redirectUrl, timeout, acceptLang))
+        resolve(httpGetCustom(redirectUrl, timeout, acceptLang, maxRedirects - 1))
         return
       }
       const chunks: Buffer[] = []
@@ -238,23 +246,58 @@ async function fetchPageContents(items: { title: string; url: string; snippet: s
   return results
 }
 
-// ===== 多引擎搜索（轻量版，跳过页面抓取） =====
+// ===== 多引擎搜索（轻量版，竞速截断） =====
 
 export async function searchWebLight(query: string): Promise<SearchHit[]> {
-  const [cnResults, enResults, ddgResults] = await Promise.all([
+  const FAST_DEADLINE = 3000
+  const FULL_DEADLINE = 8000
+  const MIN_FAST = 3
+
+  const tasks = [
     searchBingLight(query).catch(() => [] as SearchHit[]),
-    searchBingEnLight(query).catch(() => [] as SearchHit[]),
     searchDDGLight(query).catch(() => [] as SearchHit[]),
-  ])
+    searchBingEnLight(query).catch(() => [] as SearchHit[]),
+  ]
 
   const seen = new Set<string>()
   const merged: SearchHit[] = []
-  for (const r of [...cnResults, ...enResults, ...ddgResults]) {
-    if (!seen.has(r.url)) {
-      seen.add(r.url)
-      merged.push(r)
+
+  function mergeResults(newResults: SearchHit[]) {
+    for (const r of newResults) {
+      if (!seen.has(r.url)) {
+        seen.add(r.url)
+        merged.push(r)
+      }
     }
   }
+
+  await new Promise<void>(resolve => {
+    let resolved = false
+    const done = () => { if (!resolved) { resolved = true; resolve() } }
+
+    const fullTimer = setTimeout(done, FULL_DEADLINE)
+    const fastTimer = setTimeout(() => {
+      if (merged.length >= MIN_FAST) done()
+    }, FAST_DEADLINE)
+
+    for (const task of tasks) {
+      task.then(results => {
+        mergeResults(results)
+        if (merged.length >= MIN_FAST) {
+          clearTimeout(fastTimer)
+          clearTimeout(fullTimer)
+          done()
+        }
+      })
+    }
+
+    Promise.all(tasks).then(() => {
+      clearTimeout(fastTimer)
+      clearTimeout(fullTimer)
+      done()
+    })
+  })
+
   return merged
 }
 

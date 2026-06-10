@@ -159,10 +159,11 @@ function buildStep(
 
   // 根据字段判断类型
   if (map.has('prompt')) {
-    if (!map.has('prompt')) {
-      errors.push({ stepIndex: index, field: 'prompt', message: 'prompt 步骤缺少 prompt 字段' })
+    const promptVal = getVal('prompt')
+    if (!promptVal || !promptVal.trim()) {
+      errors.push({ stepIndex: index, field: 'prompt', message: 'prompt 步骤的 prompt 字段不能为空' })
     }
-    return { type: 'prompt', stage, prompt: getVal('prompt') }
+    return { type: 'prompt', stage, prompt: promptVal }
   }
 
   if (map.has('condition')) {

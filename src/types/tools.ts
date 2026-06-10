@@ -63,6 +63,9 @@ export interface ToolCallRequest {
   name: string
   arguments: string // JSON string
   callId: string
+  /** 可选：关联到会话和一轮用户消息，便于 Observation 串联 */
+  sessionId?: string
+  conversationTurnId?: string
 }
 
 export interface ToolListResponse {

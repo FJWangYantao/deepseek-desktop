@@ -12,6 +12,7 @@ const router = useRouter()
 const store = useSkillStore()
 const editing = ref<SkillMeta | null>(null)
 const showForm = ref(false)
+const showImport = ref(false)
 const formMode = ref<'text' | 'dsl'>('text')
 const formSteps = ref<DSLStep[]>([])
 const dslValidationError = ref('')
@@ -55,33 +56,13 @@ function openEdit(skill: SkillMeta) {
   showForm.value = true
 }
 
-function cancelEdit() {
-  showForm.value = false
-  editing.value = null
-  dslValidationError.value = ''
-}
+function cancelEdit() { showForm.value = false; editing.value = null; dslValidationError.value = '' }
 
 async function handleSave() {
   let content = form.value.content.trim()
-  const meta = {
-    name: form.value.name.trim(),
-    description: form.value.description.trim(),
-    version: form.value.version.trim() || '1.0.0',
-    tags: form.value.tags.split(',').map(s => s.trim()).filter(Boolean),
-  }
-
-  if (formMode.value === 'dsl' && formSteps.value.length > 0) {
-    content = serializeDSL(meta, content, formSteps.value)
-  }
-
-  const skill: SkillMeta = {
-    id: form.value.id,
-    name: meta.name,
-    description: meta.description,
-    version: meta.version,
-    tags: meta.tags,
-    content,
-  }
+  const meta = { name: form.value.name.trim(), description: form.value.description.trim(), version: form.value.version.trim() || '1.0.0', tags: form.value.tags.split(',').map(s => s.trim()).filter(Boolean) }
+  if (formMode.value === 'dsl' && formSteps.value.length > 0) content = serializeDSL(meta, content, formSteps.value)
+  const skill: SkillMeta = { id: form.value.id, name: meta.name, description: meta.description, version: meta.version, tags: meta.tags, content }
   if (!skill.name || !content) return
   await store.saveSkill(skill)
   showForm.value = false
@@ -89,7 +70,7 @@ async function handleSave() {
 }
 
 async function handleDelete(id: string) {
-  if (!confirm('确定删除这个 Skill？')) return
+  if (!confirm('确定删除？')) return
   await store.deleteSkill(id)
 }
 
@@ -102,152 +83,101 @@ async function handleImport() {
   importing.value = true
   try {
     const result = await window.electronAPI.importSkill(url)
-    if (result) {
-      importUrl.value = ''
-      await store.loadSkills()
-    } else {
-      alert('导入失败，请检查 URL 是否正确，或该 Skill 已存在')
-    }
-  } finally {
-    importing.value = false
-  }
+    if (result) { importUrl.value = ''; showImport.value = false; await store.loadSkills() }
+    else { alert('导入失败') }
+  } finally { importing.value = false }
 }
 
-// 推荐社区 Skill 仓库
 const featuredRepos = [
-  { name: 'Anthropic 官方 Skills', url: 'https://raw.githubusercontent.com/anthropics/claude-code/main/.claude/skills/brainstorming/SKILL.md', desc: '头脑风暴 & 设计讨论' },
-  { name: 'Claude Code Skills 合集', url: 'https://raw.githubusercontent.com/anthropics/claude-code/main/.claude/skills/writing-plans/SKILL.md', desc: '实现计划编写' },
+  { name: '头脑风暴', url: 'https://raw.githubusercontent.com/anthropics/claude-code/main/.claude/skills/brainstorming/SKILL.md' },
+  { name: '实现计划', url: 'https://raw.githubusercontent.com/anthropics/claude-code/main/.claude/skills/writing-plans/SKILL.md' },
 ]
 </script>
 
 <template>
   <div class="flex-1 flex flex-col min-w-0 bg-app-bg">
-    <div class="flex items-center gap-3 px-5 py-3 border-b border-app-border">
-      <button
-        @click="router.push('/')"
-        class="w-7 h-7 flex items-center justify-center rounded-md text-app-muted hover:bg-app-card transition-colors"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
+    <!-- 顶栏 -->
+    <div class="flex items-center gap-3 px-5 py-3 border-b border-app-border/40">
+      <button @click="router.push('/')" class="w-7 h-7 flex items-center justify-center rounded-md text-app-muted hover:text-app-text transition-colors">
+        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19l-7-7 7-7" /></svg>
       </button>
-      <h1 class="text-base font-semibold text-app-text">Skill 管理</h1>
+      <h1 class="text-sm font-medium text-app-text">Skills</h1>
       <div class="flex-1" />
-      <button
-        @click="openNew()"
-        class="px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-app-accent hover:bg-app-accent-hover transition-colors"
-      >
-        + 新建
-      </button>
+      <button @click="showImport = !showImport" class="text-xs text-app-muted/60 hover:text-app-text transition-colors">导入</button>
+      <button @click="openNew()" class="ml-3 px-3.5 py-1.5 text-xs font-medium rounded-md bg-app-text text-app-bg hover:opacity-80 transition-opacity">新建</button>
     </div>
 
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-      <!-- 搜索 -->
-      <input
-        v-model="searchQuery"
-        placeholder="搜索 Skill..."
-        class="w-full px-3.5 py-2 text-sm rounded-lg border border-app-border bg-app-input
-               text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
-               transition-colors mb-4"
-      />
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-xl mx-auto px-6 py-8 space-y-6">
 
-      <!-- 导入 -->
-      <div class="mb-6 p-4 rounded-xl border border-app-border bg-app-surface-alt">
-        <h3 class="text-sm font-medium text-app-heading mb-3">从社区导入 Skill</h3>
-        <div class="flex gap-2 mb-3">
-          <input
-            v-model="importUrl"
-            placeholder="粘贴 Skill 的 Raw URL（GitHub raw URL）"
-            class="flex-1 px-3 py-2 text-sm rounded-lg border border-app-border bg-app-input
-                   text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent"
-          />
-          <button
-            @click="handleImport"
-            :disabled="!importUrl.trim() || importing"
-            class="px-4 py-2 text-xs font-medium rounded-lg text-white bg-app-accent hover:bg-app-accent-hover
-                   disabled:opacity-40 transition-colors shrink-0"
-          >
-            {{ importing ? '导入中...' : '导入' }}
-          </button>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <span class="text-xs text-app-muted">推荐：</span>
-          <button
-            v-for="repo in featuredRepos" :key="repo.url"
-            @click="importUrl = repo.url"
-            class="text-xs px-2 py-1 rounded-md border border-app-border text-app-muted hover:border-app-accent hover:text-app-accent transition-colors"
-          >
-            {{ repo.name }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 编辑表单 -->
-      <div v-if="showForm" class="mb-6 p-4 rounded-xl border border-app-accent bg-app-accent-soft">
-        <input v-model="form.name" placeholder="名称" class="w-full px-3 py-2 mb-2 text-sm rounded-lg border border-app-border bg-app-input text-app-text focus:outline-none focus:border-app-accent" />
-        <input v-model="form.description" placeholder="描述" class="w-full px-3 py-2 mb-2 text-sm rounded-lg border border-app-border bg-app-input text-app-text focus:outline-none focus:border-app-accent" />
-        <div class="flex gap-2 mb-2">
-          <input v-model="form.version" placeholder="版本" class="flex-1 px-3 py-2 text-sm rounded-lg border border-app-border bg-app-input text-app-text focus:outline-none focus:border-app-accent" />
-          <input v-model="form.tags" placeholder="标签 (逗号分隔)" class="flex-[2] px-3 py-2 text-sm rounded-lg border border-app-border bg-app-input text-app-text focus:outline-none focus:border-app-accent" />
+        <!-- 搜索 -->
+        <div class="relative">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input v-model="searchQuery" placeholder="搜索..." class="w-full pl-9 pr-4 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors" />
         </div>
 
-        <!-- 模式切换 -->
-        <div class="flex items-center gap-1 mb-3 bg-app-hover rounded-lg p-0.5 w-fit">
-          <button @click="formMode = 'text'" class="px-3 py-1 text-xs rounded-md transition-colors"
-            :class="formMode === 'text' ? 'bg-white text-app-text shadow-sm font-medium' : 'text-app-muted hover:text-app-text'"
-          >纯文本</button>
-          <button @click="formMode = 'dsl'" class="px-3 py-1 text-xs rounded-md transition-colors"
-            :class="formMode === 'dsl' ? 'bg-white text-app-text shadow-sm font-medium' : 'text-app-muted hover:text-app-text'"
-          >DSL 步骤</button>
-        </div>
-
-        <!-- DSL 验证警告 -->
-        <div v-if="dslValidationError" class="mb-3 px-3 py-2 rounded-lg text-xs bg-amber-50 text-amber-700 border border-amber-200">
-          {{ dslValidationError }}
-        </div>
-
-        <!-- 纯文本编辑器 -->
-        <textarea v-if="formMode === 'text'" v-model="form.content" placeholder="Prompt 内容（支持 Markdown）" rows="8"
-          class="w-full px-3 py-2 mb-3 text-sm rounded-lg border border-app-border bg-app-input text-app-text font-mono focus:outline-none focus:border-app-accent resize-y"
-        ></textarea>
-
-        <!-- DSL 步骤编辑器 -->
-        <div v-if="formMode === 'dsl'" class="mb-3">
-          <DSLStepEditor :steps="formSteps" @update:steps="formSteps = $event" />
-        </div>
-
-        <div class="flex gap-2">
-          <button @click="handleSave" class="px-4 py-1.5 text-xs font-medium rounded-lg text-white bg-app-accent hover:bg-app-accent-hover">保存</button>
-          <button @click="cancelEdit" class="px-4 py-1.5 text-xs font-medium rounded-lg border border-app-border text-app-muted hover:bg-app-hover">取消</button>
-        </div>
-      </div>
-
-      <!-- Skill 列表 -->
-      <div v-if="store.loading" class="text-sm text-app-muted text-center py-12">加载中...</div>
-      <div v-else-if="filteredSkills.length === 0" class="text-sm text-app-muted text-center py-12">
-        {{ searchQuery ? '没有匹配的 Skill' : '还没有 Skill，点击右上角"新建"创建' }}
-      </div>
-      <div v-else class="space-y-3">
-        <div
-          v-for="s in filteredSkills"
-          :key="s.id"
-          class="p-4 rounded-xl border border-app-border bg-app-input hover:border-app-accent-soft-border transition-colors"
-        >
-          <div class="flex items-start justify-between mb-1.5">
-            <div>
-              <h3 class="text-sm font-medium text-app-heading">{{ s.name }}</h3>
-              <p class="text-xs text-app-muted mt-0.5">{{ s.description }}</p>
+        <!-- 导入面板 -->
+        <Transition name="tool-expand">
+          <div v-if="showImport" class="border border-app-border/40 rounded-lg p-4 space-y-3">
+            <div class="flex gap-2">
+              <input v-model="importUrl" placeholder="粘贴 Skill Raw URL" class="flex-1 px-3.5 py-2 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors" />
+              <button @click="handleImport" :disabled="!importUrl.trim() || importing" class="px-3.5 py-2 text-xs font-medium rounded-md bg-app-text text-app-bg hover:opacity-80 disabled:opacity-30 transition-opacity shrink-0">{{ importing ? '...' : '导入' }}</button>
             </div>
-            <div class="flex gap-1 shrink-0 ml-4">
-              <button @click="openEdit(s)" class="px-2.5 py-1 text-xs rounded-md border border-app-border text-app-muted hover:text-app-accent hover:border-app-accent transition-colors">编辑</button>
-              <button @click="handleDelete(s.id)" class="px-2.5 py-1 text-xs rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition-colors">删除</button>
+            <div class="flex gap-2">
+              <button v-for="repo in featuredRepos" :key="repo.url" @click="importUrl = repo.url" class="text-xs px-2.5 py-1 rounded-md border border-app-border/30 text-app-muted hover:text-app-text hover:border-app-border/60 transition-colors">{{ repo.name }}</button>
             </div>
           </div>
-          <div class="flex items-center gap-2 text-[11px] text-app-muted">
-            <span>v{{ s.version }}</span>
-            <span v-for="t in s.tags" :key="t" class="px-1.5 py-0.5 rounded bg-app-hover">{{ t }}</span>
+        </Transition>
+
+        <!-- 编辑表单 -->
+        <div v-if="showForm" class="pt-6 border-t border-app-border/30 space-y-3">
+          <p class="text-xs font-medium text-app-muted mb-2">{{ editing ? '编辑' : '新建' }} Skill</p>
+          <input v-model="form.name" placeholder="名称" class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors" />
+          <input v-model="form.description" placeholder="描述" class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors" />
+          <div class="flex gap-2">
+            <input v-model="form.version" placeholder="版本" class="flex-1 px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors" />
+            <input v-model="form.tags" placeholder="标签(逗号)" class="flex-[2] px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors" />
+          </div>
+          <!-- 模式切换 -->
+          <div class="flex gap-3 text-xs">
+            <button @click="formMode = 'text'" class="pb-0.5 transition-colors" :class="formMode === 'text' ? 'text-app-text border-b border-app-text' : 'text-app-muted/60 hover:text-app-text'">文本</button>
+            <button @click="formMode = 'dsl'" class="pb-0.5 transition-colors" :class="formMode === 'dsl' ? 'text-app-text border-b border-app-text' : 'text-app-muted/60 hover:text-app-text'">DSL</button>
+          </div>
+          <div v-if="dslValidationError" class="text-xs text-amber-600/80 px-3 py-2 border border-amber-300/30 rounded-lg">{{ dslValidationError }}</div>
+          <textarea v-if="formMode === 'text'" v-model="form.content" placeholder="Prompt 内容" rows="8" class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text font-mono placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors resize-y" />
+          <DSLStepEditor v-if="formMode === 'dsl'" :steps="formSteps" @update:steps="formSteps = $event" />
+          <div class="flex gap-2 pt-2">
+            <button @click="handleSave" class="px-4 py-2 text-xs font-medium rounded-md bg-app-text text-app-bg hover:opacity-80 transition-opacity">保存</button>
+            <button @click="cancelEdit" class="px-3 py-1.5 text-xs text-app-muted hover:text-app-text transition-colors">取消</button>
           </div>
         </div>
+
+        <!-- 列表 -->
+        <div v-if="!showForm">
+          <div v-if="store.loading" class="text-center py-16">
+            <svg class="w-4 h-4 animate-spin mx-auto text-app-muted/40" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+          </div>
+          <div v-else-if="filteredSkills.length === 0" class="text-center py-16">
+            <svg class="w-12 h-12 mx-auto text-app-muted/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+            <p class="text-sm text-app-muted/60 mt-3">{{ searchQuery ? '无匹配结果' : '还没有 Skill' }}</p>
+          </div>
+          <div v-else class="divide-y divide-app-border/20">
+            <div
+              v-for="s in filteredSkills" :key="s.id"
+              class="group flex items-center gap-3 py-4 cursor-default"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="text-sm text-app-text">{{ s.name }}</p>
+                <p class="text-xs text-app-muted/60 truncate mt-0.5">{{ s.description }}</p>
+              </div>
+              <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <button @click="openEdit(s)" class="text-xs text-app-muted hover:text-app-text transition-colors">编辑</button>
+                <button @click="handleDelete(s.id)" class="text-xs text-app-muted hover:text-red-500 transition-colors">删除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

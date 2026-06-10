@@ -4,6 +4,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setStore: (key: string, value: string) => ipcRenderer.invoke('store:set', key, value),
   getStore: (key: string) => ipcRenderer.invoke('store:get', key),
   deleteStore: (key: string) => ipcRenderer.invoke('store:delete', key),
+  // 加密存储（用于 API Key 等敏感数据）
+  secureGet: (key: string): Promise<string> => ipcRenderer.invoke('secure-storage:get', key),
+  secureSet: (key: string, value: string): Promise<boolean> => ipcRenderer.invoke('secure-storage:set', key, value),
+  secureDelete: (key: string): Promise<boolean> => ipcRenderer.invoke('secure-storage:delete', key),
+  secureAvailable: (): Promise<boolean> => ipcRenderer.invoke('secure-storage:available'),
   selectAvatar: () => ipcRenderer.invoke('avatar:select'),
   getAvatar: () => ipcRenderer.invoke('avatar:get'),
   selectFiles: () => ipcRenderer.invoke('file:select'),
@@ -27,4 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('image:describe', config),
   saveClipboardImage: (data: { base64: string; ext: string }) =>
     ipcRenderer.invoke('image:saveClipboard', data),
+  observationsAppend: (event: Record<string, unknown>) => ipcRenderer.invoke('observations:append', event),
+  observationsAppendBatch: (events: Record<string, unknown>[]) => ipcRenderer.invoke('observations:appendBatch', events),
+  observationsFlush: () => ipcRenderer.invoke('observations:flush'),
 })

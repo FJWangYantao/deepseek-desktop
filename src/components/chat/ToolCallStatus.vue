@@ -139,7 +139,7 @@ const hasCompleted = computed(() => props.calls.some(c => c.status === 'complete
           </svg>
         </span>
         <span v-else-if="call.status === 'completed'" class="text-green-500 flex items-center justify-center w-3.5 h-3.5 shrink-0">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="w-3.5 h-3.5 animate-bounce-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 13l4 4L19 7" />
           </svg>
         </span>
@@ -185,10 +185,11 @@ const hasCompleted = computed(() => props.calls.some(c => c.status === 'complete
       </button>
 
       <!-- 展开详情 -->
-      <div
-        v-if="expanded[call.callId]"
-        class="ml-5 mt-1.5 mb-2 pl-3 border-l-2 border-app-accent-soft-border"
-      >
+      <Transition name="tool-expand">
+        <div
+          v-if="expanded[call.callId]"
+          class="ml-5 mt-1.5 mb-2 pl-3 border-l-2 border-app-accent-soft-border"
+        >
         <!-- 参数 -->
         <div class="mb-2">
           <div class="text-[10px] text-app-muted uppercase tracking-wide mb-1">参数</div>
@@ -217,6 +218,7 @@ const hasCompleted = computed(() => props.calls.some(c => c.status === 'complete
         <!-- 错误 -->
         <div v-if="call.error" class="text-xs text-red-400">{{ call.error }}</div>
       </div>
+      </Transition>
     </div>
   </div>
 </template>

@@ -22,7 +22,7 @@ function createSession() {
     <!-- 顶部 Logo -->
     <button
       @click="router.push('/')"
-      class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-app-hover transition-colors"
+      class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-app-hover transition-colors btn-interactive"
       title="首页"
     >
       <ReplixLogo size="sm" />
@@ -33,7 +33,7 @@ function createSession() {
       <!-- 对话列表 -->
       <button
         @click="router.push('/sessions')"
-        class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
+        class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors btn-interactive"
         title="对话列表"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,7 @@ function createSession() {
       <!-- 新建对话 -->
       <button
         @click="createSession"
-        class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
+        class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors btn-interactive"
         title="新建对话"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

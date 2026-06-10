@@ -17,214 +17,157 @@ const themes = [
 
 <template>
   <div class="flex-1 flex flex-col min-w-0 bg-app-bg">
-    <div class="flex items-center gap-3 px-5 py-3 border-b border-app-border">
-      <button
-        @click="router.push('/')"
-        class="w-7 h-7 flex items-center justify-center rounded-md text-app-muted hover:bg-app-card transition-colors"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
+    <!-- 顶栏 -->
+    <div class="flex items-center gap-3 px-5 py-3 border-b border-app-border/40">
+      <button @click="router.push('/')" class="w-7 h-7 flex items-center justify-center rounded-md text-app-muted hover:text-app-text transition-colors">
+        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19l-7-7 7-7" /></svg>
       </button>
-      <h1 class="text-base font-semibold text-app-text">设置</h1>
+      <h1 class="text-sm font-medium text-app-text">设置</h1>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-8">
-      <!-- API Key -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">API Key</label>
-        <input
-          :type="settings.showKey ? 'text' : 'password'"
-          :value="settings.apiKey"
-          @input="settings.apiKey = ($event.target as HTMLInputElement).value"
-          placeholder="sk-..."
-          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                 text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
-                 transition-colors font-mono"
-        />
-        <label class="inline-flex items-center gap-1.5 mt-2 text-xs text-app-muted cursor-pointer">
-          <input type="checkbox" v-model="settings.showKey" class="rounded" />
-          显示
-        </label>
-      </div>
 
-      <!-- 提示词库 -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between mb-3">
-          <label class="block text-sm font-medium text-app-heading">提示词库</label>
-          <a href="https://api-docs.deepseek.com/zh-cn/prompt-library/" target="_blank"
-             class="text-xs text-app-accent hover:underline">官方提示词库 →</a>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            v-for="t in settings.promptTemplates"
-            :key="t.id"
-            @click="settings.selectRole(t.id)"
-            class="text-left px-3.5 py-3 rounded-lg border transition-colors"
-            :class="settings.activeRoleId === t.id
-              ? 'border-app-accent bg-app-accent-soft'
-              : 'border-app-border bg-app-input hover:bg-app-hover'"
-            :title="t.description"
-          >
-            <div class="flex items-center gap-2 mb-0.5">
-              <span class="text-base">{{ t.icon }}</span>
-              <span class="text-sm font-medium" :class="settings.activeRoleId === t.id ? 'text-app-accent' : 'text-app-heading'">{{ t.name }}</span>
-              <span v-if="t.type === 'user'" class="text-[10px] px-1 py-0.5 rounded bg-app-border text-app-muted">示例</span>
-            </div>
-            <p class="text-[11px] text-app-muted line-clamp-2 leading-[1.5]">{{ t.description }}</p>
-          </button>
-        </div>
-        <p class="text-xs text-app-muted mt-2">点击卡片选择提示词模板，提示词将自动填入下方输入框。标注"示例"的模板为官方用户提示词示例，无官方 SYSTEM 提示词。</p>
-      </div>
+    <!-- 内容区 -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-xl mx-auto px-6 py-8 space-y-8">
 
-      <!-- 系统提示词 -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">系统提示词</label>
-        <textarea
-          :value="settings.systemPrompt"
-          @input="settings.systemPrompt = ($event.target as HTMLTextAreaElement).value; settings.activeRoleId = 'custom'"
-          placeholder="设定 AI 的行为规则、角色、回答风格等..."
-          rows="5"
-          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                 text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
-                 transition-colors resize-y min-h-[100px]"
-        ></textarea>
-        <p class="text-xs text-app-muted mt-1.5">自定义提示词将注入到每轮对话的开头，用于设定 AI 角色、行为规则和回答风格。选择上方提示词库或手动编辑。</p>
-      </div>
-
-      <!-- 视觉模型（伪多模态） -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">视觉模型</label>
-        <p class="text-xs text-app-muted mb-3">配置图片理解模型，上传图片后自动生成文字描述注入对话。支持 MiMo、GPT-4o 等 OpenAI 兼容视觉 API。</p>
-        <div class="space-y-3">
+        <!-- API Key -->
+        <section>
+          <label class="text-xs font-medium text-app-muted mb-3 block">API Key</label>
           <input
             :type="settings.showKey ? 'text' : 'password'"
-            :value="settings.mimoApiKey"
-            @input="settings.mimoApiKey = ($event.target as HTMLInputElement).value"
-            placeholder="视觉模型 API Key（可选）"
-            class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                   text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
+            :value="settings.apiKey"
+            @input="settings.apiKey = ($event.target as HTMLInputElement).value"
+            placeholder="sk-..."
+            class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent
+                   text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60
                    transition-colors font-mono"
           />
-          <input
-            :value="settings.mimoBaseUrl"
-            @input="settings.mimoBaseUrl = ($event.target as HTMLInputElement).value"
-            placeholder="API 地址"
-            class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                   text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
-                   transition-colors font-mono"
-          />
-          <input
-            :value="settings.mimoModel"
-            @input="settings.mimoModel = ($event.target as HTMLInputElement).value"
-            placeholder="模型名称"
-            class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                   text-app-text placeholder-app-muted focus:outline-none focus:border-app-accent
-                   transition-colors font-mono"
-          />
-        </div>
-      </div>
+          <label class="inline-flex items-center gap-1.5 mt-2 text-xs text-app-muted cursor-pointer select-none">
+            <input type="checkbox" v-model="settings.showKey" class="rounded border-app-border/50" /> 显示
+          </label>
+        </section>
 
-      <!-- 默认模型 -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">默认模型</label>
-        <div class="flex gap-2">
-          <button
-            v-for="m in settings.models"
-            :key="m.id"
-            @click="settings.defaultModel = m.id"
-            class="flex-1 px-4 py-2.5 text-sm rounded-lg border transition-colors"
-            :class="settings.defaultModel === m.id
-              ? 'border-app-accent bg-app-accent-soft text-app-accent font-medium'
-              : 'border-app-border bg-app-input text-app-heading hover:bg-app-hover'"
-          >
-            {{ m.name }}
-          </button>
-        </div>
-        <p class="text-xs text-app-muted mt-2">
-          {{ settings.models.find(m => m.id === settings.defaultModel)?.description }}
-        </p>
-      </div>
+        <!-- 模型 -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-3 block">默认模型</label>
+          <div class="space-y-1">
+            <button
+              v-for="m in settings.models" :key="m.id"
+              @click="settings.defaultModel = m.id"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-colors text-left"
+              :class="settings.defaultModel === m.id
+                ? 'bg-app-text/5 text-app-text'
+                : 'text-app-muted hover:text-app-text hover:bg-app-text/[0.02]'"
+            >
+              <span class="w-3 h-3 rounded-full border-2 flex items-center justify-center shrink-0"
+                :class="settings.defaultModel === m.id ? 'border-app-text' : 'border-app-border'"
+              >
+                <span v-if="settings.defaultModel === m.id" class="w-1.5 h-1.5 rounded-full bg-app-text"></span>
+              </span>
+              <span>{{ m.name }}</span>
+            </button>
+          </div>
+          <p class="text-xs text-app-muted/70 mt-2 pl-7">{{ settings.models.find(m => m.id === settings.defaultModel)?.description }}</p>
+        </section>
 
-      <!-- 字体大小 -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">字体大小</label>
-        <select
-          :value="settings.fontSize"
-          @change="settings.fontSize = Number(($event.target as HTMLSelectElement).value)"
-          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                 text-app-text focus:outline-none focus:border-app-accent transition-colors"
-        >
-          <option v-for="s in [10,12,14,16,18,20,22,24,26,28]" :key="s" :value="s">{{ s }}px</option>
-        </select>
-      </div>
+        <!-- 视觉模型 -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-1 block">视觉模型</label>
+          <p class="text-xs text-app-muted/60 mb-3">图片理解，上传图片后自动生成描述注入对话</p>
+          <div class="space-y-2">
+            <input :type="settings.showKey ? 'text' : 'password'" :value="settings.mimoApiKey" @input="settings.mimoApiKey = ($event.target as HTMLInputElement).value" placeholder="API Key（可选）" class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors font-mono" />
+            <div class="grid grid-cols-2 gap-2">
+              <input :value="settings.mimoBaseUrl" @input="settings.mimoBaseUrl = ($event.target as HTMLInputElement).value" placeholder="API 地址" class="px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors font-mono" />
+              <input :value="settings.mimoModel" @input="settings.mimoModel = ($event.target as HTMLInputElement).value" placeholder="模型名称" class="px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors font-mono" />
+            </div>
+          </div>
+        </section>
 
-      <!-- 字体族 -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">字体</label>
-        <select
-          :value="settings.fontFamily"
-          @change="settings.fontFamily = ($event.target as HTMLSelectElement).value"
-          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                 text-app-text focus:outline-none focus:border-app-accent transition-colors"
-          :style="{ fontFamily: settings.fontFamily || 'inherit' }"
-        >
-          <option v-for="f in settings.fontOptions" :key="f.value" :value="f.value">{{ f.label }}</option>
-        </select>
-      </div>
+        <!-- 提示词 -->
+        <section class="pt-6 border-t border-app-border/30">
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-xs font-medium text-app-muted">提示词</label>
+            <a href="https://api-docs.deepseek.com/zh-cn/prompt-library/" target="_blank" class="text-xs text-app-muted/60 hover:text-app-text transition-colors">官方库 →</a>
+          </div>
+          <div class="-mx-6 px-6 overflow-x-auto scrollbar-none">
+            <div class="flex gap-1.5 pb-2" style="width: max-content">
+              <button
+                v-for="t in settings.promptTemplates" :key="t.id"
+                @click="settings.selectRole(t.id)"
+                class="shrink-0 px-3 py-1.5 rounded-md text-xs transition-colors whitespace-nowrap border"
+                :class="settings.activeRoleId === t.id
+                  ? 'border-app-text/40 text-app-text bg-app-text/5'
+                  : 'border-app-border/30 text-app-muted hover:text-app-text hover:border-app-border/60'"
+              >
+                <span class="mr-1">{{ t.icon }}</span>{{ t.name }}
+              </button>
+            </div>
+          </div>
+          <textarea
+            :value="settings.systemPrompt"
+            @input="settings.systemPrompt = ($event.target as HTMLTextAreaElement).value; settings.activeRoleId = 'custom'"
+            placeholder="系统提示词..."
+            rows="4"
+            class="mt-3 w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent
+                   text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60
+                   transition-colors resize-y min-h-[80px]"
+          ></textarea>
+        </section>
 
-      <!-- 代码块样式 -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">代码块样式</label>
-        <select
-          :value="settings.codeTheme"
-          @change="settings.codeTheme = ($event.target as HTMLSelectElement).value"
-          class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-app-border bg-app-input
-                 text-app-text focus:outline-none focus:border-app-accent transition-colors"
-        >
-          <option v-for="t in settings.codeThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
-        </select>
-      </div>
+        <!-- 显示 -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-3 block">显示</label>
+          <div class="grid grid-cols-3 gap-2">
+            <select :value="settings.fontSize" @change="settings.fontSize = Number(($event.target as HTMLSelectElement).value)" class="px-3 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text focus:outline-none focus:border-app-text/60 transition-colors cursor-pointer appearance-none">
+              <option v-for="s in [12,14,16,18,20,22,24]" :key="s" :value="s">{{ s }}px</option>
+            </select>
+            <select :value="settings.fontFamily" @change="settings.fontFamily = ($event.target as HTMLSelectElement).value" class="px-3 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text focus:outline-none focus:border-app-text/60 transition-colors cursor-pointer appearance-none" :style="{ fontFamily: settings.fontFamily || 'inherit' }">
+              <option v-for="f in settings.fontOptions" :key="f.value" :value="f.value">{{ f.label }}</option>
+            </select>
+            <select :value="settings.codeTheme" @change="settings.codeTheme = ($event.target as HTMLSelectElement).value" class="px-3 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text focus:outline-none focus:border-app-text/60 transition-colors cursor-pointer appearance-none">
+              <option v-for="t in settings.codeThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
+            </select>
+          </div>
+        </section>
 
-      <!-- 主题颜色 -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">主题颜色</label>
-        <div class="flex gap-2">
-          <button
-            v-for="t in themes"
-            :key="t.id"
-            @click="theme.setTheme(t.id)"
-            class="flex-1 px-3 py-2.5 text-sm rounded-lg border transition-colors text-center"
-            :class="theme.themeName.value === t.id
-              ? 'border-app-accent bg-app-accent-soft text-app-accent font-medium'
-              : 'border-app-border bg-app-input text-app-heading hover:bg-app-hover'"
-          >
-            <span class="inline-block w-3 h-3 rounded-full mr-1.5 align-middle" :style="{ backgroundColor: t.color }"></span>
-            {{ t.label }}
-          </button>
-        </div>
-        <label class="inline-flex items-center gap-2 mt-3 cursor-pointer">
-          <input type="checkbox" :checked="theme.themeMode.value === 'dark'" @change="theme.toggleMode()" class="rounded" />
-          <span class="text-sm text-app-text">暗色模式</span>
-        </label>
-      </div>
+        <!-- 主题 -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-3 block">主题</label>
+          <div class="flex items-center gap-3">
+            <button
+              v-for="t in themes" :key="t.id"
+              @click="theme.setTheme(t.id)"
+              class="w-5 h-5 rounded-full transition-all"
+              :class="theme.themeName.value === t.id ? 'ring-2 ring-offset-2 ring-app-text/60 scale-110' : 'opacity-60 hover:opacity-100'"
+              :style="{ backgroundColor: t.color, '--tw-ring-offset-color': 'var(--app-bg)' }"
+              :title="t.label"
+            />
+            <div class="ml-auto flex items-center gap-2">
+              <span class="text-xs text-app-muted">暗色</span>
+              <button
+                @click="theme.toggleMode()"
+                class="relative w-9 h-[18px] rounded-full transition-colors"
+                :class="theme.themeMode.value === 'dark' ? 'bg-app-text/80' : 'bg-app-border/60'"
+              >
+                <span
+                  class="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-app-bg shadow-sm transition-transform"
+                  :class="theme.themeMode.value === 'dark' ? 'translate-x-[19px]' : 'translate-x-[2px]'"
+                />
+              </button>
+            </div>
+          </div>
+        </section>
 
-      <!-- 数据管理 -->
-      <div class="mb-8">
-        <label class="block text-sm font-medium text-app-heading mb-2">数据管理</label>
-        <button
-          @click="settings.clearAllData()"
-          class="px-4 py-2 text-sm rounded-lg border border-red-200 text-red-600
-                 hover:bg-red-50 transition-colors"
-        >
-          清除所有对话数据
-        </button>
-      </div>
+        <!-- 底部 -->
+        <section class="pt-6 border-t border-app-border/30 pb-6">
+          <div class="flex items-center justify-between text-xs text-app-muted">
+            <span>DeepSeek Desktop · v1.9.0</span>
+            <button
+              @click="settings.clearAllData()"
+              class="text-app-muted/60 hover:text-red-500 transition-colors"
+            >清除所有数据</button>
+          </div>
+        </section>
 
-      <!-- 关于 -->
-      <div>
-        <h3 class="text-sm font-medium text-app-heading mb-2">关于</h3>
-        <p class="text-sm text-app-muted">DeepSeek Desktop v1.9.0</p>
-        <p class="text-xs text-app-muted mt-1">Electron + Vue 3 + Tailwind CSS</p>
       </div>
     </div>
   </div>

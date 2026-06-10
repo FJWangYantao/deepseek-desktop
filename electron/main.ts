@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import { existsSync } from 'fs'
 import { execSync } from 'child_process'
 import { registerStorageHandlers } from './ipc/storage'
+import { registerSecureStorageHandlers } from './ipc/secure-storage'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
 import { registerExportHandlers } from './ipc/export'
@@ -11,6 +12,7 @@ import { registerSkillHandlers } from './ipc/skills'
 import { registerToolHandlers } from './ipc/tools'
 import { registerTokenizerHandlers } from './ipc/tokenizer'
 import { registerImageDescribeHandlers } from './ipc/image-describe'
+import { registerObservationHandlers } from './ipc/observations'
 import { registerBuiltinTools } from './tools'
 
 // Windows 控制台 UTF-8 编码
@@ -20,7 +22,9 @@ if (process.platform === 'win32') {
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const preloadPath = join(__dirname, '../electron/preload.cjs')
+// preload 由 vite 编译到 dist-electron/preload.cjs（与 main.js 同目录）
+// 不要再指向源目录 ../electron/preload.cjs — 那是历史手写副本，已废弃
+const preloadPath = join(__dirname, 'preload.cjs')
 const iconPath = join(__dirname, '../electron/icon_dl.ico')
 console.log('[Main] __dirname:', __dirname)
 
@@ -69,6 +73,7 @@ Menu.setApplicationMenu(
   )
 
 registerStorageHandlers()
+registerSecureStorageHandlers()
 registerAvatarHandlers()
 registerFileHandlers()
 registerExportHandlers()
@@ -77,6 +82,7 @@ registerBuiltinTools()
 registerToolHandlers()
 registerTokenizerHandlers()
 registerImageDescribeHandlers()
+registerObservationHandlers()
 
 app.whenReady().then(() => {
   createWindow()

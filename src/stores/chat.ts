@@ -7,6 +7,12 @@ import { useStatsStore } from './stats'
 import { useMemory } from '@/composables/useMemory'
 import { useSkillStore } from './skills'
 import { useToolLoop } from '@/composables/useToolLoop'
+import {
+  recordMessageCompleted,
+  extractLightFromMessageCompleted,
+  recordSessionSwitch,
+  extractBatchOnSessionSwitch,
+} from '@/composables/useObservationMemory'
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
@@ -87,7 +93,11 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // 监听会话切换
-  watch(() => sessionStore.currentId, () => {
+  watch(() => sessionStore.currentId, (newId, oldId) => {
+    if (oldId && oldId !== newId) {
+      void recordSessionSwitch(oldId, newId)
+      void extractBatchOnSessionSwitch(oldId, newId, settingsStore.apiKey)
+    }
     loadFromSession()
   }, { immediate: true })
 
@@ -309,7 +319,8 @@ export const useChatStore = defineStore('chat', () => {
       '3. 对不确定的内容，明确标注不确定性，而不是编造事实。\n' +
       '4. 你可以使用 web_search 工具搜索互联网获取实时信息，使用 web_fetch 工具抓取网页内容。当用户的问题可能需要最新信息时，主动调用搜索工具。\n' +
       '5. web_search 的 queries 参数接受关键词数组，一次搜索就能覆盖多个方向（自动并行）。搜索前先想好需要哪些角度，一次性传入中英文、不同表述等变体。\n' +
-      '6. 搜索结果的摘要通常就够回答，不需要 web_fetch 抓全文（知乎等有登录墙的网站无法抓取）。\n\n'
+      '6. 搜索结果的摘要通常就够回答，不需要 web_fetch 抓全文（知乎等有登录墙的网站无法抓取）。\n' +
+      '7. 你可以使用 list_dir 工具列出目录内容，使用 file_read 读取文件，使用 file_write 写入文件。当用户提到本地文件或目录时，主动使用这些工具。\n\n'
 
     // 1. 用户自定义 system prompt（含角色模板）
     if (settingsStore.systemPrompt) {
@@ -436,12 +447,15 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const toolLoop = useToolLoop()
+      const conversationTurnId = generateId()
       const loopResult = await toolLoop.run({
         messages: apiMessages,
         model: currentModel.value,
         thinking: thinkingEnabled.value ? 'enabled' : 'disabled',
         apiKey: settingsStore.apiKey,
         signal: abortCtrl.signal,
+        sessionId: sid,
+        conversationTurnId,
         onToken(token) {
           fullContent += token
           if (sessionStore.currentId === sid) {
@@ -506,18 +520,35 @@ export const useChatStore = defineStore('chat', () => {
         unreadSessions.value = { ...unreadSessions.value, [sid]: true }
       }
 
-      // 记忆提取（fire-and-forget）
-      memory.extractFromExchange(text, fullContent, settingsStore.apiKey)
+      // 记忆提取 + Observation（fire-and-forget）
+      void recordMessageCompleted({
+        sessionId: sid,
+        conversationTurnId,
+        userMessageId: userMsg.id,
+        assistantMessageId: aiMsg.id,
+        userText: text,
+        assistantText: fullContent,
+        toolCallCount: finalToolCalls.length,
+        usage: loopResult.totalUsage ?? usageFromApi ?? undefined,
+      })
+      void extractLightFromMessageCompleted({
+        sessionId: sid,
+        conversationTurnId,
+        userText: text,
+        assistantText: fullContent,
+        apiKey: settingsStore.apiKey,
+      })
 
-      // 记录统计（仅使用 API 返回的真实数据）
-      if (usageFromApi) {
+      // 记录统计（仅使用 API 返回的真实数据；多轮工具时使用累计 usage）
+      const finalUsage = loopResult.totalUsage ?? usageFromApi
+      if (finalUsage) {
         const statsStore = useStatsStore()
         statsStore.addRecord({
           id: generateId(),
           model: currentModel.value,
           sessionId: sid,
           sessionTitle: session?.title ?? '',
-          usage: usageFromApi,
+          usage: finalUsage,
           timestamp: Date.now(),
           cost: 0,
           source: 'api',
