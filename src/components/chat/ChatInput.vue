@@ -168,7 +168,7 @@ function handleDrop(e: DragEvent) {
 </script>
 
 <template>
-  <div class="px-4 pb-4 pt-2">
+  <div class="px-6 pb-6 pt-4">
     <div class="max-w-[860px] mx-auto">
       <div
         class="bg-app-input border rounded-2xl overflow-hidden relative transition-colors"

@@ -5,15 +5,15 @@ import SettingsView from '@/views/SettingsView.vue'
 import StatsView from '@/views/StatsView.vue'
 import MemoryView from '@/views/MemoryView.vue'
 import SkillsView from '@/views/SkillsView.vue'
+import SessionsView from '@/views/SessionsView.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useTheme } from '@/composables/useTheme'
 import { useRoute } from 'vue-router'
-import { watch, onMounted, ref } from 'vue'
+import { watch, onMounted } from 'vue'
 
 const route = useRoute()
 const settings = useSettingsStore()
 const theme = useTheme()
-const sidebarCollapsed = ref(false)
 
 function applyFontSize(size: number) {
   document.documentElement.style.setProperty('--app-font-size', `${size}px`)
@@ -43,10 +43,11 @@ watch(() => settings.codeTheme, applyCodeTheme)
 
 <template>
   <div class="h-full flex">
-    <Sidebar :collapsed="sidebarCollapsed" @toggle="sidebarCollapsed = !sidebarCollapsed" />
+    <Sidebar />
     <ChatView v-show="route.path === '/'" />
     <SettingsView v-show="route.path === '/settings'" />
     <StatsView v-show="route.path === '/stats'" />
+    <SessionsView v-show="route.path === '/sessions'" />
     <MemoryView v-show="route.path === '/memory'" />
     <SkillsView v-show="route.path === '/skills'" />
   </div>

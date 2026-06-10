@@ -1,79 +1,59 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
-import { useAvatar } from '@/composables/useAvatar'
-import SessionList from './SessionList.vue'
 import SidebarFooter from './SidebarFooter.vue'
+import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 
-defineProps<{ collapsed: boolean }>()
-defineEmits<{ toggle: [] }>()
-
+const router = useRouter()
 const sessionStore = useSessionStore()
-const { avatarUrl, loadAvatar, changeAvatar } = useAvatar()
-
-onMounted(() => { loadAvatar() })
 
 function createSession() {
-  // 当前会话无消息时不创建新会话，防止误触产生空对话
   const current = sessionStore.sessions.find(s => s.id === sessionStore.currentId)
   if (current && current.messages.length === 0) return
   sessionStore.createSession()
+  router.push('/')
 }
 </script>
 
 <template>
   <aside
-    class="h-full bg-app-sidebar border-r border-app-border flex flex-col transition-all duration-200"
-    :class="collapsed ? 'w-[48px] min-w-[48px]' : 'w-[250px] min-w-[250px]'"
+    class="h-full w-[56px] min-w-[56px] bg-app-sidebar border-r border-app-border flex flex-col items-center py-3 gap-2 z-20"
   >
-    <!-- 顶部：品牌 + 收起按钮 -->
-    <div class="px-3 py-2.5 border-b border-app-border flex items-center" :class="collapsed ? 'justify-center' : 'justify-between'">
-      <template v-if="!collapsed">
-        <div class="flex items-center gap-2">
-          <button
-            @click="changeAvatar"
-            :class="[
-              'w-7 h-7 rounded-lg shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold',
-              avatarUrl
-                ? 'bg-transparent hover:opacity-80 transition-opacity'
-                : 'bg-app-accent text-white'
-            ]"
-            title="更换头像"
-          >
-            <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-contain" />
-            <span v-else>D</span>
-          </button>
-          <span class="text-sm font-medium text-app-heading">DeepSeek Desktop</span>
-        </div>
-      </template>
+    <!-- 顶部 Logo -->
+    <button
+      @click="router.push('/')"
+      class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-app-hover transition-colors"
+      title="首页"
+    >
+      <ReplixLogo size="sm" />
+    </button>
+
+    <!-- 中间功能图标 -->
+    <div class="flex-1 flex flex-col items-center gap-1 pt-2">
+      <!-- 对话列表 -->
       <button
-        @click="$emit('toggle')"
-        class="w-7 h-7 rounded-md hover:bg-app-hover flex items-center justify-center text-app-muted
-               hover:text-app-text transition-colors shrink-0"
-        :title="collapsed ? '展开侧栏' : '收起侧栏'"
+        @click="router.push('/sessions')"
+        class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
+        title="对话列表"
       >
-        <svg v-if="collapsed" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
-        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+      </button>
+
+      <!-- 新建对话 -->
+      <button
+        @click="createSession"
+        class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
+        title="新建对话"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
       </button>
     </div>
 
-    <!-- 展开时显示的内容 -->
-    <template v-if="!collapsed">
-      <div class="p-3 border-b border-app-border">
-        <button
-          @click="createSession"
-          class="w-full py-2.5 text-sm font-medium rounded-lg border border-app-border bg-app-card
-                 text-app-heading hover:bg-app-hover-strong transition-colors"
-        >
-          + 新对话
-        </button>
-      </div>
-      <SessionList />
-      <SidebarFooter />
-    </template>
+    <!-- 底部导航 -->
+    <SidebarFooter />
   </aside>
 </template>

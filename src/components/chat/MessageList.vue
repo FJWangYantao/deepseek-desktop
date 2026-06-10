@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
-import { nextTick, ref, watch, onMounted } from 'vue'
 import { useStreamRender } from '@/composables/useStreamRender'
 import { fixCjkEmphasis, renderMarkdown } from '@/composables/useMarkdown'
-import { useAvatar } from '@/composables/useAvatar'
 import MessageItem from './MessageItem.vue'
 import StreamCursor from '@/components/renderer/StreamCursor.vue'
 import ToolCallStatus from './ToolCallStatus.vue'
+import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 
 const chatStore = useChatStore()
-const { avatarUrl, loadAvatar } = useAvatar()
 const listRef = ref<HTMLElement>()
 const showScrollBtn = ref(false)
-onMounted(() => { loadAvatar() })
 
 const { processChunk } = useStreamRender()
 
@@ -102,7 +99,7 @@ watch(() => chatStore.messages.length, () => {
 </script>
 
 <template>
-  <div ref="listRef" class="flex-1 overflow-y-auto px-6 py-6 relative" @scroll="onScroll">
+  <div ref="listRef" class="flex-1 overflow-y-auto px-8 py-10 relative" @scroll="onScroll">
     <div
       v-if="chatStore.messages.length === 0 && !chatStore.streaming"
       class="flex items-center justify-center h-full"
@@ -126,15 +123,7 @@ watch(() => chatStore.messages.length, () => {
       <!-- AI 生成区域：统一头像区域，混合等待/工具调用/思考/流式内容 -->
       <div v-if="chatStore.isGenerating || chatStore.streaming || chatStore.streamingThinking" class="mb-6">
         <div class="flex items-start gap-3">
-          <div
-            :class="[
-              'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 overflow-hidden',
-              avatarUrl ? 'bg-transparent' : 'bg-app-accent text-white'
-            ]"
-          >
-            <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-contain" />
-            <span v-else>D</span>
-          </div>
+          <ReplixLogo size="sm" animate state="active" class="mt-0.5" />
           <div class="min-w-0 flex-1">
             <!-- 等待首 token（无工具调用时） -->
             <div v-if="chatStore.isGenerating && !chatStore.streaming && !chatStore.streamingThinking && chatStore.activeToolCalls.length === 0" class="flex items-center gap-1 py-1.5">

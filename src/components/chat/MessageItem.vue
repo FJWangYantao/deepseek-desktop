@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import type { Message } from '@/types'
 import { useChatStore } from '@/stores/chat'
-import { useAvatar } from '@/composables/useAvatar'
 import { useQuote } from '@/composables/useQuote'
 import ContentBlock from '@/components/renderer/ContentBlock.vue'
 import ThinkingBubble from '@/components/renderer/ThinkingBubble.vue'
+import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 
 const props = defineProps<{
   message: Message
 }>()
 
 const chatStore = useChatStore()
-const { avatarUrl, loadAvatar } = useAvatar()
 const { addQuote } = useQuote()
 const copied = ref(false)
 const exported = ref(false)
@@ -20,8 +19,6 @@ const contentRef = ref<HTMLElement>()
 const showQuoteBtn = ref(false)
 const quoteBtnPos = ref({ x: 0, y: 0 })
 const selectedText = ref('')
-
-onMounted(() => { loadAvatar() })
 
 function onContentMouseUp() {
   const sel = window.getSelection()
@@ -74,7 +71,7 @@ function retry() {
 </script>
 
 <template>
-  <div class="mb-6 group">
+  <div class="mb-8 group">
     <!-- 浮动引用按钮 -->
     <Teleport to="body">
       <button
@@ -146,16 +143,8 @@ function retry() {
     </div>
 
     <!-- AI 消息 -->
-    <div v-else class="flex items-start gap-3">
-      <div
-        :class="[
-          'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 overflow-hidden',
-          avatarUrl ? 'bg-transparent' : 'bg-app-accent text-white'
-        ]"
-      >
-        <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-contain" />
-        <span v-else>D</span>
-      </div>
+    <div v-else class="flex items-start gap-4">
+      <ReplixLogo size="sm" animate state="idle" class="mt-0.5" />
       <div ref="contentRef" @mouseup="onContentMouseUp" class="min-w-0 flex-1">
         <ThinkingBubble v-if="message.thinking" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
         <ContentBlock :content="message.content" />
