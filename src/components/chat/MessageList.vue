@@ -101,11 +101,23 @@ watch(() => chatStore.messages.length, () => {
 const animReady = ref(false)
 onMounted(() => { nextTick(() => { animReady.value = true }) })
 
+// 流式输出结束 → 跳过助手消息入场动画，避免"闪一下再从左滑入"
+const skipAssistantAnim = ref(false)
+watch(() => chatStore.isGenerating, (val, oldVal) => {
+  if (oldVal && !val) skipAssistantAnim.value = true
+})
+
 function onBeforeEnter(el: Element) {
   const htmlEl = el as HTMLElement
   if (!animReady.value) { htmlEl.style.opacity = '1'; return }
-  htmlEl.style.opacity = '0'
   const role = htmlEl.getAttribute('data-role')
+  // 流式刚结束的助手消息直接显示，不做滑入动画
+  if (role === 'assistant' && skipAssistantAnim.value) {
+    htmlEl.style.opacity = '1'
+    skipAssistantAnim.value = false
+    return
+  }
+  htmlEl.style.opacity = '0'
   if (role === 'user') {
     htmlEl.style.transform = 'translateX(12px)'
   } else {
@@ -116,6 +128,8 @@ function onBeforeEnter(el: Element) {
 function onEnter(el: Element, done: () => void) {
   const htmlEl = el as HTMLElement
   if (!animReady.value) { done(); return }
+  // 已跳过入场动画的元素直接完成
+  if (htmlEl.style.opacity === '1') { done(); return }
   void htmlEl.offsetHeight
   htmlEl.style.transition = 'opacity 220ms ease-out, transform 220ms ease-out'
   htmlEl.style.opacity = '1'

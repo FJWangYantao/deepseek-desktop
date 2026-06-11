@@ -7,6 +7,8 @@ import type { MemoryLayer, MemoryItem, SortMode } from '@/types/memory'
 import MemoryCard from '@/components/memory/MemoryCard.vue'
 import DreamPreviewModal from '@/components/memory/DreamPreviewModal.vue'
 import type { DreamPreview } from '@/types/memory'
+import { useInstinct, INSTINCT_CONFIG } from '@/composables/useInstinct'
+import type { Instinct } from '@/types/instinct'
 
 const router = useRouter()
 const memory = useMemory()
@@ -18,7 +20,7 @@ const searchQuery = ref('')
 const searchInput = ref('')
 const selectedCategories = ref<Set<string>>(new Set())
 const sortMode = ref<SortMode>('lastAccessedAt')
-const viewMode = ref<'list' | 'insights'>('list')
+const viewMode = ref<'list' | 'insights' | 'instinct'>('list')
 const growthDays = ref<7 | 14 | 30>(14)
 const showActions = ref(false)
 
@@ -161,6 +163,51 @@ function growthPolyline(): string {
 function handleUpdate(id: string, updates: Partial<Pick<MemoryItem, 'content' | 'layer' | 'category'>>) { memory.updateItem(id, updates) }
 function handleDelete(id: string) { memory.deleteItem(id) }
 function handlePin(id: string) { memory.togglePin(id) }
+
+// ===== Instinct（直觉） =====
+const instinct = useInstinct()
+const instinctSubTab = ref<'active' | 'observing' | 'deprecated'>('active')
+
+const instinctsActive = computed<Instinct[]>(() =>
+  instinct.store.value.instincts
+    .filter(i => !i.deprecated && i.confidence >= INSTINCT_CONFIG.INJECT_THRESHOLD)
+    .sort((a, b) => b.confidence - a.confidence)
+)
+const instinctsObserving = computed<Instinct[]>(() =>
+  instinct.store.value.instincts
+    .filter(i => !i.deprecated && i.confidence < INSTINCT_CONFIG.INJECT_THRESHOLD)
+    .sort((a, b) => b.confidence - a.confidence)
+)
+const instinctsDeprecated = computed<Instinct[]>(() =>
+  instinct.store.value.instincts
+    .filter(i => i.deprecated)
+    .sort((a, b) => b.lastObservedAt - a.lastObservedAt)
+)
+const instinctsCurrent = computed<Instinct[]>(() => {
+  if (instinctSubTab.value === 'active') return instinctsActive.value
+  if (instinctSubTab.value === 'observing') return instinctsObserving.value
+  return instinctsDeprecated.value
+})
+
+const domainLabels: Record<string, string> = {
+  'tool-strategy': '工具策略',
+  'workflow': '工作流',
+  'tool-preference': '工具偏好',
+  'search-pattern': '搜索习惯',
+  'context-pattern': '项目上下文',
+}
+
+function formatInstinctTime(ts: number): string {
+  if (!ts) return '—'
+  const days = Math.floor((Date.now() - ts) / 86400000)
+  if (days === 0) return '今天'
+  if (days === 1) return '昨天'
+  if (days < 30) return `${days} 天前`
+  return new Date(ts).toLocaleDateString('zh-CN')
+}
+
+function handleInstinctDelete(id: string) { instinct.deleteInstinct(id) }
+function handleInstinctToggle(id: string) { instinct.toggleDeprecated(id) }
 </script>
 
 <template>
@@ -174,6 +221,7 @@ function handlePin(id: string) { memory.togglePin(id) }
       <div class="flex items-center gap-3 ml-auto text-xs">
         <button @click="viewMode = 'list'" class="pb-0.5 transition-colors" :class="viewMode === 'list' ? 'text-app-text border-b border-app-text' : 'text-app-muted/60 hover:text-app-text'">列表</button>
         <button @click="viewMode = 'insights'" class="pb-0.5 transition-colors" :class="viewMode === 'insights' ? 'text-app-text border-b border-app-text' : 'text-app-muted/60 hover:text-app-text'">洞察</button>
+        <button @click="viewMode = 'instinct'" class="pb-0.5 transition-colors" :class="viewMode === 'instinct' ? 'text-app-text border-b border-app-text' : 'text-app-muted/60 hover:text-app-text'">直觉</button>
       </div>
     </div>
 
@@ -188,6 +236,102 @@ function handlePin(id: string) { memory.togglePin(id) }
           <span class="text-app-text/80">有待确认的记忆提取预览（{{ memory.store.value.pendingPreview.operations.length }} 条）</span>
           <button @click="showPreview = true" class="text-app-text hover:opacity-70 transition-opacity">查看 →</button>
         </div>
+
+        <!-- ═══ 直觉视图（Instinct Engine） ═══ -->
+        <template v-if="viewMode === 'instinct'">
+          <!-- 头部说明 -->
+          <div class="mb-6">
+            <p class="text-xs text-app-muted/70 leading-relaxed">
+              基于历史会话自动学习的"触发条件→建议行为"规则。置信度 ≥ {{ INSTINCT_CONFIG.INJECT_THRESHOLD }} 的规则会自动注入到对话上下文。
+            </p>
+          </div>
+
+          <!-- 子 tab 切换 -->
+          <div class="flex items-baseline gap-8 mb-6">
+            <button
+              v-for="t in [
+                { key: 'active', label: '激活中', count: instinctsActive.length },
+                { key: 'observing', label: '观察中', count: instinctsObserving.length },
+                { key: 'deprecated', label: '已废弃', count: instinctsDeprecated.length },
+              ]" :key="t.key"
+              @click="instinctSubTab = t.key as 'active' | 'observing' | 'deprecated'"
+              class="text-center transition-opacity"
+              :class="instinctSubTab === t.key ? 'opacity-100' : 'opacity-30 hover:opacity-60'"
+            >
+              <p class="text-lg font-medium text-app-text tabular-nums">{{ t.count }}</p>
+              <p class="text-xs text-app-muted/60 mt-0.5">{{ t.label }}</p>
+            </button>
+          </div>
+
+          <!-- 列表 -->
+          <div v-if="instinctsCurrent.length === 0" class="text-center py-16">
+            <svg class="w-12 h-12 mx-auto text-app-muted/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <p class="text-sm text-app-muted/60 mt-3">
+              {{ instinctSubTab === 'active' ? '还没有激活的直觉，继续对话以积累' : instinctSubTab === 'observing' ? '暂无观察中的直觉' : '暂无已废弃的直觉' }}
+            </p>
+          </div>
+
+          <div v-else class="space-y-3">
+            <div
+              v-for="i in instinctsCurrent" :key="i.id"
+              class="group border border-app-border/40 rounded-lg p-4 transition-colors"
+              :class="i.deprecated ? 'opacity-50' : ''"
+            >
+              <!-- trigger → action -->
+              <div class="text-xs text-app-text/90 leading-relaxed mb-3">
+                <span class="text-app-muted">当 </span>{{ i.trigger.replace(/^当/, '').replace(/时$/, '') }}<span class="text-app-muted"> 时 → </span>{{ i.action }}
+              </div>
+
+              <!-- 元信息 -->
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-3 text-app-muted/60">
+                  <!-- 置信度条 -->
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-16 h-1 rounded-full bg-app-border/30 overflow-hidden">
+                      <div
+                        class="h-full transition-all"
+                        :style="{
+                          width: `${(i.confidence / INSTINCT_CONFIG.CONFIDENCE_CAP) * 100}%`,
+                          backgroundColor: i.confidence >= INSTINCT_CONFIG.INJECT_THRESHOLD ? '#10b981' : '#f59e0b'
+                        }"
+                      ></div>
+                    </div>
+                    <span class="tabular-nums">{{ i.confidence.toFixed(2) }}</span>
+                  </div>
+                  <!-- domain -->
+                  <span class="px-1.5 py-0.5 rounded border border-app-border/40 text-app-muted/70">
+                    {{ domainLabels[i.domain] ?? i.domain }}
+                  </span>
+                  <!-- source -->
+                  <span class="text-app-muted/40">
+                    {{ i.source === 'statistical' ? '统计' : '语义' }}
+                  </span>
+                  <!-- 出现次数 -->
+                  <span class="text-app-muted/40">观察 {{ i.observedCount }}×</span>
+                  <!-- 最近触发 -->
+                  <span class="text-app-muted/40">{{ formatInstinctTime(i.lastObservedAt) }}</span>
+                </div>
+
+                <!-- 操作 -->
+                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    @click="handleInstinctToggle(i.id)"
+                    class="text-app-muted/60 hover:text-app-text transition-colors"
+                  >{{ i.deprecated ? '激活' : '废弃' }}</button>
+                  <button
+                    @click="handleInstinctDelete(i.id)"
+                    class="text-app-muted/60 hover:text-red-500 transition-colors"
+                  >删除</button>
+                </div>
+              </div>
+
+              <!-- evidence（可折叠时显示） -->
+              <div v-if="i.evidence" class="mt-2 text-xs text-app-muted/50 italic">
+                {{ i.evidence }}
+              </div>
+            </div>
+          </div>
+        </template>
 
         <!-- ═══ 洞察视图 ═══ -->
         <template v-if="viewMode === 'insights'">
@@ -263,7 +407,7 @@ function handlePin(id: string) { memory.togglePin(id) }
         </template>
 
         <!-- ═══ 列表视图 ═══ -->
-        <template v-else>
+        <template v-if="viewMode === 'list'">
 
           <!-- 数字指标 -->
           <div class="flex items-baseline gap-8 mb-8">

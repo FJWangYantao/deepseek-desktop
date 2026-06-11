@@ -157,6 +157,40 @@ const themes = [
           </div>
         </section>
 
+        <!-- 行为习惯学习（Instinct Engine） -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-3 block">行为习惯</label>
+          <div class="space-y-3">
+            <label class="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                v-model="settings.instinctEnabled"
+                class="mt-0.5 rounded border-app-border/50"
+              />
+              <div class="flex-1">
+                <div class="text-xs text-app-text">启用行为习惯学习</div>
+                <div class="text-xs text-app-muted mt-0.5 leading-relaxed">
+                  会话切换时分析行为流，自动提炼工具偏好、工作流模式，并在下次对话中注入到 AI 上下文。
+                </div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer select-none" :class="{ 'opacity-40': !settings.instinctEnabled }">
+              <input
+                type="checkbox"
+                v-model="settings.instinctSemanticEnabled"
+                :disabled="!settings.instinctEnabled"
+                class="mt-0.5 rounded border-app-border/50"
+              />
+              <div class="flex-1">
+                <div class="text-xs text-app-text">启用语义层面分析</div>
+                <div class="text-xs text-app-muted mt-0.5 leading-relaxed">
+                  额外用 LLM 提炼统计路径无法识别的复杂模式（任务类型→行为偏好等）。会消耗少量 Token，默认关闭。
+                </div>
+              </div>
+            </label>
+          </div>
+        </section>
+
         <!-- 底部 -->
         <section class="pt-6 border-t border-app-border/30 pb-6">
           <div class="flex items-center justify-between text-xs text-app-muted">

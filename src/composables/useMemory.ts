@@ -283,7 +283,7 @@ export function useMemory() {
   }
 
   /** 构建记忆注入上下文 */
-  function buildMemoryContext(userText: string): string {
+  function buildMemoryContext(userText: string, recentContext?: string): string {
     // 清理已有的垃圾条目
     const before = store.value.items.length
     store.value.items = store.value.items.filter(i => !isJunkContent(i.content))
@@ -291,7 +291,12 @@ export function useMemory() {
       saveStore(store.value)
     }
 
-    const queryKeywords = extractKeywords(userText)
+    // 查询构造：用最近对话历史补充当前输入，改善短消息检索信号不足的问题
+    // 例：用户说"帮我改个 bug"（几乎无关键词），但前几轮在讨论 Instinct Engine → 能召回相关记忆
+    const queryText = recentContext
+      ? recentContext.slice(-600) + ' ' + userText   // 最近上下文截断 600 字，避免过长稀释关键词
+      : userText
+    const queryKeywords = extractKeywords(queryText)
     const layers: MemoryLayer[] = ['long', 'medium', 'short']
     const sections: string[] = []
 

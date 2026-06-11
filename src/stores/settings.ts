@@ -20,6 +20,12 @@ export const useSettingsStore = defineStore('settings', () => {
   const mimoBaseUrl = ref(localStorage.getItem('ds_mimo_base_url') ?? 'https://api.xiaomimimo.com/v1')
   const mimoModel = ref(localStorage.getItem('ds_mimo_model') ?? 'mimo-v2.5')
 
+  // Instinct Engine（行为习惯学习）
+  // - instinctEnabled：是否在 system prompt 注入已学到的 instinct（默认开）
+  // - instinctSemanticEnabled：是否在会话切换时启用 LLM 语义路径（默认开，使用与对话同一份 apiKey）
+  const instinctEnabled = ref(localStorage.getItem('ds_instinct_enabled') !== '0')
+  const instinctSemanticEnabled = ref(localStorage.getItem('ds_instinct_semantic_enabled') !== '0')
+
   // 加密存储状态：true=已用 safeStorage 加密；false=平台不支持，回退到 localStorage 明文
   const secureStorageAvailable = ref(false)
   // 初始化完成前不持久化敏感字段，防止 watch 在 loadSecrets 中途用空值覆盖磁盘
@@ -138,6 +144,12 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(mimoModel, (val) => {
     try { localStorage.setItem('ds_mimo_model', val) } catch { /* ignore */ }
   })
+  watch(instinctEnabled, (val) => {
+    try { localStorage.setItem('ds_instinct_enabled', val ? '1' : '0') } catch { /* ignore */ }
+  })
+  watch(instinctSemanticEnabled, (val) => {
+    try { localStorage.setItem('ds_instinct_semantic_enabled', val ? '1' : '0') } catch { /* ignore */ }
+  })
 
   async function clearAllData() {
     useStatsStore().clearAllStats()
@@ -164,6 +176,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable,
+    instinctEnabled, instinctSemanticEnabled,
     clearAllData,
   }
 })

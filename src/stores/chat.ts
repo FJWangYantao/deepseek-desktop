@@ -13,6 +13,10 @@ import {
   recordSessionSwitch,
   extractBatchOnSessionSwitch,
 } from '@/composables/useObservationMemory'
+import {
+  useInstinct,
+  extractInstinctsOnSessionSwitch,
+} from '@/composables/useInstinct'
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
@@ -97,6 +101,12 @@ export const useChatStore = defineStore('chat', () => {
     if (oldId && oldId !== newId) {
       void recordSessionSwitch(oldId, newId)
       void extractBatchOnSessionSwitch(oldId, newId, settingsStore.apiKey)
+      // Instinct Engine：fire-and-forget；Path A 永远跑，Path B 受设置开关控制
+      void extractInstinctsOnSessionSwitch({
+        fromSessionId: oldId,
+        apiKey: settingsStore.instinctSemanticEnabled ? settingsStore.apiKey : undefined,
+        enabled: settingsStore.instinctEnabled,
+      })
     }
     loadFromSession()
   }, { immediate: true })
@@ -417,10 +427,24 @@ export const useChatStore = defineStore('chat', () => {
       systemPrompt += `[Skill: ${skillStore.activeSkill.name}]\n${skillStore.activeSkill.content}\n\n`
     }
 
-    // 2. 记忆上下文
-    const memoryContext = memory.buildMemoryContext(text)
+    // 2. 记忆上下文（用最近用户消息补充检索信号，改善短消息召回率）
+    const recentUserTexts = historyMsgs
+      .filter(m => m.role === 'user')
+      .slice(-4)
+      .map(m => typeof m.content === 'string' ? m.content : '')
+      .filter(Boolean)
+      .join(' ')
+    const memoryContext = memory.buildMemoryContext(text, recentUserTexts || undefined)
     if (memoryContext) {
       systemPrompt += memoryContext + '\n\n'
+    }
+
+    // 2.5 行为习惯（Instinct Engine）— 注入历史学到的高置信 trigger→action 规则
+    if (settingsStore.instinctEnabled) {
+      const instinctContext = useInstinct().buildInstinctContext()
+      if (instinctContext) {
+        systemPrompt += instinctContext + '\n\n'
+      }
     }
 
     // 3. 日期信息
