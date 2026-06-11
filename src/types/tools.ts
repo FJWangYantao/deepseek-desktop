@@ -45,13 +45,17 @@ export interface ToolCallResult {
 
 // ===== 权限管理 =====
 
+export type ToolPermissionMode = 'confirm' | 'auto' | 'yolo'
+export type ToolPermissionLevel = 'auto' | 'confirm' | 'blocked' | 'whitelist'
+
 export interface ToolPermissionRule {
   toolName: string
-  level: 'auto' | 'confirm' | 'blocked'
+  level: ToolPermissionLevel
   allowedPaths?: string[] // file_* 工具的白名单路径
 }
 
 export interface ToolPermissionConfig {
+  mode: ToolPermissionMode
   rules: ToolPermissionRule[]
   // 默认策略：auto = 低风险工具自动放行, confirm = 全部需确认
   defaultPolicy: 'auto' | 'confirm'

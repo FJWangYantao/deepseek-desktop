@@ -13,6 +13,12 @@ const themes = [
   { id: 'sage' as const, label: '森绿', color: '#4d7c0f' },
   { id: 'slate' as const, label: '岩灰', color: '#6366f1' },
 ]
+
+const permissionModes = [
+  { id: 'confirm' as const, label: '确认', desc: '高风险操作前询问，保持默认安全体验。' },
+  { id: 'auto' as const, label: 'Auto', desc: '普通写入和安全工具自动执行，危险写入直接拒绝。' },
+  { id: 'yolo' as const, label: 'YOLO', desc: '跳过确认，但仍尊重禁用规则和危险写入拦截。' },
+]
 </script>
 
 <template>
@@ -155,6 +161,28 @@ const themes = [
               </button>
             </div>
           </div>
+        </section>
+
+        <!-- 工具权限 -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-3 block">工具权限</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="mode in permissionModes"
+              :key="mode.id"
+              @click="settings.setToolPermissionMode(mode.id)"
+              class="px-3 py-2.5 rounded-lg text-left border transition-colors"
+              :class="settings.toolPermissionMode === mode.id
+                ? 'border-app-accent text-app-accent bg-app-accent-soft/30'
+                : 'border-app-border/50 text-app-muted hover:text-app-text hover:bg-app-hover'"
+            >
+              <div class="text-xs font-medium">{{ mode.label }}</div>
+              <div class="text-[11px] opacity-70 mt-1 leading-relaxed">{{ mode.desc }}</div>
+            </button>
+          </div>
+          <p class="text-xs text-app-muted/70 mt-2 leading-relaxed">
+            Auto 会自动批准普通写入并拒绝 .env、.ssh、系统目录和路径穿越等危险写入；YOLO 会跳过确认，但不会覆盖已禁用工具。
+          </p>
         </section>
 
         <!-- 行为习惯学习（Instinct Engine） -->

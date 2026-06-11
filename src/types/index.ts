@@ -73,7 +73,7 @@ export type {
 export type {
   ToolParameter, ToolDefinition, ToolPermission,
   ToolCall, ToolCallResult,
-  ToolPermissionRule, ToolPermissionConfig,
+  ToolPermissionMode, ToolPermissionLevel, ToolPermissionRule, ToolPermissionConfig,
   ToolCallRequest, ToolListResponse, ToolAuthorizeRequest,
   ToolCallStatus, ToolCallUIState,
   StreamToolCallChunk,

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import type { ModelOption } from '@/types'
+import type { ModelOption, ToolPermissionMode } from '@/types'
 import { useStatsStore } from './stats'
 import { promptTemplates, DEFAULT_ROLE_ID } from '@/data/prompts'
 
@@ -14,6 +14,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const codeTheme = ref(localStorage.getItem('ds_code_theme') ?? 'dark')
   const systemPrompt = ref(localStorage.getItem('ds_system_prompt') ?? '')
   const showKey = ref(false)
+  const toolPermissionMode = ref<ToolPermissionMode>(
+    (localStorage.getItem('ds_tool_permission_mode') as ToolPermissionMode) || 'confirm'
+  )
 
   // 视觉模型配置（伪多模态）—— mimoApiKey 同样走 safeStorage
   const mimoApiKey = ref('')
@@ -71,8 +74,33 @@ export const useSettingsStore = defineStore('settings', () => {
     secretsReady = true
   }
 
+  async function loadToolPermissionMode() {
+    const api = window.electronAPI
+    if (api?.toolsGetPermissionConfig) {
+      try {
+        const config = await api.toolsGetPermissionConfig()
+        toolPermissionMode.value = config.mode ?? 'confirm'
+        localStorage.setItem('ds_tool_permission_mode', toolPermissionMode.value)
+      } catch { /* ignore */ }
+    }
+  }
+
+  async function setToolPermissionMode(mode: ToolPermissionMode) {
+    toolPermissionMode.value = mode
+    try { localStorage.setItem('ds_tool_permission_mode', mode) } catch { /* ignore */ }
+
+    const api = window.electronAPI
+    if (api?.toolsGetPermissionConfig && api?.toolsSetPermissionConfig) {
+      try {
+        const config = await api.toolsGetPermissionConfig()
+        await api.toolsSetPermissionConfig({ ...config, mode })
+      } catch { /* ignore */ }
+    }
+  }
+
   // 启动即异步加载，UI 在 await 到来前显示空值
   loadSecrets()
+  loadToolPermissionMode()
 
   const models: ModelOption[] = [
     { id: 'deepseek-v4-pro', name: 'V4 Pro', description: '旗舰模型，最强性能', contextLength: 1000000 },
@@ -172,11 +200,12 @@ export const useSettingsStore = defineStore('settings', () => {
     mimoApiKey.value = ''
     mimoBaseUrl.value = 'https://api.xiaomimimo.com/v1'
     mimoModel.value = 'mimo-v2.5'
+    void setToolPermissionMode('confirm')
   }
 
   return {
     apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable,
-    instinctEnabled, instinctSemanticEnabled,
+    instinctEnabled, instinctSemanticEnabled, toolPermissionMode, setToolPermissionMode,
     clearAllData,
   }
 })
