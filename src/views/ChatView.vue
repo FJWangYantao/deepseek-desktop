@@ -31,16 +31,16 @@ function handleToolDeny() {
 <template>
   <div class="flex-1 flex flex-col min-w-0 bg-app-bg">
     <MessageList />
+    <ToolConfirmDialog
+      :info="chatStore.pendingApproval"
+      @approve="handleToolApprove"
+      @deny="handleToolDeny"
+    />
     <ChatInput />
     <InputDialog
       :pause-info="dslRunner.pauseInfo.value"
       @submit="handleDSLResume"
       @cancel="handleDSLCancel"
-    />
-    <ToolConfirmDialog
-      :info="chatStore.pendingApproval"
-      @approve="handleToolApprove"
-      @deny="handleToolDeny"
     />
   </div>
 </template>
