@@ -515,8 +515,10 @@ function formatDateLabel(dateStr: string): string {
                   />
                 </div>
                 <!-- 普通模式 -->
-                <button
+                <div
                   v-else
+                  role="button"
+                  tabindex="0"
                   @click="selectNotebook(nb.id)"
                   @dragover="onDragOverNotebook(nb.id, $event)"
                   @dragleave="onDragLeaveNotebook(nb.id)"
@@ -562,7 +564,7 @@ function formatDateLabel(dateStr: string): string {
                       <circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" />
                     </svg>
                   </button>
-                </button>
+                </div>
 
                 <!-- 操作菜单 -->
                 <div
@@ -613,8 +615,10 @@ function formatDateLabel(dateStr: string): string {
                       ref="renameInputRef"
                     />
                   </div>
-                  <button
+                  <div
                     v-else
+                    role="button"
+                    tabindex="0"
                     @click="selectNotebook(child.id)"
                     @dragover="onDragOverNotebook(child.id, $event)"
                     @dragleave="onDragLeaveNotebook(child.id)"
@@ -640,7 +644,7 @@ function formatDateLabel(dateStr: string): string {
                         <circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" />
                       </svg>
                     </button>
-                  </button>
+                  </div>
                   <!-- 子笔记本菜单（不含「新建子」） -->
                   <div
                     v-if="notebookMenuId === child.id"

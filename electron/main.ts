@@ -1,8 +1,8 @@
-import { app, BrowserWindow, Menu, globalShortcut } from 'electron'
+import { app, BrowserWindow, Menu, globalShortcut, shell, screen, clipboard } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { existsSync } from 'fs'
-import { execSync } from 'child_process'
+import { exec } from 'child_process'
 import { registerStorageHandlers } from './ipc/storage'
 import { registerSecureStorageHandlers } from './ipc/secure-storage'
 import { registerAvatarHandlers } from './ipc/avatar'
@@ -13,13 +13,14 @@ import { registerToolHandlers } from './ipc/tools'
 import { registerTokenizerHandlers } from './ipc/tokenizer'
 import { registerImageDescribeHandlers } from './ipc/image-describe'
 import { registerObservationHandlers } from './ipc/observations'
+import { registerAssistantHandlers, setAssistantWindow } from './ipc/assistant'
+import { startSelectionWatcher, stopSelectionWatcher, setAssistantFocused } from './assistant/selectionWatcher'
 import { registerBuiltinTools } from './tools'
 
 // Windows 控制台 UTF-8 编码
 if (process.platform === 'win32') {
   try { execSync('chcp 65001', { stdio: 'ignore' }) } catch {}
 }
-
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // preload 由 vite 编译到 dist-electron/preload.cjs（与 main.js 同目录）
@@ -29,6 +30,7 @@ const iconPath = join(__dirname, '../electron/icon_dl.ico')
 console.log('[Main] __dirname:', __dirname)
 
 let mainWindow: BrowserWindow | null = null
+let assistantWindow: BrowserWindow | null = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -52,6 +54,110 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../dist/index.html'))
   }
+
+  // 所有外部链接用系统默认浏览器（Chrome）打开，不在 Electron 窗口内导航
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    // 允许 dev server 热更新和本地文件加载，拦截其余外部导航
+    const isLocal = url.startsWith('file://') || url.startsWith(process.env.VITE_DEV_SERVER_URL ?? '__none__')
+    if (!isLocal) {
+      event.preventDefault()
+      shell.openExternal(url)
+    }
+  })
+}
+
+// ===== 划词助手窗口 =====
+function getOrCreateAssistantWindow(): BrowserWindow {
+  if (assistantWindow && !assistantWindow.isDestroyed()) return assistantWindow
+  assistantWindow = new BrowserWindow({
+    width: 360,
+    height: 44,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    backgroundColor: '#fdfcf9',
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    assistantWindow.loadURL(process.env.VITE_DEV_SERVER_URL + '#/assistant')
+  } else {
+    assistantWindow.loadFile(join(__dirname, '../dist/index.html'), { hash: '/assistant' })
+  }
+
+  // 焦点状态同步给选区监听器（聚焦时抑制检测，避免自捕获结果文本）
+  assistantWindow.on('focus', () => {
+    setAssistantFocused(true)
+  })
+
+  // 失焦自动隐藏（延迟检查，避免内部按钮点击的瞬时失焦误关）
+  assistantWindow.on('blur', () => {
+    setAssistantFocused(false)
+    setTimeout(() => {
+      if (assistantWindow && !assistantWindow.isDestroyed() && assistantWindow.isVisible()) {
+        assistantWindow.hide()
+      }
+    }, 120)
+  })
+
+  // 隐藏时务必复位焦点标志 —— 否则经 ✕/Escape 隐藏后标志残留，后续划词全被抑制
+  assistantWindow.on('hide', () => {
+    setAssistantFocused(false)
+  })
+
+  assistantWindow.on('closed', () => {
+    assistantWindow = null
+    setAssistantFocused(false)
+    setAssistantWindow(null)
+  })
+
+  setAssistantWindow(assistantWindow)
+  return assistantWindow
+}
+
+/** 选区监听回调：捕获到文本后显示助手窗口 */
+function onTextCaptured(text: string) {
+  const win = getOrCreateAssistantWindow()
+  // 重置为小长条尺寸（Windows 下 resizable:false 会忽略 setSize，临时解锁）
+  win.setResizable(true)
+  win.setSize(360, 44)
+  win.setResizable(false)
+  // 定位到鼠标附近
+  const pos = screen.getCursorScreenPoint()
+  const display = screen.getDisplayNearestPoint(pos)
+  const x = Math.min(pos.x + 10, display.bounds.x + display.bounds.width - 370)
+  const y = Math.min(pos.y + 10, display.bounds.y + display.bounds.height - 54)
+  win.setPosition(x, y)
+
+  const sendText = () => win.webContents.send('assistant:text-captured', text)
+
+  // 窗口加载完成后发送文本
+  if (win.webContents.isLoading()) {
+    win.webContents.once('did-finish-load', sendText)
+  } else {
+    sendText()
+  }
+
+  // 显示并强制聚焦 —— 否则从其他应用触发时按钮首次点击只会激活窗口
+  win.showInactive()
+  win.setAlwaysOnTop(true)
+  // 稍延迟抢焦点，确保 SendKeys 的 Ctrl 已释放、原应用焦点已让出
+  setTimeout(() => {
+    if (win && !win.isDestroyed()) {
+      win.show()
+      win.focus()
+    }
+  }, 60)
 }
 
 Menu.setApplicationMenu(
@@ -83,6 +189,7 @@ registerToolHandlers()
 registerTokenizerHandlers()
 registerImageDescribeHandlers()
 registerObservationHandlers()
+registerAssistantHandlers()
 
 app.whenReady().then(() => {
   createWindow()
@@ -95,6 +202,11 @@ app.whenReady().then(() => {
   globalShortcut.register('F12', toggleDevTools)
   globalShortcut.register('CommandOrControl+Shift+I', toggleDevTools)
 
+  // 启动全局划词选区监听（仅 Windows）
+  if (process.platform === 'win32') {
+    startSelectionWatcher(onTextCaptured)
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
@@ -102,4 +214,11 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+  if (process.platform === 'win32') {
+    try { stopSelectionWatcher() } catch { /* ignore */ }
+  }
 })

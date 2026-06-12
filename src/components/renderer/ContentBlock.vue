@@ -89,6 +89,27 @@ function onCodeCopy(e: Event) {
     }, 2000)
   }).catch(() => {})
 }
+
+// 流式输出时 v-html 不断重建 DOM，<a> 可能在 mousedown→mouseup 之间被替换，
+// 导致 click 事件丢失。用 mousedown 捕获 href，mouseup 时打开来解决。
+let pendingLink: string | null = null
+
+function onContentMouseDown(e: MouseEvent) {
+  const anchor = (e.target as HTMLElement).closest('a')
+  if (anchor?.href && anchor.target === '_blank') {
+    pendingLink = anchor.href
+  } else {
+    pendingLink = null
+  }
+}
+
+function onContentMouseUp(e: MouseEvent) {
+  if (pendingLink) {
+    e.preventDefault()
+    window.open(pendingLink, '_blank')
+    pendingLink = null
+  }
+}
 </script>
 
 <template>
@@ -101,6 +122,8 @@ function onCodeCopy(e: Event) {
            prose-li:text-app-text prose-table:border-app-border"
     :style="{ fontSize: 'var(--app-font-size)' }"
     v-html="html"
+    @mousedown="onContentMouseDown"
+    @mouseup="onContentMouseUp"
     @click="onCodeCopy"
   />
 </template>

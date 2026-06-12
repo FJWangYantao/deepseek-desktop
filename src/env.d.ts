@@ -85,5 +85,10 @@ interface Window {
     observationsAppend: (event: import('../src/types/observation').ObservationEvent) => Promise<import('../src/types/observation').ObservationAppendResult>
     observationsAppendBatch: (events: import('../src/types/observation').ObservationEvent[]) => Promise<import('../src/types/observation').ObservationAppendResult>
     observationsFlush: () => Promise<{ ok: boolean }>
+    // 划词助手
+    assistantOnText: (callback: (text: string) => void) => void
+    assistantHide: () => Promise<void>
+    assistantQuery: (text: string, action: string) => Promise<string>
+    assistantResize: (width: number, height: number) => Promise<void>
   }
 }

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import type { ModelOption, ToolPermissionMode } from '@/types'
+import type { ModelOption, ToolPermissionMode, WorkMode } from '@/types'
 import { useStatsStore } from './stats'
 import { promptTemplates, DEFAULT_ROLE_ID } from '@/data/prompts'
 
@@ -16,6 +16,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const showKey = ref(false)
   const toolPermissionMode = ref<ToolPermissionMode>(
     (localStorage.getItem('ds_tool_permission_mode') as ToolPermissionMode) || 'confirm'
+  )
+  const workMode = ref<WorkMode>(
+    (localStorage.getItem('ds_work_mode') as WorkMode) || 'chat'
   )
 
   // 视觉模型配置（伪多模态）—— mimoApiKey 同样走 safeStorage
@@ -96,6 +99,11 @@ export const useSettingsStore = defineStore('settings', () => {
         await api.toolsSetPermissionConfig({ ...config, mode })
       } catch { /* ignore */ }
     }
+  }
+
+  async function setWorkMode(mode: WorkMode) {
+    workMode.value = mode
+    try { localStorage.setItem('ds_work_mode', mode) } catch { /* ignore */ }
   }
 
   // 启动即异步加载，UI 在 await 到来前显示空值
@@ -201,11 +209,13 @@ export const useSettingsStore = defineStore('settings', () => {
     mimoBaseUrl.value = 'https://api.xiaomimimo.com/v1'
     mimoModel.value = 'mimo-v2.5'
     void setToolPermissionMode('confirm')
+    void setWorkMode('chat')
   }
 
   return {
     apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable,
     instinctEnabled, instinctSemanticEnabled, toolPermissionMode, setToolPermissionMode,
+    workMode, setWorkMode,
     clearAllData,
   }
 })

@@ -37,6 +37,7 @@ export interface ModelOption {
 }
 
 export type ThinkingMode = 'enabled' | 'disabled'
+export type WorkMode = 'chat' | 'plan' | 'react'
 
 export type ThemeName = 'amber' | 'ocean' | 'sage' | 'slate'
 export type ThemeMode = 'light' | 'dark'

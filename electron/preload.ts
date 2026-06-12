@@ -62,4 +62,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   observationsAppend: (event: Record<string, unknown>) => ipcRenderer.invoke('observations:append', event),
   observationsAppendBatch: (events: Record<string, unknown>[]) => ipcRenderer.invoke('observations:appendBatch', events),
   observationsFlush: () => ipcRenderer.invoke('observations:flush'),
+  // 划词助手
+  assistantOnText: (callback: (text: string) => void) => {
+    ipcRenderer.on('assistant:text-captured', (_e, text: string) => callback(text))
+  },
+  assistantHide: () => ipcRenderer.invoke('assistant:hide'),
+  assistantQuery: (text: string, action: string) => ipcRenderer.invoke('assistant:query', text, action),
+  assistantResize: (width: number, height: number) => ipcRenderer.invoke('assistant:resize', width, height),
 })

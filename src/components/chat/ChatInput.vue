@@ -6,6 +6,7 @@ import ModelSelector from './ModelSelector.vue'
 import ThinkingToggle from './ThinkingToggle.vue'
 import FileAttach from './FileAttach.vue'
 import ToolPermissionModeSelector from './ToolPermissionModeSelector.vue'
+import WorkModeSelector from './WorkModeSelector.vue'
 import ContextRing from './ContextRing.vue'
 import { useTokenCounter } from '@/composables/useTokenCounter'
 import { useQuote } from '@/composables/useQuote'
@@ -231,6 +232,7 @@ function handleDrop(e: DragEvent) {
             <ModelSelector />
             <ThinkingToggle />
             <ToolPermissionModeSelector />
+            <WorkModeSelector />
             <ContextRing
               :percentage="tokenCounter.percentage.value"
               :token-count="tokenCounter.tokenCount.value"

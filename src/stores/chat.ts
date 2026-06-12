@@ -8,6 +8,7 @@ import { useMemory } from '@/composables/useMemory'
 import { useSkillStore } from './skills'
 import { buildSkillContext } from '@/composables/useSkillContext'
 import { useToolLoop } from '@/composables/useToolLoop'
+import { workModes } from '@/data/workModes'
 import {
   recordMessageCompleted,
   extractLightFromMessageCompleted,
@@ -332,6 +333,14 @@ export const useChatStore = defineStore('chat', () => {
       '5. web_search 的 queries 参数接受关键词数组，一次搜索就能覆盖多个方向（自动并行）。搜索前先想好需要哪些角度，一次性传入中英文、不同表述等变体。\n' +
       '6. 搜索结果的摘要通常就够回答，不需要 web_fetch 抓全文（知乎等有登录墙的网站无法抓取）。\n' +
       '7. 你可以使用 list_dir 工具列出目录内容，使用 file_read 读取文件，使用 file_write 写入文件。当用户提到本地文件或目录时，主动使用这些工具。\n\n'
+
+    // 0.5 工作模式指令
+    if (settingsStore.workMode !== 'chat') {
+      const modeBlock = workModes.find(m => m.value === settingsStore.workMode)?.promptBlock
+      if (modeBlock) {
+        systemPrompt += '\n' + modeBlock + '\n\n'
+      }
+    }
 
     // 1. 用户自定义 system prompt（含角色模板）
     if (settingsStore.systemPrompt) {

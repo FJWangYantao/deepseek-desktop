@@ -26,7 +26,7 @@ export default defineConfig({
           build: {
             outDir: 'dist-electron',
             rollupOptions: {
-              external: ['electron', '@huggingface/tokenizers']
+              external: ['electron', '@huggingface/tokenizers', 'uiohook-napi']
             }
           }
         }
