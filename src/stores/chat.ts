@@ -6,6 +6,7 @@ import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
 import { useMemory } from '@/composables/useMemory'
 import { useSkillStore } from './skills'
+import { buildSkillContext } from '@/composables/useSkillContext'
 import { useToolLoop } from '@/composables/useToolLoop'
 import {
   recordMessageCompleted,
@@ -337,94 +338,15 @@ export const useChatStore = defineStore('chat', () => {
       systemPrompt += settingsStore.systemPrompt + '\n\n'
     }
 
-    // 1.5 Skill prompt / DSL runner
+    // 1.5 Skill Index / loaded Skill（Claude Skills 风格渐进加载）
     const skillStore = useSkillStore()
-    if (skillStore.activeSkill) {
-      const { parseDSL } = await import('@/utils/dsl-parser')
-      const dslResult = parseDSL(skillStore.activeSkill.content)
-      if (dslResult.isDSL && dslResult.steps && dslResult.steps.length > 0) {
-        // === DSL 执行路径 ===
-        const { useDSLRunner } = await import('@/composables/useDSLRunner')
-        const runner = useDSLRunner()
-        const dslOutputs: { stage: string; content: string }[] = []
-
-        const abortCtrl = new AbortController()
-        abortControllers[sid] = abortCtrl
-
-        try {
-          // 先发一条"执行中"占位消息
-          const placeholderMsg: Message = {
-            id: generateId(), role: 'assistant',
-            content: '🤖 DSL 技能执行中...',
-            timestamp: Date.now(),
-          }
-          const targetSession = sessionStore.sessions.find(s => s.id === sid)
-          if (targetSession) targetSession.messages.push(placeholderMsg)
-          if (sessionStore.currentId === sid) {
-            messages.value = targetSession?.messages ?? messages.value
-          }
-
-          await runner.startExecution({
-            steps: dslResult.steps,
-            context: { userInput: text, files, date: `${dateStr} 星期${weekDay}` },
-            apiKey: settingsStore.apiKey,
-            model: currentModel.value,
-            thinking: thinkingEnabled.value ? 'enabled' : 'disabled',
-            signal: abortCtrl.signal,
-            onStepOutput: (o) => {
-              dslOutputs.push({ stage: o.stage, content: o.content })
-              // 实时更新占位消息为当前步骤进度
-              const stepsDone = dslOutputs.map(s => `**${s.stage}** ✅`).join('  ')
-              if (sessionStore.currentId === sid) {
-                streaming.value = `${stepsDone}\n\n---\n\n正在执行下一步：**${o.stage}**\n\n${o.content.slice(0, 500)}`
-              }
-            },
-          })
-
-          const combinedContent = dslOutputs.map(o => `## ${o.stage}\n${o.content}`).join('\n\n---\n\n')
-          // 替换占位消息
-          const ts = sessionStore.sessions.find(s => s.id === sid)
-          if (ts) {
-            const idx = ts.messages.findIndex(m => m.id === placeholderMsg.id)
-            if (idx >= 0) {
-              ts.messages[idx] = { ...ts.messages[idx], content: combinedContent || '(DSL 执行完成)' }
-            }
-          }
-          if (sessionStore.currentId === sid) {
-            messages.value = ts?.messages ?? messages.value
-          } else if (ts) {
-            unreadSessions.value = { ...unreadSessions.value, [sid]: true }
-          }
-        } catch (dslError: any) {
-          const errMsg: Message = {
-            id: generateId(), role: 'assistant',
-            content: `DSL 执行失败: ${dslError?.message || '未知错误'}`,
-            timestamp: Date.now(),
-          }
-          if (sid === sessionStore.currentId) {
-            messages.value.push(errMsg)
-          } else {
-            const origSession = sessionStore.sessions.find(s => s.id === sid)
-            if (origSession) origSession.messages.push(errMsg)
-          }
-        } finally {
-          delete abortControllers[sid]
-          const doneSid = sid
-          if (doneSid) {
-            generatingSessions.value = { ...generatingSessions.value }
-            delete generatingSessions.value[doneSid]
-            delete bgStreams[doneSid]
-            delete bgToolCalls[doneSid]
-          }
-          streaming.value = ''
-          streamingThinking.value = ''
-          isGenerating.value = false
-          generatingSessionId.value = null
-        }
-        return  // EARLY RETURN - skip normal flow
-      }
-      // 无 DSL → 传统 system prompt 注入
-      systemPrompt += `[Skill: ${skillStore.activeSkill.name}]\n${skillStore.activeSkill.content}\n\n`
+    if (skillStore.skillIndex.length === 0) await skillStore.loadSkillIndex()
+    const skillContext = await buildSkillContext({
+      skillIndex: skillStore.skillIndex,
+      setLoadedSkill: skillStore.setLoadedSkill,
+    })
+    if (skillContext.systemBlock) {
+      systemPrompt += skillContext.systemBlock + '\n\n'
     }
 
     // 2. 记忆上下文（用最近用户消息补充检索信号，改善短消息召回率）
@@ -480,6 +402,10 @@ export const useChatStore = defineStore('chat', () => {
         signal: abortCtrl.signal,
         sessionId: sid,
         conversationTurnId,
+        loadedSkillId: skillStore.loadedSkillId,
+        onSkillLoaded(skillId) {
+          skillStore.setLoadedSkill(skillId)
+        },
         onToken(token) {
           fullContent += token
           if (sessionStore.currentId === sid) {

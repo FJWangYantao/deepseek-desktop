@@ -15,9 +15,9 @@ const themes = [
 ]
 
 const permissionModes = [
-  { id: 'confirm' as const, label: '确认', desc: '高风险操作前询问，保持默认安全体验。' },
   { id: 'auto' as const, label: 'Auto', desc: '普通写入和安全工具自动执行，危险写入直接拒绝。' },
   { id: 'yolo' as const, label: 'YOLO', desc: '跳过确认，但仍尊重禁用规则和危险写入拦截。' },
+  { id: 'confirm' as const, label: 'Manual', desc: '操作前手动确认，保持默认安全体验。' },
 ]
 </script>
 
@@ -181,7 +181,7 @@ const permissionModes = [
             </button>
           </div>
           <p class="text-xs text-app-muted/70 mt-2 leading-relaxed">
-            Auto 会自动批准普通写入并拒绝 .env、.ssh、系统目录和路径穿越等危险写入；YOLO 会跳过确认，但不会覆盖已禁用工具。
+            Auto 会自动批准普通写入并拒绝 .env、.ssh、系统目录和路径穿越等危险写入；YOLO 会跳过确认，但不会覆盖已禁用工具；Manual 会在需要时手动确认。
           </p>
         </section>
 

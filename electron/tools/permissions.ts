@@ -2,6 +2,8 @@ import type { ToolPermissionConfig, ToolPermissionRule } from '../../src/types/t
 import { app } from 'electron'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'fs'
 import { basename, parse, relative, resolve, isAbsolute } from 'path'
+import { checkTrust, loadTrustStore } from '../skills/runtime/trust-store'
+import { getSkillPackage } from '../skills/service'
 
 const CONFIG_FILE = resolve(app.getPath('userData'), 'tool-permissions.json')
 
@@ -14,6 +16,10 @@ const DEFAULT_CONFIG: ToolPermissionConfig = {
     { toolName: 'file_read', level: 'whitelist' },
     { toolName: 'file_write', level: 'confirm' },
     { toolName: 'list_dir', level: 'whitelist' },
+    { toolName: 'skill_load', level: 'auto' },
+    { toolName: 'skill_read_resource', level: 'auto' },
+    { toolName: 'skill_check_deps', level: 'auto' },
+    { toolName: 'skill_script_run', level: 'confirm' },
   ],
 }
 
@@ -183,6 +189,32 @@ function checkRule(
   }
 }
 
+/**
+ * skill_script_run 的 trust 闸门：与权限 mode 无关的硬约束。
+ * 即使在 auto / yolo 模式，未被信任的 Skill 首次执行外部命令也必须经过用户确认，
+ * 不能被自动放行（P2 决策 4）。返回 null 表示该工具不受此闸门约束。
+ */
+function checkSkillTrustGate(toolName: string, args: Record<string, unknown>): PermissionDecision | null {
+  if (toolName !== 'skill_script_run') return null
+  const skillId = String(args.skill_id || '').trim()
+  if (!skillId) return { status: 'block', reason: '缺少 skill_id' }
+
+  let version: string | undefined
+  try {
+    version = getSkillPackage(skillId)?.version
+  } catch { /* ignore — version 拿不到就按 undefined 处理 */ }
+
+  const store = loadTrustStore(app.getPath('userData'))
+  const trust = checkTrust(store, skillId, version)
+  if (trust.state === 'denied') {
+    return { status: 'block', reason: `Skill "${skillId}" 已被标记为拒绝执行外部命令` }
+  }
+  if (trust.state === 'pending') {
+    return { status: 'confirm', reason: trust.reason }
+  }
+  return { status: 'allow' }
+}
+
 // 检查工具是否被允许执行：allow = 自动放行，confirm = 需要确认，block = 直接拒绝
 export function checkPermission(
   toolName: string,
@@ -198,6 +230,13 @@ export function checkPermission(
   const danger = checkDangerousFileWrite(toolName, args)
   if (danger.dangerous) {
     return { status: 'block', reason: danger.reason || '危险写入已被拒绝' }
+  }
+
+  // skill_script_run 的 trust 闸门优先于任何 mode：
+  // pending → 强制 confirm；denied → 强制 block；即使 auto/yolo 也不放行未授权的 Skill。
+  const trustGate = checkSkillTrustGate(toolName, args)
+  if (trustGate && trustGate.status !== 'allow') {
+    return trustGate
   }
 
   if (config.mode === 'yolo') {

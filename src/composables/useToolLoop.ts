@@ -18,6 +18,8 @@ interface ToolLoopOptions {
   onUsage?: (usage: UsageData) => void
   onToolCallUpdate?: (calls: ToolCallUIState[]) => void
   onNeedsApproval?: (info: { callId: string; name: string; arguments: Record<string, unknown>; reason: string }) => Promise<boolean>
+  loadedSkillId?: string | null
+  onSkillLoaded?: (skillId: string) => void
 }
 
 interface ToolLoopResult {
@@ -109,6 +111,7 @@ export function useToolLoop() {
     const usageList: UsageData[] = []
     let totalUsage: UsageData | null = null
     const ctx = { sessionId: options.sessionId, conversationTurnId: options.conversationTurnId }
+    let loadedSkillId = options.loadedSkillId || null
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       activeToolCalls.splice(0, activeToolCalls.length)
@@ -197,7 +200,31 @@ export function useToolLoop() {
       for (let i = 0; i < result.toolCalls.length; i++) {
         const tc = result.toolCalls[i]
         try {
-          const res = await executeToolViaIPC(tc, ctx)
+          let res: ToolCallResult
+          if (tc.name === 'skill_load') {
+            let requestedSkillId = ''
+            try { requestedSkillId = String(JSON.parse(tc.arguments || '{}').skill_id || '') } catch { /* ignore */ }
+            if (loadedSkillId && requestedSkillId && loadedSkillId !== requestedSkillId) {
+              res = {
+                callId: tc.id,
+                name: tc.name,
+                success: false,
+                data: `本轮已加载 Skill: ${loadedSkillId}。每轮最多加载一个 Skill，请继续使用当前 Skill，或在下一轮再切换。`,
+                truncated: false,
+                totalSize: 0,
+                displayedSize: 0,
+                offset: 0,
+              }
+            } else {
+              res = await executeToolViaIPC(tc, ctx)
+              if (res.success && requestedSkillId) {
+                loadedSkillId = requestedSkillId
+                options.onSkillLoaded?.(requestedSkillId)
+              }
+            }
+          } else {
+            res = await executeToolViaIPC(tc, ctx)
+          }
 
           if (res.needsApproval && options.onNeedsApproval) {
             uiStates[i].status = 'awaiting-approval'

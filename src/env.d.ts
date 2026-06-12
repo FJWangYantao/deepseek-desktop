@@ -42,10 +42,37 @@ interface Window {
     getFilePath: (file: File) => string
     exportSession: (session: any, format: 'md' | 'html') => Promise<boolean>
     exportMessage: (msg: import('../src/types').Message, format: 'md' | 'html') => Promise<boolean>
-    listSkills: () => Promise<import('../electron/ipc/skills').SkillMeta[]>
-    importSkill: (url: string) => Promise<import('../electron/ipc/skills').SkillMeta | null>
-    saveSkill: (skill: import('../electron/ipc/skills').SkillMeta) => Promise<boolean>
+    listSkills: () => Promise<import('../src/types/skills').LegacySkillMeta[]>
+    importSkill: (url: string) => Promise<import('../src/types/skills').LegacySkillMeta | null>
+    saveSkill: (skill: import('../src/types/skills').LegacySkillMeta) => Promise<boolean>
     deleteSkill: (id: string) => Promise<boolean>
+    listSkillIndex: () => Promise<import('../src/types/skills').SkillIndex[]>
+    getSkillPackage: (id: string) => Promise<import('../src/types/skills').SkillPackage | null>
+    createSkillPackage: (payload: { id: string; readme: string }) => Promise<import('../src/types/skills').SkillPackage | null>
+    saveSkillPackage: (payload: { id: string; readme: string }) => Promise<boolean>
+    importSkillPackageUrl: (url: string) => Promise<import('../src/types/skills').SkillPackage | null>
+    migrateLegacySkill: (id: string) => Promise<import('../src/types/skills').SkillPackage | null>
+    readSkillResource: (payload: { id: string; path: string }) => Promise<import('../src/types/skills').SkillResourceReadResult>
+    validateSkill: (id: string) => Promise<import('../src/types/skills').SkillValidationResult>
+    // ClawHub registry
+    clawHubSearch: (payload: { query?: string; cursor?: string; limit?: number; token?: string; baseUrl?: string }) =>
+      Promise<import('../electron/skills/clawhub/types').ClawHubListResponse | { error: string }>
+    clawHubGetSkill: (payload: { slug: string; token?: string; baseUrl?: string }) =>
+      Promise<import('../electron/skills/clawhub/types').ClawHubSkillDetail | { error: string }>
+    clawHubGetVersion: (payload: { slug: string; version: string; token?: string; baseUrl?: string }) =>
+      Promise<import('../electron/skills/clawhub/types').ClawHubVersionDetail | { error: string }>
+    clawHubInstall: (payload: { slug: string; version?: string; overwrite?: boolean; token?: string; baseUrl?: string }) =>
+      Promise<import('../electron/skills/clawhub/types').ClawHubInstallResult>
+    clawHubUninstall: (slug: string) => Promise<boolean>
+    clawHubListInstalled: () => Promise<import('../electron/skills/clawhub/types').ClawHubLock>
+    // Skill 运行时：trust / env / deps（P2）
+    skillTrustList: () => Promise<import('../electron/skills/runtime/trust-store').TrustStore>
+    skillTrustSet: (payload: { skillId: string; decision: 'trusted' | 'denied' }) => Promise<boolean>
+    skillTrustRevoke: (skillId: string) => Promise<boolean>
+    skillEnvGet: () => Promise<import('../electron/skills/runtime/env-resolver').SkillEnvConfig>
+    skillEnvSet: (payload: { skillId: string; name: string; value: string | null }) => Promise<boolean>
+    skillEnvSetGlobal: (payload: { name: string; value: string | null }) => Promise<boolean>
+    skillCheckDeps: (skillId: string) => Promise<import('../electron/skills/runtime/deps-check').SkillDepsReport>
     mcpToolCall: (request: { serverId: string; toolName: string; params: Record<string, string> }) => Promise<{ success: boolean; data?: unknown; error?: string }>
     toolsList: () => Promise<import('../src/types/tools').ToolListResponse>
     toolsCall: (request: import('../src/types/tools').ToolCallRequest) => Promise<import('../src/types/tools').ToolCallResult>

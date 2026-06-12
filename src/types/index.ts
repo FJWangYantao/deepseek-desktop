@@ -57,8 +57,20 @@ export interface ThemeDefinition {
   dark: ThemeColors
 }
 
+// ===== 笔记/Insight 相关 =====
+export type { Insight, InsightInput, Notebook } from './notes'
+export { INSIGHT_COLORS } from './notes'
+
 // ===== 记忆相关 =====
 export type { MemoryItem, MemoryLayer, MemoryStore } from './memory'
+
+// ===== Skill 相关 =====
+export type {
+  SkillValidationIssue, SkillValidationResult,
+  SkillIndex, SkillResource, SkillPackage, SkillActivation,
+  LegacySkillMeta, SkillResourceReadResult,
+  SkillRuntimeMetadata, SkillEnvVar, SkillInstallSpec,
+} from './skills'
 
 // ===== DSL 相关 =====
 export type {

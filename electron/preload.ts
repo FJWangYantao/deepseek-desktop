@@ -20,6 +20,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importSkill: (url: string) => ipcRenderer.invoke('skills:import', url),
   saveSkill: (skill: any) => ipcRenderer.invoke('skills:save', skill),
   deleteSkill: (id: string) => ipcRenderer.invoke('skills:delete', id),
+  listSkillIndex: () => ipcRenderer.invoke('skills:list-index'),
+  getSkillPackage: (id: string) => ipcRenderer.invoke('skills:get-package', id),
+  createSkillPackage: (payload: { id: string; readme: string }) => ipcRenderer.invoke('skills:create-package', payload),
+  saveSkillPackage: (payload: { id: string; readme: string }) => ipcRenderer.invoke('skills:save-package', payload),
+  importSkillPackageUrl: (url: string) => ipcRenderer.invoke('skills:import-package-url', url),
+  migrateLegacySkill: (id: string) => ipcRenderer.invoke('skills:migrate-legacy', id),
+  readSkillResource: (payload: { id: string; path: string }) => ipcRenderer.invoke('skills:read-resource', payload),
+  validateSkill: (id: string) => ipcRenderer.invoke('skills:validate', id),
+  // ClawHub registry
+  clawHubSearch: (payload: { query?: string; cursor?: string; limit?: number; token?: string; baseUrl?: string }) =>
+    ipcRenderer.invoke('clawhub:search', payload),
+  clawHubGetSkill: (payload: { slug: string; token?: string; baseUrl?: string }) =>
+    ipcRenderer.invoke('clawhub:get-skill', payload),
+  clawHubGetVersion: (payload: { slug: string; version: string; token?: string; baseUrl?: string }) =>
+    ipcRenderer.invoke('clawhub:get-version', payload),
+  clawHubInstall: (payload: { slug: string; version?: string; overwrite?: boolean; token?: string; baseUrl?: string }) =>
+    ipcRenderer.invoke('clawhub:install', payload),
+  clawHubUninstall: (slug: string) => ipcRenderer.invoke('clawhub:uninstall', slug),
+  clawHubListInstalled: () => ipcRenderer.invoke('clawhub:list-installed'),
+  // Skill 运行时：trust / env / deps（P2）
+  skillTrustList: () => ipcRenderer.invoke('skills:trust-list'),
+  skillTrustSet: (payload: { skillId: string; decision: 'trusted' | 'denied' }) => ipcRenderer.invoke('skills:trust-set', payload),
+  skillTrustRevoke: (skillId: string) => ipcRenderer.invoke('skills:trust-revoke', skillId),
+  skillEnvGet: () => ipcRenderer.invoke('skills:env-get'),
+  skillEnvSet: (payload: { skillId: string; name: string; value: string | null }) => ipcRenderer.invoke('skills:env-set', payload),
+  skillEnvSetGlobal: (payload: { name: string; value: string | null }) => ipcRenderer.invoke('skills:env-set-global', payload),
+  skillCheckDeps: (skillId: string) => ipcRenderer.invoke('skills:check-deps', skillId),
   mcpToolCall: (request: { serverId: string; toolName: string; params: Record<string, string> }) =>
     ipcRenderer.invoke('mcp:tool-call', request),
   toolsList: () => ipcRenderer.invoke('tools:list'),

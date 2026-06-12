@@ -1,22 +1,32 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import type { Message } from '@/types'
 import { useChatStore } from '@/stores/chat'
+import { useSessionStore } from '@/stores/session'
 import { useQuote } from '@/composables/useQuote'
+import { useNotesStore } from '@/stores/notes'
 import ContentBlock from '@/components/renderer/ContentBlock.vue'
 import ThinkingBubble from '@/components/renderer/ThinkingBubble.vue'
 import ReplixLogo from '@/components/pet/ReplixLogo.vue'
+import FavoritePopover from '@/components/notes/FavoritePopover.vue'
+import ToastNotification from '@/components/notes/ToastNotification.vue'
 
 const props = defineProps<{
   message: Message
 }>()
 
 const chatStore = useChatStore()
+const sessionStore = useSessionStore()
+const notesStore = useNotesStore()
 const { addQuote } = useQuote()
 const copied = ref(false)
 const exported = ref(false)
 const contentRef = ref<HTMLElement>()
+const quoteBtnRef = ref<HTMLElement>()
+const popoverRef = ref<HTMLElement>()
 const showQuoteBtn = ref(false)
+const showFavoritePopover = ref(false)
+const favSuccess = ref(false)
 const quoteBtnPos = ref({ x: 0, y: 0 })
 const selectedText = ref('')
 
@@ -37,12 +47,87 @@ function onContentMouseUp() {
   selectedText.value = text
   quoteBtnPos.value = { x: rect.left + rect.width / 2, y: rect.top - 8 }
   showQuoteBtn.value = true
+  showFavoritePopover.value = false
+}
+
+// 点击别处时隐藏浮动引用按钮。mousedown 先于按钮的 click，
+// 所以点在按钮本身上要放行，否则会在引用动作触发前就被隐藏。
+function onGlobalMouseDown(e: MouseEvent) {
+  if (!showQuoteBtn.value && !showFavoritePopover.value) return
+  if (quoteBtnRef.value?.contains(e.target as Node)) return
+  if (popoverRef.value?.contains(e.target as Node)) return
+  showQuoteBtn.value = false
+  showFavoritePopover.value = false
+}
+
+// 选区被清空（键盘操作、点击折叠选区等）时同步隐藏
+function onSelectionChange() {
+  if (!showQuoteBtn.value) return
+  const sel = window.getSelection()
+  if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+    showQuoteBtn.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('mousedown', onGlobalMouseDown)
+  document.addEventListener('selectionchange', onSelectionChange)
+  document.addEventListener('keydown', onGlobalKeydown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', onGlobalMouseDown)
+  document.removeEventListener('selectionchange', onSelectionChange)
+  document.removeEventListener('keydown', onGlobalKeydown)
+})
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    if (showFavoritePopover.value) {
+      showFavoritePopover.value = false
+    } else if (showQuoteBtn.value) {
+      showQuoteBtn.value = false
+    }
+  }
 }
 
 function handleQuote() {
   addQuote(selectedText.value, props.message.id)
   showQuoteBtn.value = false
   window.getSelection()?.removeAllRanges()
+}
+
+function toggleFavorite() {
+  showFavoritePopover.value = !showFavoritePopover.value
+}
+
+function handleFavoriteSaved(data: { content: string; tags: string[]; color: string; notebookId: string | null }) {
+  // 检测重复（同一条消息中的相同文本）
+  const isDuplicate = notesStore.insights.some(
+    i => i.sourceMessageId === props.message.id && i.content === data.content
+  )
+  if (isDuplicate) {
+    showQuoteBtn.value = false
+    showFavoritePopover.value = false
+    favSuccess.value = true
+    window.getSelection()?.removeAllRanges()
+    setTimeout(() => { favSuccess.value = false }, 1500)
+    return
+  }
+  notesStore.addInsight({
+    content: data.content,
+    sourceMessageId: props.message.id,
+    sourceSessionId: sessionStore.currentId,
+    sourceRole: props.message.role,
+    tags: data.tags,
+    color: data.color,
+    notebookId: data.notebookId,
+  })
+  showQuoteBtn.value = false
+  showFavoritePopover.value = false
+  favSuccess.value = true
+  window.getSelection()?.removeAllRanges()
+  setTimeout(() => { favSuccess.value = false }, 1500)
 }
 
 async function copyContent() {
@@ -72,18 +157,49 @@ function retry() {
 
 <template>
   <div class="mb-8 group">
-    <!-- 浮动引用按钮 -->
+    <!-- 浮动操作栏（引用 + 收藏） -->
     <Teleport to="body">
-      <button
+      <div
         v-if="showQuoteBtn"
-        @click="handleQuote"
-        class="fixed z-[9999] px-3 py-1.5 text-xs font-medium rounded-lg shadow-lg
-               bg-app-accent text-white hover:bg-app-accent-hover transition-colors
-               -translate-x-1/2 -translate-y-full whitespace-nowrap"
+        ref="quoteBtnRef"
+        class="fixed z-[9999] flex items-center -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg shadow-lg overflow-hidden"
         :style="{ left: quoteBtnPos.x + 'px', top: quoteBtnPos.y + 'px' }"
       >
-        引用
-      </button>
+        <button
+          @click="handleQuote"
+          class="px-3 py-1.5 text-xs font-medium bg-app-accent text-white hover:bg-app-accent-hover transition-colors"
+        >
+          引用
+        </button>
+        <button
+          @click="toggleFavorite"
+          class="px-3 py-1.5 text-xs font-medium bg-app-card text-app-accent border border-app-accent/30 hover:bg-app-hover transition-colors"
+        >
+          收藏
+        </button>
+      </div>
+      <!-- 收藏弹出框 -->
+      <FavoritePopover
+        ref="popoverRef"
+        :visible="showFavoritePopover"
+        :position="quoteBtnPos"
+        :selected-text="selectedText"
+        @saved="handleFavoriteSaved"
+        @cancel="showFavoritePopover = false"
+      />
+      <!-- 已收藏反馈 -->
+      <Transition name="toast">
+        <div
+          v-if="favSuccess"
+          class="fixed z-[10001] px-3 py-1.5 text-xs font-medium rounded-lg shadow-lg bg-app-card border border-app-accent/30 text-app-accent -translate-x-1/2 -translate-y-full flex items-center gap-1.5"
+          :style="{ left: quoteBtnPos.x + 'px', top: quoteBtnPos.y + 'px' }"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          已收藏
+        </div>
+      </Transition>
     </Teleport>
 
     <!-- 用户消息 -->
