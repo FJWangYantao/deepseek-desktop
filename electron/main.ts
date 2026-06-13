@@ -14,7 +14,7 @@ import { registerTokenizerHandlers } from './ipc/tokenizer'
 import { registerImageDescribeHandlers } from './ipc/image-describe'
 import { registerObservationHandlers } from './ipc/observations'
 import { registerAssistantHandlers, setAssistantWindow } from './ipc/assistant'
-import { startSelectionWatcher, stopSelectionWatcher, setAssistantFocused } from './assistant/selectionWatcher'
+import { startSelectionWatcher, stopSelectionWatcher, setAssistantFocused, setMouseDownCallback } from './assistant/selectionWatcher'
 import { registerBuiltinTools } from './tools'
 
 // Windows 控制台 UTF-8 编码
@@ -74,7 +74,7 @@ function createWindow() {
 function getOrCreateAssistantWindow(): BrowserWindow {
   if (assistantWindow && !assistantWindow.isDestroyed()) return assistantWindow
   assistantWindow = new BrowserWindow({
-    width: 360,
+    width: 280,
     height: 44,
     frame: false,
     resizable: false,
@@ -130,12 +130,12 @@ function onTextCaptured(text: string) {
   const win = getOrCreateAssistantWindow()
   // 重置为小长条尺寸（Windows 下 resizable:false 会忽略 setSize，临时解锁）
   win.setResizable(true)
-  win.setSize(360, 44)
+  win.setSize(280, 44)
   win.setResizable(false)
   // 定位到鼠标附近
   const pos = screen.getCursorScreenPoint()
   const display = screen.getDisplayNearestPoint(pos)
-  const x = Math.min(pos.x + 10, display.bounds.x + display.bounds.width - 370)
+  const x = Math.min(pos.x + 10, display.bounds.x + display.bounds.width - 290)
   const y = Math.min(pos.y + 10, display.bounds.y + display.bounds.height - 54)
   win.setPosition(x, y)
 
@@ -204,6 +204,17 @@ app.whenReady().then(() => {
   // 启动全局划词选区监听（仅 Windows）
   if (process.platform === 'win32') {
     startSelectionWatcher(onTextCaptured)
+    // 点击助手窗口外部 → 隐藏（比 blur 事件更可靠）
+    setMouseDownCallback(() => {
+      if (!assistantWindow || assistantWindow.isDestroyed() || !assistantWindow.isVisible()) return
+      // 用 Electron API 取鼠标坐标，确保与 getBounds() 同一坐标系（避免 DPI 缩放偏差）
+      const pos = screen.getCursorScreenPoint()
+      const b = assistantWindow.getBounds()
+      const inside = pos.x >= b.x && pos.x <= b.x + b.width && pos.y >= b.y && pos.y <= b.y + b.height
+      if (!inside) {
+        assistantWindow.hide()
+      }
+    })
   }
 
   app.on('activate', () => {

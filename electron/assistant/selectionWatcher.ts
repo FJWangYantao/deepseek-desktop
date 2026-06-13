@@ -18,6 +18,7 @@ let assistantFocused = false // 助手窗口聚焦时不触发（避免自捕获
 let mouseDownX = 0
 let mouseDownY = 0
 let callbackFn: ((text: string) => void) | null = null
+let mouseDownCbFn: ((x: number, y: number) => void) | null = null
 
 const MIN_DRAG_DISTANCE = 8 // 最小拖动距离（像素），过滤单击
 const MIN_TEXT_LENGTH = 1 // 最短有效选中文本
@@ -48,6 +49,8 @@ function captureSelection(): Promise<string> {
 function onMouseDown(e: { x: number; y: number }) {
   mouseDownX = e.x
   mouseDownY = e.y
+  // 通知主进程：有全局 mousedown（用于点击外部关闭助手窗口）
+  if (mouseDownCbFn) mouseDownCbFn(e.x, e.y)
 }
 
 async function onMouseUp(e: { x: number; y: number; clicks?: number }) {
@@ -110,4 +113,9 @@ export function stopSelectionWatcher() {
 /** 设置助手窗口聚焦状态（聚焦时抑制检测，避免选中结果文本造成自捕获） */
 export function setAssistantFocused(focused: boolean) {
   assistantFocused = focused
+}
+
+/** 设置全局 mousedown 回调（主进程用于检测点击外部关闭助手窗口） */
+export function setMouseDownCallback(cb: ((x: number, y: number) => void) | null) {
+  mouseDownCbFn = cb
 }

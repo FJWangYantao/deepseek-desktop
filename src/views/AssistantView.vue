@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const capturedText = ref('')
 const result = ref('')
@@ -9,12 +9,6 @@ const copied = ref(false)
 // 两种状态：bar（矮长条）和 panel（展开面板）
 type Phase = 'bar' | 'panel'
 const phase = ref<Phase>('bar')
-
-const truncatedText = computed(() => {
-  const t = capturedText.value
-  if (!t) return ''
-  return t.length > 30 ? t.slice(0, 30) + '…' : t
-})
 
 let textHandler: ((text: string) => void) | null = null
 
@@ -75,10 +69,12 @@ async function copyResult() {
 <template>
   <!-- 矮长条模式 -->
   <div v-if="phase === 'bar'" class="bar">
-    <span class="bar-logo">✦</span>
-    <span class="bar-text" :title="capturedText">{{ truncatedText }}</span>
-    <button class="bar-btn" @click="doAction('translate')">翻译</button>
-    <button class="bar-btn" @click="doAction('explain')">解释</button>
+    <div class="bar-actions">
+      <button class="bar-btn" @click="doAction('translate')">翻译</button>
+      <button class="bar-btn" @click="doAction('explain')">解释</button>
+    </div>
+    <!-- 右侧预留区域（未来可扩展更多功能） -->
+    <div class="bar-reserve"></div>
     <button class="bar-close" @click="hide">✕</button>
   </div>
 
@@ -114,9 +110,7 @@ async function copyResult() {
   width: 100vw;
   height: 100vh;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 10px;
+  align-items: stretch;
   background: var(--app-card, #fff);
   border: 1px solid var(--app-border, #e5e5e5);
   border-radius: 8px;
@@ -126,30 +120,18 @@ async function copyResult() {
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 
-.bar-logo {
-  color: var(--app-accent, #d97706);
-  font-size: 14px;
+.bar-actions {
+  display: flex;
+  align-items: stretch;
   flex-shrink: 0;
-}
-
-.bar-text {
-  flex: 1;
-  font-size: 12px;
-  color: var(--app-text, #333);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  line-height: 1;
 }
 
 .bar-btn {
-  flex-shrink: 0;
-  padding: 3px 10px;
+  padding: 0 14px;
   font-size: 11px;
   font-weight: 500;
-  border: 1px solid var(--app-border, #e5e5e5);
-  border-radius: 5px;
+  border: none;
+  border-right: 1px solid var(--app-border, #e5e5e5);
   background: transparent;
   color: var(--app-text, #333);
   cursor: pointer;
@@ -157,24 +139,26 @@ async function copyResult() {
   white-space: nowrap;
 }
 .bar-btn:hover {
-  border-color: var(--app-accent, #d97706);
   color: var(--app-accent, #d97706);
   background: var(--app-accent-soft, rgba(217, 119, 6, 0.08));
 }
 
+.bar-reserve {
+  flex: 1;
+}
+
 .bar-close {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
+  border-left: 1px solid var(--app-border, #e5e5e5);
   background: transparent;
   color: var(--app-muted, #999);
   font-size: 12px;
   cursor: pointer;
-  border-radius: 3px;
   transition: all 0.15s;
 }
 .bar-close:hover {
