@@ -7,8 +7,9 @@
  * 仅 Windows 平台使用
  */
 
-import { clipboard } from 'electron'
+import { clipboard, app } from 'electron'
 import { execFile } from 'child_process'
+import { join } from 'path'
 import { uIOhook } from 'uiohook-napi'
 
 let isWatching = false
@@ -21,37 +22,26 @@ let callbackFn: ((text: string) => void) | null = null
 const MIN_DRAG_DISTANCE = 8 // 最小拖动距离（像素），过滤单击
 const MIN_TEXT_LENGTH = 1 // 最短有效选中文本
 
-// 用 keybd_event 发送真实的 Ctrl+C 物理按键（比 SendKeys 对 Chrome/PDF 等更可靠）
-// VK_CONTROL=0x11, VK 'C'=0x43；flags: 0=按下, 2=KEYEVENTF_KEYUP
-// 复制后 Start-Sleep 等待剪贴板填充，脚本退出即表示完成
-const PS_COPY_SCRIPT = [
-  "Add-Type -Name K -Namespace W -MemberDefinition '[DllImport(\"user32.dll\")]public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, System.IntPtr dwExtraInfo);'",
-  '[W.K]::keybd_event(0x11,0,0,[System.IntPtr]::Zero)',
-  '[W.K]::keybd_event(0x43,0,0,[System.IntPtr]::Zero)',
-  'Start-Sleep -Milliseconds 40',
-  '[W.K]::keybd_event(0x43,0,2,[System.IntPtr]::Zero)',
-  '[W.K]::keybd_event(0x11,0,2,[System.IntPtr]::Zero)',
-  'Start-Sleep -Milliseconds 130',
-].join('; ')
+/** 获取预编译的 Ctrl+C 模拟工具路径（比 PowerShell 启动快 30 倍） */
+function getCopyExePath(): string {
+  // 开发模式：app.getAppPath() = 项目根目录
+  // 打包模式：需要 extraResources 配置将 exe 包进去
+  return app.isPackaged
+    ? join(process.resourcesPath!, 'assistant', 'copy-selection.exe')
+    : join(app.getAppPath(), 'electron', 'assistant', 'native', 'copy-selection.exe')
+}
 
 /** 模拟 Ctrl+C，返回剪贴板中的新文本（自动恢复原始剪贴板） */
 function captureSelection(): Promise<string> {
   const savedClipboard = clipboard.readText()
-  // 先清空，便于判断本次复制是否真的产生了内容
   clipboard.writeText('')
 
   return new Promise((resolve) => {
-    execFile(
-      'powershell',
-      ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', PS_COPY_SCRIPT],
-      { windowsHide: true },
-      () => {
-        const newText = clipboard.readText()
-        // 恢复原始剪贴板内容
-        clipboard.writeText(savedClipboard)
-        resolve(newText)
-      }
-    )
+    execFile(getCopyExePath(), [], { windowsHide: true }, () => {
+      const newText = clipboard.readText()
+      clipboard.writeText(savedClipboard)
+      resolve(newText)
+    })
   })
 }
 

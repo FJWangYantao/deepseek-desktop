@@ -148,16 +148,15 @@ function onTextCaptured(text: string) {
     sendText()
   }
 
-  // 显示并强制聚焦 —— 否则从其他应用触发时按钮首次点击只会激活窗口
+  // 显示并聚焦（exe 已在 ~110ms 内完成 Ctrl+C 模拟，等待按键释放后抢焦点）
   win.showInactive()
   win.setAlwaysOnTop(true)
-  // 稍延迟抢焦点，确保 SendKeys 的 Ctrl 已释放、原应用焦点已让出
   setTimeout(() => {
     if (win && !win.isDestroyed()) {
       win.show()
       win.focus()
     }
-  }, 60)
+  }, 30)
 }
 
 Menu.setApplicationMenu(
