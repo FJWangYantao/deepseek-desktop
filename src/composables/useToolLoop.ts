@@ -133,7 +133,7 @@ export function useToolLoop() {
       if (round >= policy.maxRounds && !budgetWarned) {
         messages.push({
           role: 'system',
-          content: '工具预算已用尽，请直接基于已有信息用文字给出最终答案，不要再调用工具。',
+          content: '工具预算已用尽。现在必须用文字回答用户：已查到的信息就总结呈现；没查到就明确回复「未找到相关内容」并简要说明原因（如搜索结果被干扰）。禁止再调用任何工具。',
         })
         budgetWarned = true
       }
@@ -402,7 +402,7 @@ export function useToolLoop() {
 
     // 跑满绝对上限仍想调工具：返回已有内容（兜底，避免空答）
     return {
-      content: fullContent || '(工具调用已达上限，未能给出最终答案)',
+      content: fullContent || '未能查到相关内容（搜索结果可能不相关或被干扰）。',
       thinking: fullThinking,
       usageList,
       totalUsage,
