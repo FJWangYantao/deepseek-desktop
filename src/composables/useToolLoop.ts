@@ -123,7 +123,21 @@ export function useToolLoop() {
     const ctx = { sessionId: options.sessionId, conversationTurnId: options.conversationTurnId }
     let loadedSkillId = options.loadedSkillId || null
 
-    for (let round = 0; round < policy.maxRounds; round++) {
+    // 软兜底：maxRounds 是“建议轮次”，达到后注入提醒引导作答；
+    // absoluteLimit 是绝对上限，多预留 2 轮让模型基于已有信息收尾，避免硬截断成空答。
+    const absoluteLimit = policy.maxRounds + 2
+    let budgetWarned = false
+
+    for (let round = 0; round < absoluteLimit; round++) {
+      // 达到模式轮次预算时提醒模型尽快作答（仅注入一次）
+      if (round >= policy.maxRounds && !budgetWarned) {
+        messages.push({
+          role: 'system',
+          content: '工具预算已用尽，请直接基于已有信息用文字给出最终答案，不要再调用工具。',
+        })
+        budgetWarned = true
+      }
+
       // accumulate=true（ReAct/Plan）：不清空，本轮工具调用行追加到已有轨迹上
       // accumulate=false（Chat）：每轮覆盖，只显示当前轮
       if (!policy.accumulate) {
@@ -386,36 +400,13 @@ export function useToolLoop() {
       fullThinking = ''
     }
 
-    // 工具预算用尽收尾：循环跑满 maxRounds 仍想调工具时，
-    // 注入提示引导模型基于已有信息直接作答。
-    // 必须仍带 tools：否则 DeepSeek 会把内部 DSML 工具调用标记当作正文文本输出（泄漏给用户）。
-    messages.push({
-      role: 'system',
-      content: '工具预算已用尽，请直接用文字给出最终答案，不要调用任何工具。',
-    })
-    await deepSeekChat({
-      messages: messages as any,
-      model: options.model,
-      thinking: options.thinking,
-      apiKey: options.apiKey,
-      signal: options.signal,
-      tools: hasTools ? toolsSchema.value : undefined,
-      onToken(token) {
-        fullContent += token
-        options.onToken(token)
-      },
-      onThinking(token) {
-        fullThinking += token
-        options.onThinking(token)
-      },
-      onUsage(usage) {
-        usageList.push(usage)
-        totalUsage = totalUsage ? addUsage(totalUsage, usage) : { ...usage }
-        options.onUsage?.(usage)
-      },
-    })
-
-    return { content: fullContent, thinking: fullThinking, usageList, totalUsage }
+    // 跑满绝对上限仍想调工具：返回已有内容（兜底，避免空答）
+    return {
+      content: fullContent || '(工具调用已达上限，未能给出最终答案)',
+      thinking: fullThinking,
+      usageList,
+      totalUsage,
+    }
   }
 
   return {
