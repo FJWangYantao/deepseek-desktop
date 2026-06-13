@@ -1,10 +1,36 @@
 import type { WorkMode } from '@/types'
 
+/** 工具 schema 项的形状（与 useToolLoop 内构造一致） */
+export interface ToolSchemaItem {
+  type: 'function'
+  function: { name: string; description: string; parameters: object }
+}
+
+/** 工作模式的能力策略 */
+export interface ModeCapabilities {
+  /** 工具调用轮次上限 */
+  maxRounds: number
+  /** 允许的工具：'all' 或工具名白名单 */
+  allowedTools: string[] | 'all'
+  /** 工具调用行是否多轮累积（ReAct/Plan=true）；false=每轮覆盖（Chat 现状） */
+  accumulate: boolean
+}
+
 export interface WorkModeDefinition {
   value: WorkMode
   label: string
   desc: string
   promptBlock: string
+  capabilities: ModeCapabilities
+}
+
+/** 按 allowedTools 过滤工具 schema。'all' 返回全部。 */
+export function filterToolSchema(
+  all: ToolSchemaItem[],
+  allowedTools: string[] | 'all',
+): ToolSchemaItem[] {
+  if (allowedTools === 'all') return all
+  return all.filter(t => allowedTools.includes(t.function.name))
 }
 
 export const workModes: WorkModeDefinition[] = [
@@ -13,6 +39,11 @@ export const workModes: WorkModeDefinition[] = [
     label: 'Chat',
     desc: '直接对话与工具调用',
     promptBlock: '',
+    capabilities: {
+      maxRounds: 3,
+      allowedTools: ['web_search', 'web_fetch', 'skill_load', 'skill_read_resource', 'skill_check_deps'],
+      accumulate: false,
+    },
   },
   {
     value: 'plan',
@@ -34,6 +65,11 @@ export const workModes: WorkModeDefinition[] = [
 - 全部完成后输出执行总结
 
 重要：如果用户的首次消息不包含明确的任务（如普通闲聊），按普通对话模式回复，不必强制制定计划。`,
+    capabilities: {
+      maxRounds: 100,
+      allowedTools: 'all',
+      accumulate: true,
+    },
   },
   {
     value: 'react',
@@ -57,5 +93,10 @@ export const workModes: WorkModeDefinition[] = [
 > **Final Answer:** 北京今天天气晴朗，最高温度 32°C。
 
 注意：简单闲聊或常识问题不需要走 ReAct 循环，直接回答即可。`,
+    capabilities: {
+      maxRounds: 100,
+      allowedTools: 'all',
+      accumulate: true,
+    },
   },
 ]

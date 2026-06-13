@@ -13,6 +13,7 @@ const suites = [
   'path-safety.test.ts',
   'clawhub-installer.test.ts',
   'skill-runtime.test.ts',
+  'mode-policy.test.ts',
 ]
 
 let totalFailed = 0
