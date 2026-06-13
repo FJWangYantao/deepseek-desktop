@@ -403,6 +403,9 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const toolLoop = useToolLoop()
       const conversationTurnId = generateId()
+      // 按当前工作模式取能力策略（工具白名单 / 轮次上限 / 是否累积）
+      const modePolicy = workModes.find(m => m.value === settingsStore.workMode)?.capabilities
+        ?? workModes[0].capabilities
       const loopResult = await toolLoop.run({
         messages: apiMessages,
         model: currentModel.value,
@@ -450,6 +453,7 @@ export const useChatStore = defineStore('chat', () => {
             pendingApproval.value = info
           })
         },
+        modePolicy,
       })
 
       fullContent = loopResult.content
