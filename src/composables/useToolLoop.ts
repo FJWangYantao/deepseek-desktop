@@ -386,7 +386,34 @@ export function useToolLoop() {
       fullThinking = ''
     }
 
-    return { content: fullContent || '(工具调用轮次已达上限)', thinking: fullThinking, usageList, totalUsage }
+    // 工具预算用尽收尾：循环跑满 maxRounds 仍想调工具时，
+    // 注入提示让模型基于已有信息直接作答（不再带 tools，强制文字收尾）。
+    messages.push({
+      role: 'system',
+      content: '工具预算已用尽，请基于已有信息直接作答，不要再调用工具。',
+    })
+    await deepSeekChat({
+      messages: messages as any,
+      model: options.model,
+      thinking: options.thinking,
+      apiKey: options.apiKey,
+      signal: options.signal,
+      onToken(token) {
+        fullContent += token
+        options.onToken(token)
+      },
+      onThinking(token) {
+        fullThinking += token
+        options.onThinking(token)
+      },
+      onUsage(usage) {
+        usageList.push(usage)
+        totalUsage = totalUsage ? addUsage(totalUsage, usage) : { ...usage }
+        options.onUsage?.(usage)
+      },
+    })
+
+    return { content: fullContent, thinking: fullThinking, usageList, totalUsage }
   }
 
   return {
