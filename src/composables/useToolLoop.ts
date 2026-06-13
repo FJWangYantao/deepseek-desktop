@@ -2,8 +2,16 @@ import { ref, reactive } from 'vue'
 import type { ToolCallUIState, ToolCallResult, UsageData } from '@/types'
 import { deepSeekChat } from './useDeepSeek'
 import { recordObservation } from './useObservationMemory'
+import { filterToolSchema, type ModeCapabilities } from '@/data/workModes'
 
 const MAX_TOOL_ROUNDS = 100
+
+/** 兜底策略：与改造前行为一致（全工具 + 100 轮 + 不累积），保证未传 modePolicy 时不回归 */
+const DEFAULT_MODE_POLICY: ModeCapabilities = {
+  maxRounds: 100,
+  allowedTools: 'all',
+  accumulate: false,
+}
 
 interface ToolLoopOptions {
   messages: { role: 'user' | 'assistant' | 'system' | 'tool'; content: string; tool_call_id?: string; tool_calls?: any[] }[]
@@ -20,6 +28,8 @@ interface ToolLoopOptions {
   onNeedsApproval?: (info: { callId: string; name: string; arguments: Record<string, unknown>; reason: string }) => Promise<boolean>
   loadedSkillId?: string | null
   onSkillLoaded?: (skillId: string) => void
+  /** 工作模式能力策略。未传时使用 DEFAULT_MODE_POLICY（等同改造前行为） */
+  modePolicy?: ModeCapabilities
 }
 
 interface ToolLoopResult {
@@ -47,11 +57,11 @@ export function useToolLoop() {
   const activeToolCalls = reactive<ToolCallUIState[]>([])
   const toolsSchema = ref<object[]>([])
 
-  async function loadToolsSchema() {
+  async function loadToolsSchema(allowedTools: string[] | 'all') {
     if (!window.electronAPI?.toolsList) return
     try {
       const resp = await window.electronAPI.toolsList()
-      toolsSchema.value = resp.tools.map(t => ({
+      const all = resp.tools.map(t => ({
         type: 'function' as const,
         function: {
           name: t.name,
@@ -59,6 +69,7 @@ export function useToolLoop() {
           parameters: t.parameters,
         },
       }))
+      toolsSchema.value = filterToolSchema(all, allowedTools)
     } catch (e) {
       console.warn('[ToolLoop] 获取工具列表失败:', e)
     }
@@ -100,7 +111,8 @@ export function useToolLoop() {
   }
 
   async function run(options: ToolLoopOptions): Promise<ToolLoopResult> {
-    await loadToolsSchema()
+    const policy = options.modePolicy ?? DEFAULT_MODE_POLICY
+    await loadToolsSchema(policy.allowedTools)
 
     const hasTools = toolsSchema.value.length > 0
     const messages = [...options.messages]
