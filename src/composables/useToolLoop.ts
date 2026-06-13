@@ -4,8 +4,6 @@ import { deepSeekChat } from './useDeepSeek'
 import { recordObservation } from './useObservationMemory'
 import { filterToolSchema, type ModeCapabilities } from '@/data/workModes'
 
-const MAX_TOOL_ROUNDS = 100
-
 /** 兜底策略：与改造前行为一致（全工具 + 100 轮 + 不累积），保证未传 modePolicy 时不回归 */
 const DEFAULT_MODE_POLICY: ModeCapabilities = {
   maxRounds: 100,
@@ -125,8 +123,12 @@ export function useToolLoop() {
     const ctx = { sessionId: options.sessionId, conversationTurnId: options.conversationTurnId }
     let loadedSkillId = options.loadedSkillId || null
 
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      activeToolCalls.splice(0, activeToolCalls.length)
+    for (let round = 0; round < policy.maxRounds; round++) {
+      // accumulate=true（ReAct/Plan）：不清空，本轮工具调用行追加到已有轨迹上
+      // accumulate=false（Chat）：每轮覆盖，只显示当前轮
+      if (!policy.accumulate) {
+        activeToolCalls.splice(0, activeToolCalls.length)
+      }
 
       // Observation: LLM 请求
       void recordObservation({
