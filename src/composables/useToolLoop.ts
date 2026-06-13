@@ -387,10 +387,11 @@ export function useToolLoop() {
     }
 
     // 工具预算用尽收尾：循环跑满 maxRounds 仍想调工具时，
-    // 注入提示让模型基于已有信息直接作答（不再带 tools，强制文字收尾）。
+    // 注入提示引导模型基于已有信息直接作答。
+    // 必须仍带 tools：否则 DeepSeek 会把内部 DSML 工具调用标记当作正文文本输出（泄漏给用户）。
     messages.push({
       role: 'system',
-      content: '工具预算已用尽，请基于已有信息直接作答，不要再调用工具。',
+      content: '工具预算已用尽，请直接用文字给出最终答案，不要调用任何工具。',
     })
     await deepSeekChat({
       messages: messages as any,
@@ -398,6 +399,7 @@ export function useToolLoop() {
       thinking: options.thinking,
       apiKey: options.apiKey,
       signal: options.signal,
+      tools: hasTools ? toolsSchema.value : undefined,
       onToken(token) {
         fullContent += token
         options.onToken(token)
