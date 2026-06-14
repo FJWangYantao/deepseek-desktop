@@ -4,6 +4,7 @@ import { renderMarkdown } from '@/composables/useMarkdown'
 import { useStreamRender } from '@/composables/useStreamRender'
 import { DEFAULT_ASSISTANT_TRANSLATE_PROMPT, DEFAULT_ASSISTANT_EXPLAIN_PROMPT } from '@/data/prompts'
 import { useAssistantChat } from '@/composables/useAssistantChat'
+import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 import { useSettingsStore } from '@/stores/settings'
 
 const capturedText = ref('')
@@ -190,6 +191,10 @@ async function copyCaptured() {
 <template>
   <!-- 矮长条模式 -->
   <div v-if="phase === 'bar'" class="bar">
+    <!-- 吉祥物（最左边） -->
+    <div class="bar-mascot">
+      <ReplixLogo size="xs" animate />
+    </div>
     <div class="bar-actions">
       <button class="bar-btn" @click="copyCaptured">{{ copied ? '已复制 ✓' : '复制' }}</button>
       <button class="bar-btn" @click="doAction('translate')">翻译</button>
@@ -311,6 +316,16 @@ async function copyCaptured() {
   user-select: none;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+
+.bar-mascot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--app-border, #e5e5e5);
+  background: var(--app-surface-alt, #fafaf9);
 }
 
 .bar-actions {

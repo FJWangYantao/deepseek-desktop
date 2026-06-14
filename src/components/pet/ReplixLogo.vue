@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 
 const props = withDefaults(defineProps<{
-  size?: 'sm' | 'md'
+  size?: 'xs' | 'sm' | 'md'
   animate?: boolean
   state?: 'idle' | 'active'
 }>(), {
@@ -61,8 +61,8 @@ const colors: Record<number, string> = {
 }
 const blinkMask = [false, false, true, false, false, false, false, false, false]
 
-const containerSize = computed(() => props.size === 'md' ? 56 : 48)
-const pixelSize = computed(() => props.size === 'md' ? 5 : 4)
+const containerSize = computed(() => props.size === 'md' ? 56 : props.size === 'xs' ? 36 : 48)
+const pixelSize = computed(() => props.size === 'md' ? 5 : props.size === 'xs' ? 3 : 4)
 const gridPx = computed(() => pixelSize.value * 9)
 
 function draw(now: number) {
