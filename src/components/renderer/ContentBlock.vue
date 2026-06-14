@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
-import { fixCjkEmphasis, renderMarkdown } from '@/composables/useMarkdown'
+import { renderMarkdown } from '@/composables/useMarkdown'
 
 const props = defineProps<{
   content: string
@@ -71,7 +71,7 @@ marked.setOptions({
 
 const html = computed(() => {
   if (!props.content) return ''
-  return renderMarkdown(fixCjkEmphasis(props.content))
+  return renderMarkdown(props.content)
 })
 
 // 事件委托：处理复制按钮点击

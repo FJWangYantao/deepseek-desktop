@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { renderMarkdown } from '@/composables/useMarkdown'
 
 const capturedText = ref('')
 const result = ref('')
+// 结果用主渲染器渲染（同聊天窗口）：markdown 排版 + KaTeX 公式 + 链接化 + DOMPurify 净化
+const resultHtml = computed(() => (result.value ? renderMarkdown(result.value) : ''))
 const loading = ref(false)
 const copied = ref(false)
 
@@ -96,7 +99,7 @@ async function copyResult() {
       <span>AI 处理中...</span>
     </div>
     <div v-else-if="result" class="panel-result">
-      <div class="result-text">{{ result }}</div>
+      <div class="result-text markdown-body prose prose-sm max-w-none break-words prose-p:my-1.5 prose-li:my-0 prose-headings:mb-1 prose-pre:my-2" v-html="resultHtml"></div>
       <button class="copy-btn" @click="copyResult">
         {{ copied ? '已复制 ✓' : '复制' }}
       </button>
@@ -257,13 +260,14 @@ async function copyResult() {
   to { transform: rotate(360deg); }
 }
 
+/* 结果区：交给 prose 排版（公式/列表/段落/标题），不再用 pre-wrap */
 .result-text {
   flex: 1;
-  font-size: 13px;
-  line-height: 1.7;
-  white-space: pre-wrap;
+  overflow-x: auto;
   word-break: break-word;
   color: var(--app-text, #333);
+  /* 允许在结果区内选中复制（覆盖面板的 user-select:none） */
+  user-select: text;
 }
 
 .copy-btn {

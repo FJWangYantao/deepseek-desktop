@@ -19,6 +19,7 @@ let mouseDownX = 0
 let mouseDownY = 0
 let callbackFn: ((text: string) => void) | null = null
 let mouseDownCbFn: ((x: number, y: number) => void) | null = null
+let suppressChecker: (() => boolean) | null = null // 抑制检查器：返回 true 时本次选区不触发助手（本应用窗口内让位给内置选词交互）
 
 const MIN_DRAG_DISTANCE = 8 // 最小拖动距离（像素），过滤单击
 const MIN_TEXT_LENGTH = 1 // 最短有效选中文本
@@ -56,6 +57,12 @@ function onMouseDown(e: { x: number; y: number }) {
 async function onMouseUp(e: { x: number; y: number; clicks?: number }) {
   // 正在捕获中，或助手窗口聚焦时（用户在面板内操作），不触发
   if (isCapturing || assistantFocused) return
+  // 本应用主窗口区域内选词时让位（主聊天窗口有自己的引用/收藏选词交互；
+  // 系统级钩子无法区分窗口，否则在应用内选词会与引用收藏按钮同时弹出打架）
+  if (suppressChecker && suppressChecker()) {
+    console.log('[Assistant] 本应用窗口聚焦，抑制助手（让位给内置选词交互）')
+    return
+  }
 
   const dx = e.x - mouseDownX
   const dy = e.y - mouseDownY
@@ -118,4 +125,9 @@ export function setAssistantFocused(focused: boolean) {
 /** 设置全局 mousedown 回调（主进程用于检测点击外部关闭助手窗口） */
 export function setMouseDownCallback(cb: ((x: number, y: number) => void) | null) {
   mouseDownCbFn = cb
+}
+
+/** 设置抑制检查器：返回 true 时本次选区不触发助手（本应用窗口聚焦时让位给内置选词交互） */
+export function setSuppressChecker(cb: (() => boolean) | null) {
+  suppressChecker = cb
 }

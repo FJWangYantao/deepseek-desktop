@@ -14,7 +14,7 @@ import { registerTokenizerHandlers } from './ipc/tokenizer'
 import { registerImageDescribeHandlers } from './ipc/image-describe'
 import { registerObservationHandlers } from './ipc/observations'
 import { registerAssistantHandlers, setAssistantWindow } from './ipc/assistant'
-import { startSelectionWatcher, stopSelectionWatcher, setAssistantFocused, setMouseDownCallback } from './assistant/selectionWatcher'
+import { startSelectionWatcher, stopSelectionWatcher, setAssistantFocused, setMouseDownCallback, setSuppressChecker } from './assistant/selectionWatcher'
 import { registerBuiltinTools } from './tools'
 
 // Windows 控制台 UTF-8 编码
@@ -121,6 +121,12 @@ function getOrCreateAssistantWindow(): BrowserWindow {
     setAssistantWindow(null)
   })
 
+  // 外部链接走系统浏览器（与主窗口一致），避免在助手窗口里新开 Electron 窗口
+  assistantWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
   setAssistantWindow(assistantWindow)
   return assistantWindow
 }
@@ -204,6 +210,10 @@ app.whenReady().then(() => {
   // 启动全局划词选区监听（仅 Windows）
   if (process.platform === 'win32') {
     startSelectionWatcher(onTextCaptured)
+    // 本应用任意窗口聚焦时抑制助手（主聊天窗口的内置引用/收藏选词交互接管，避免打架）。
+    // 用 getFocusedWindow() 而非坐标：外部应用聚焦时它返回 null（助手正常弹出），
+    // 不受主窗口大小/位置影响——坐标方案在主窗口最大化时会把整屏都判成"主窗口内"，误伤网页选词。
+    setSuppressChecker(() => BrowserWindow.getFocusedWindow() !== null)
     // 点击助手窗口外部 → 隐藏（比 blur 事件更可靠）
     setMouseDownCallback(() => {
       if (!assistantWindow || assistantWindow.isDestroyed() || !assistantWindow.isVisible()) return

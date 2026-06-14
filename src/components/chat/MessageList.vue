@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { useStreamRender } from '@/composables/useStreamRender'
-import { fixCjkEmphasis, renderMarkdown } from '@/composables/useMarkdown'
+import { renderMarkdown } from '@/composables/useMarkdown'
 import MessageItem from './MessageItem.vue'
 import StreamCursor from '@/components/renderer/StreamCursor.vue'
 import ToolCallStatus from './ToolCallStatus.vue'
@@ -39,7 +39,7 @@ const streamingPending = computed(() => {
 
 const streamHtml = computed(() => {
   if (!streamingSafe.value) return ''
-  return renderMarkdown(fixCjkEmphasis(streamingSafe.value))
+  return renderMarkdown(streamingSafe.value)
 })
 
 // 新消息 → 仅用户消息滚到底（助手回复完成时不强制滚动）

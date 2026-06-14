@@ -14,6 +14,7 @@ const suites = [
   'clawhub-installer.test.ts',
   'skill-runtime.test.ts',
   'mode-policy.test.ts',
+  'markdown-math.test.ts',
 ]
 
 let totalFailed = 0

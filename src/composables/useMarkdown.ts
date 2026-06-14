@@ -1,6 +1,10 @@
-import katex from 'katex'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { extractMath } from './useMath'
+
+// 全局 marked 配置：GFM + 软换行转 <br>。
+// 助手窗口不复用 ContentBlock 的 setOptions，在此兜底，保证两窗口排版一致。
+marked.setOptions({ breaks: true, gfm: true })
 
 const ZWSP = '​'
 
@@ -41,49 +45,67 @@ export function fixCjkEmphasis(text: string): string {
   return text
 }
 
-// 在 marked 之前：提取 LaTeX 公式，用 KaTeX 渲染，生成占位符
+/**
+ * Markdown → HTML 渲染管线。
+ *
+ * 顺序很重要（每一步都为下一步保护内容）：
+ *   1. 提取公式（extractMath）—— 公式里的 _ ^ * 不能被 marked/fixCjkEmphasis 破坏
+ *   2. 提取填空横线 —— 连续下划线/零宽空格要在 fixCjkEmphasis 清理零宽空格前保护
+ *   3. fixCjkEmphasis —— CJK 与强调界符之间补零宽空格（公式与横线已是占位符，不受影响）
+ *   4. marked 解析 → 还原公式与横线
+ *   5. 来源引用、明文链接化（http(s)://、www.、括号内域名）
+ *   6. DOMPurify 统一净化
+ */
 export function renderMarkdown(raw: string): string {
-  // 提取 LaTeX 公式，渲染为 HTML，用占位符替换
-  const blocks: string[] = []
-  let text = raw
+  // 1. 提取公式（含 $...$ 行内公式）
+  const { text: textWoMath, blocks } = extractMath(raw)
+  let text = textWoMath
 
-  // $$...$$ display math
-  text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-    try {
-      blocks.push(katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }))
-    } catch { blocks.push(tex) }
-    return `\x00M${blocks.length - 1}\x00`
+  // 2. 提取填空横线（连续下划线/零宽空格，常见于试卷填空；须在 fixCjkEmphasis 前保护）
+  const fills: string[] = []
+  text = text.replace(/_[​_]{2,}/g, () => {
+    fills.push(`<span class="fill-blank" style="display:inline-block;min-width:3em;border-bottom:1px solid currentColor;height:0.85em;vertical-align:bottom;margin:0 3px;"></span>`)
+    return `\x00F${fills.length - 1}\x00`
   })
 
-  // \[...\] display math
-  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, tex) => {
-    try {
-      blocks.push(katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }))
-    } catch { blocks.push(tex) }
-    return `\x00M${blocks.length - 1}\x00`
-  })
+  // 3. CJK 强调修复
+  text = fixCjkEmphasis(text)
 
-  // \(...\) inline math
-  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => {
-    try {
-      blocks.push(katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false }))
-    } catch { blocks.push(tex) }
-    return `\x00M${blocks.length - 1}\x00`
-  })
-
-  // marked 解析
+  // 4. marked 解析
   let html = marked.parse(text) as string
 
-  // 还原占位符
+  // 5. 还原公式与横线
   html = html.replace(/\x00M(\d+)\x00/g, (_, i) => blocks[+i] ?? '')
+  html = html.replace(/\x00F(\d+)\x00/g, (_, i) => fills[+i] ?? '')
 
-  // 来源引用样式化
+  // 6. 来源引用样式化
   html = html.replace(/【来源\s*(\d+)】/g, '<span class="cite-tag">[$1]</span>')
 
-  // 明文 URL → 可点击链接（跳过已在 <a> 标签内的）
-  html = html.replace(/(?<!href="|">)(https?:\/\/[^\s<>"')\]]+)/g, '<a href="$1" target="_blank" rel="noopener" class="cite-link">$1</a>')
+  // 链接化前先保护 <pre> 块，避免代码里的 xxx.yyy 被当成域名误链接化
+  const preBlocks: string[] = []
+  html = html.replace(/<pre[\s\S]*?<\/pre>/g, (m) => {
+    preBlocks.push(m)
+    return `\x00P${preBlocks.length - 1}\x00`
+  })
 
-  // 最终统一净化：剥离 <script>/事件属性/危险协议，保留 KaTeX/常用 Markdown 标签
+  // 明文 URL → 可点击链接：http(s):// 完整 URL、www. 开头域名
+  html = html.replace(
+    /(?<!href="|">)(https?:\/\/[^\s<>"')\]]+|www\.[\w.-]+\.[a-z]{2,}(?:\/[^\s<>"')\]]*)?)/gi,
+    (m) => {
+      const url = /^https?:\/\//i.test(m) ? m : `http://${m}`
+      return `<a href="${url}" target="_blank" rel="noopener" class="cite-link">${m}</a>`
+    },
+  )
+  // 括号内域名（处理「文字 (url)」写法，含非 www 域名如 max.book118.com）
+  html = html.replace(
+    /\(([\w.-]+\.[a-z]{2,}(?:\/[\w./?=&%#~-]*)?)\)/gi,
+    (_, domain) => `(<a href="http://${domain}" target="_blank" rel="noopener" class="cite-link">${domain}</a>)`,
+  )
+
+  // 还原 <pre>
+  html = html.replace(/\x00P(\d+)\x00/g, (_, i) => preBlocks[+i] ?? '')
+
+  // 7. 最终统一净化：剥离 <script>/事件属性/危险协议，保留 KaTeX/常用 Markdown 标签
   // 单点防御：useMarkdown 的所有调用方都受此保护，无需在每个 v-html 出口重复 sanitize
   html = DOMPurify.sanitize(html, {
     ADD_TAGS: ['math', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'msqrt', 'mtext', 'annotation', 'semantics'],
