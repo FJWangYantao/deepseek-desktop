@@ -131,6 +131,8 @@ export const useSettingsStore = defineStore('settings', () => {
     { value: "'Source Han Sans SC', 'Noto Sans SC', sans-serif", label: '思源黑体' },
     { value: "'LXGW WenKai', 'KaiTi', serif", label: '霞鹜文楷' },
     { value: "'SimSun', 'Noto Serif SC', serif", label: '宋体' },
+    { value: "'Noto Serif SC', 'Source Han Serif SC', 'SimSun', serif", label: '思源宋体' },
+    { value: "'Georgia', 'Times New Roman', 'SimSun', serif", label: 'Georgia' },
     { value: "'KaiTi', 'STKaiti', serif", label: '楷体' },
     { value: "'JetBrains Mono', 'Fira Code', monospace", label: 'JetBrains Mono' },
     { value: "'DengXian', sans-serif", label: '等线' },
