@@ -18,8 +18,13 @@ const memory = useMemory()
 const viewMode = ref<'list' | 'edit'>('list')
 const activeInsightId = ref<string | null>(null)
 
-// 当前选中的笔记本（null = 全部笔记）
-const activeNotebookId = ref<string | null>(null)
+// 视图哨兵值：区分"未归类 / 已归类"两个固定视图与具体笔记本
+// null（旧"全部笔记"）不再作为视图值；selectNotebook(null) 会重映射到未归类
+const VIEW_UNCATEGORIZED = '__uncategorized__'
+const VIEW_CATEGORIZED = '__categorized__'
+
+// 当前选中的视图/笔记本：哨兵值表示固定视图，真实 id 表示具体笔记本
+const activeNotebookId = ref<string | null>(VIEW_UNCATEGORIZED)
 
 // 笔记本管理 UI 状态
 const showNewNotebook = ref(false)            // 顶级新建表单
@@ -81,7 +86,13 @@ const filteredInsights = computed(() => {
   let list = notesStore.insights
 
   // 笔记本筛选
-  if (activeNotebookId.value) {
+  if (activeNotebookId.value === VIEW_UNCATEGORIZED) {
+    // 未归类：notebookId === null
+    list = list.filter(ins => ins.notebookId === null)
+  } else if (activeNotebookId.value === VIEW_CATEGORIZED) {
+    // 已归类：notebookId !== null（跨所有笔记本）
+    list = list.filter(ins => ins.notebookId !== null)
+  } else if (activeNotebookId.value) {
     const node = notesStore.allNotebooks.find(nb => nb.id === activeNotebookId.value)
     if (node && node.parentId === null) {
       // 父：合并自身 + 所有子
@@ -122,6 +133,21 @@ const filteredInsights = computed(() => {
   )
 })
 
+// 未归类 / 已归类 计数（侧栏两个固定项的角标）
+const uncategorizedCount = computed(() =>
+  notesStore.insights.filter(i => i.notebookId === null).length
+)
+const categorizedCount = computed(() =>
+  notesStore.insights.filter(i => i.notebookId !== null).length
+)
+
+// 标题栏当前视图名
+const viewTitle = computed(() => {
+  if (activeNotebookId.value === VIEW_UNCATEGORIZED) return '未归类'
+  if (activeNotebookId.value === VIEW_CATEGORIZED) return '已归类'
+  return activeNotebook.value?.name ?? '未归类'
+})
+
 // 当前编辑的 insight
 const activeInsight = computed(() =>
   activeInsightId.value
@@ -139,7 +165,8 @@ const activeNotebook = computed(() =>
 // ========== 笔记本管理 ==========
 
 function selectNotebook(id: string | null) {
-  activeNotebookId.value = id
+  // null 来自拖拽"解除归类"，语义上等于切到未归类视图
+  activeNotebookId.value = id === null ? VIEW_UNCATEGORIZED : id
   notebookMenuId.value = null
 }
 
@@ -240,7 +267,8 @@ function handleDeleteNotebook(id: string) {
   if (!confirm(msg)) return
   notesStore.deleteNotebook(id)
   if (activeNotebookId.value === id) {
-    activeNotebookId.value = null
+    // 删除了正在查看的笔记本 → 回到未归类视图
+    activeNotebookId.value = VIEW_UNCATEGORIZED
   }
   notebookMenuId.value = null
   showToast(`已删除「${nb.name}」`, 'success')
@@ -365,8 +393,12 @@ function handleEditorInput(md: string) {
 // ========== 浮动新建 ==========
 
 function createBlankNote() {
-  // 默认归入当前选中的笔记本
-  const ins = notesStore.createBlankInsight(activeNotebookId.value)
+  // 哨兵视图下新建 → 归入未归类（null）；真实笔记本则归入它
+  const current = activeNotebookId.value
+  const id = (current === VIEW_UNCATEGORIZED || current === VIEW_CATEGORIZED)
+    ? null
+    : current
+  const ins = notesStore.createBlankInsight(id)
   openEditor(ins.id)
 }
 
@@ -444,7 +476,7 @@ function formatDateLabel(dateStr: string): string {
         </svg>
       </button>
       <h2 class="text-lg font-semibold text-app-heading">
-        {{ viewMode === 'edit' ? '编辑笔记' : (activeNotebook?.name ?? '全部笔记') }}
+        {{ viewMode === 'edit' ? '编辑笔记' : viewTitle }}
       </h2>
       <span v-if="viewMode === 'list' && filteredInsights.length > 0" class="text-xs text-app-muted bg-app-surface-alt px-2 py-0.5 rounded-full">
         {{ filteredInsights.length }}
@@ -473,15 +505,15 @@ function formatDateLabel(dateStr: string): string {
           </div>
 
           <div class="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5">
-            <!-- 全部笔记（同时是拖拽目标 = 解除归类） -->
+            <!-- 未归类（notebookId === null，同时是拖拽目标 = 解除归类） -->
             <button
-              @click="selectNotebook(null)"
+              @click="selectNotebook(VIEW_UNCATEGORIZED)"
               @dragover="onDragOverNotebook('all', $event)"
               @dragleave="onDragLeaveNotebook('all')"
               @drop="onDropToNotebook(null, $event)"
               class="drop-target w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-all"
               :class="[
-                activeNotebookId === null
+                activeNotebookId === VIEW_UNCATEGORIZED
                   ? 'bg-app-accent-soft text-app-accent'
                   : 'text-app-text hover:bg-app-hover',
                 dragOverNotebookId === 'all' ? 'is-drop-active' : ''
@@ -489,10 +521,28 @@ function formatDateLabel(dateStr: string): string {
             >
               <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 11H5m14-7H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" />
+                  d="M5 8h14M5 8a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6a2 2 0 00-2-2M5 8V6a2 2 0 012-2h10a2 2 0 012 2v2" />
               </svg>
-              <span class="flex-1 text-xs truncate">全部笔记</span>
-              <span class="text-[10px] text-app-muted">{{ notesStore.count }}</span>
+              <span class="flex-1 text-xs truncate">未归类</span>
+              <span class="text-[10px] text-app-muted">{{ uncategorizedCount }}</span>
+            </button>
+
+            <!-- 已归类（notebookId !== null，跨所有笔记本） -->
+            <button
+              @click="selectNotebook(VIEW_CATEGORIZED)"
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-all"
+              :class="[
+                activeNotebookId === VIEW_CATEGORIZED
+                  ? 'bg-app-accent-soft text-app-accent'
+                  : 'text-app-text hover:bg-app-hover',
+              ]"
+            >
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+              </svg>
+              <span class="flex-1 text-xs truncate">已归类</span>
+              <span class="text-[10px] text-app-muted">{{ categorizedCount }}</span>
             </button>
 
             <!-- 顶级笔记本 + 子笔记本（仅当展开） -->
@@ -782,7 +832,13 @@ function formatDateLabel(dateStr: string): string {
               <!-- 无匹配 -->
               <div v-if="filteredInsights.length === 0" class="text-center py-12">
                 <p class="text-app-muted text-sm">
-                  {{ activeNotebookId ? '该笔记本下还没有笔记' : '没有匹配的笔记' }}
+                  {{
+                    searchQuery || filterTag || filterColor
+                      ? '没有匹配的笔记'
+                      : (activeNotebookId === VIEW_UNCATEGORIZED || activeNotebookId === VIEW_CATEGORIZED)
+                        ? '这里还没有笔记'
+                        : '该笔记本下还没有笔记'
+                  }}
                 </p>
               </div>
 

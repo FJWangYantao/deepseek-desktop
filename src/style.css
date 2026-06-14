@@ -575,6 +575,17 @@ html[data-theme="slate"][data-mode="dark"] {
   50% { border-left-color: var(--app-accent); }
 }
 
+/* 流式输出末段淡入：每个 token 到达时整块从底部轻微浮现，
+   营造"沉淀"效果（类似 Claude materialize）。
+   被 prefers-reduced-motion 守卫自动降级为硬切。 */
+.stream-reveal {
+  animation: streamReveal 220ms ease-out;
+}
+@keyframes streamReveal {
+  0%   { opacity: 0.75; transform: translateY(1px); }
+  100% { opacity: 1;    transform: translateY(0); }
+}
+
 /* ===== Vue Transition 动画类 ===== */
 
 /* 滚动到底按钮 */
