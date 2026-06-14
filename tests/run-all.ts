@@ -15,6 +15,7 @@ const suites = [
   'skill-runtime.test.ts',
   'mode-policy.test.ts',
   'markdown-math.test.ts',
+  'assistant-chat.test.ts',
 ]
 
 let totalFailed = 0

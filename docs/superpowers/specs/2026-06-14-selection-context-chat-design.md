@@ -12,7 +12,7 @@
 |---|---|
 | 范围 | 完整版 |
 | 上下文展示 | 注入 system；窗内**不显示原文**（顶栏标题"✦ 划词对话"标识模式） |
-| 入口 | bar 加"对话"按钮，顺序：复制 \| 对话 \| 翻译 \| 解释 |
+| 入口 | bar 加"对话"按钮，顺序：复制 \| 翻译 \| 解释 \| 对话 |
 | 会话模型 | 每次划词重置（新 system + 清空历史）；划新词回 bar |
 | 上下文注入 | system role |
 | model | `deepseek-v4-flash`（快速） |
@@ -31,7 +31,7 @@
 
 ### 数据流
 
-- `systemContext: string` — 划选内容（截断 4000 字）
+- `systemContext: string` — 划选内容（完整传入，不截断）
 - `messages: ChatMessage[]` — 对话历史（仅 user/assistant，不含 system）
 - 发送时组装：`[{role:'system', content: 上下文提示 + systemContext}, ...trimmedMessages, {role:'user', content: 本次输入}]`
 
@@ -40,7 +40,7 @@
 ```
 以下划选内容作为讨论背景，回答时据此为准：
 
-{systemContext}            ← 截断 4000 字，超长追加"(已截断)"
+{systemContext}            ← 划选内容完整传入，不截断
 ```
 
 放 system role 的好处：上下文始终在场（不会被多轮稀释），对话流保持干净。
@@ -54,7 +54,7 @@
 - `messages: Ref<ChatMessage[]>` — 对话历史
 - `streaming: Ref<boolean>` — 是否正在流式
 - `streamingText: Ref<string>` — 当前流式累积文本
-- `initContext(text: string)` — 截断 + 重置 messages（划词/进对话时调）
+- `initContext(text: string)` — 重置 messages（存 systemContext，完整不截断）（划词/进对话时调）
 - `send(text: string)` — 发送一条：push user、流式调 API、push assistant
 - `clear()` — 清空历史（system 上下文保留）
 
@@ -66,7 +66,7 @@
 ### 修改 `src/views/AssistantView.vue`
 
 - `phase` 类型加 `'chat'`（现有 `'bar' | 'panel'`）
-- bar 加"对话"按钮（`copyCaptured` 后、`translate` 前）
+- bar 加"对话"按钮（`explain` 后；顺序：复制 \| 翻译 \| 解释 \| 对话）
 - chat 模式 UI：
   - 顶栏：`✦ 划词对话` + `清空` + `✕`
   - 消息流：user/assistant 气泡；assistant 用 `renderMarkdown`，流式中用 `useStreamRender.processChunk` 做 safe/pending 分离（未闭合 `$...$` 不闪现）
@@ -90,8 +90,7 @@
 4. **快捷 chip**：点击即 `send(chip)`，输入框不受影响。
 5. **快捷键**：Enter 发送、Shift+Enter 换行、Esc 关窗口（沿用现有 `onKeydown`）。
 6. **历史裁剪**：messages 超 20 条（10 轮）丢弃最早的 user/assistant，system 上下文不动。
-7. **截断保护**：`systemContext = text.slice(0, 4000) + (text.length > 4000 ? '(已截断)' : '')`。
-8. **清空**：顶栏"清空"→ `clear()`（保留 system 上下文，清对话历史）。
+7. **清空**：顶栏"清空"→ `clear()`（保留 system 上下文，清对话历史）。
 
 ## 边界与错误处理
 
@@ -104,7 +103,6 @@
 ## 测试要点
 
 - `trimHistory(messages, max)` 纯函数：超限时丢弃最早、保留近期 + system；未超时原样返回。**可单测**（注册到 `run-all`）。
-- `initContext` 截断：超 4000 字截断并加标记。
 - 流式 / UI / API 交互：手动验证。
 
 ## 非目标（YAGNI）
@@ -119,7 +117,7 @@
 
 | 文件 | 改动 |
 |---|---|
-| `src/composables/useAssistantChat.ts` | 新建：对话状态 + 流式 + 截断 + 裁剪 |
+| `src/composables/useAssistantChat.ts` | 新建：对话状态 + 流式 + 裁剪 |
 | `src/views/AssistantView.vue` | 加 chat 模式（phase / template / script）+ bar "对话"按钮 |
-| `tests/assistant-chat.test.ts` | 新建：`trimHistory` + `initContext` 截断纯函数测试，注册 run-all |
+| `tests/assistant-chat.test.ts` | 新建：`trimHistory` 纯函数测试（超限丢最早、未超原样），注册 run-all |
 | 主进程 | 无改动（复用 `assistantResize`） |
