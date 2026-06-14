@@ -1,8 +1,24 @@
 import { ref, reactive } from 'vue'
-import type { ToolCallUIState, ToolCallResult, UsageData } from '@/types'
+import type { ToolCallUIState, ToolCallResult, UsageData, ContentBlock } from '@/types'
 import { deepSeekChat } from './useDeepSeek'
 import { recordObservation } from './useObservationMemory'
 import { filterToolSchema, type ModeCapabilities } from '@/data/workModes'
+
+/**
+ * 安全解析工具调用的 arguments JSON。
+ * LLM 偶尔会返回格式错误的 JSON（引号未转义、缺逗号、中文字符问题等），
+ * 直接 JSON.parse 会让整个请求失败。这里降级：解析失败时把原始字符串
+ * 放进 _raw 字段，让工具执行层至少能看到内容（往往也会执行失败，但
+ * 不会让整轮对话直接挂掉，用户能从错误信息看出是 LLM 输出问题）。
+ */
+function safeParseArguments(raw: string): Record<string, unknown> {
+  if (!raw) return {}
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return { _raw: raw, _parseError: 'arguments 不是合法 JSON' }
+  }
+}
 
 /** 兜底策略：与改造前行为一致（全工具 + 100 轮 + 不累积），保证未传 modePolicy 时不回归 */
 const DEFAULT_MODE_POLICY: ModeCapabilities = {
@@ -23,6 +39,11 @@ interface ToolLoopOptions {
   onThinking: (token: string) => void
   onUsage?: (usage: UsageData) => void
   onToolCallUpdate?: (calls: ToolCallUIState[]) => void
+  /**
+   * 每当归档一个内容块（正文段 / 工具调用段）时回调，用于渲染层内联显示。
+   * text 块归档后，本轮 token 计数会重置（store 侧据此清空 streaming）。
+   */
+  onBlock?: (block: ContentBlock) => void
   onNeedsApproval?: (info: { callId: string; name: string; arguments: Record<string, unknown>; reason: string }) => Promise<boolean>
   loadedSkillId?: string | null
   onSkillLoaded?: (skillId: string) => void
@@ -35,6 +56,8 @@ interface ToolLoopResult {
   thinking: string
   usageList: UsageData[]
   totalUsage: UsageData | null
+  /** 有序内容块（正文段 / 工具调用段交错），用于内联渲染 */
+  blocks: ContentBlock[]
 }
 
 function addUsage(a: UsageData, b: UsageData): UsageData {
@@ -114,8 +137,38 @@ export function useToolLoop() {
 
     const hasTools = toolsSchema.value.length > 0
     const messages = [...options.messages]
-    let fullContent = ''
+    let fullContent = ''      // 本轮累积，flush 后清空（供下一轮从空开始）
+    let accumulatedContent = '' // 跨轮累积所有正文段，作为最终 loopResult.content（用于导出/复制/统计）
+    let accumulatedThinking = '' // 跨轮累积所有思考段，作为最终 loopResult.thinking（兼容旧字段）
     let fullThinking = ''
+
+    // 内容块序列：记录「正文段 ↔ 思考段 ↔ 工具调用段」的真实交错顺序，用于内联渲染
+    const blocks: ContentBlock[] = []
+    /** 把当前累积的 fullContent 归档为 text block，并清空本轮累积器 */
+    const flushTextBlock = () => {
+      if (fullContent) {
+        const text = fullContent
+        blocks.push({ type: 'text', text })
+        accumulatedContent += text
+        fullContent = ''
+        options.onBlock?.({ type: 'text', text })
+      }
+    }
+    /** 把当前累积的 fullThinking 归档为 thinking block，并清空本轮累积器 */
+    const flushThinkingBlock = () => {
+      if (fullThinking) {
+        const text = fullThinking
+        blocks.push({ type: 'thinking', text })
+        accumulatedThinking += (accumulatedThinking ? '\n' : '') + text
+        fullThinking = ''
+        options.onBlock?.({ type: 'thinking', text })
+      }
+    }
+    /** 工具调用前归档本轮产生的思考和正文（按产生顺序：思考先于正文） */
+    const flushRoundBlocks = () => {
+      flushThinkingBlock()
+      flushTextBlock()
+    }
 
     let consecutiveSearchRounds = 0
     const usageList: UsageData[] = []
@@ -127,6 +180,8 @@ export function useToolLoop() {
     // absoluteLimit 是绝对上限，多预留 2 轮让模型基于已有信息收尾，避免硬截断成空答。
     const absoluteLimit = policy.maxRounds + 2
     let budgetWarned = false
+    // 兜底标志：检测到「只有思考没有正文」时只救一次，避免死循环
+    let emptyAnswerReminded = false
 
     for (let round = 0; round < absoluteLimit; round++) {
       // 达到模式轮次预算时提醒模型尽快作答（仅注入一次）
@@ -188,12 +243,41 @@ export function useToolLoop() {
       })
 
       if (result.finishReason !== 'tool_calls' || result.toolCalls.length === 0) {
-        return { content: fullContent, thinking: fullThinking, usageList, totalUsage }
+        // 兜底：本轮只输出了思考、正文为空（DeepSeek 偶发的「只想不答」）。
+        // 注入提醒让 LLM 基于思考给出正文回答，只救一次（emptyAnswerReminded），
+        // 避免模型反复空答导致死循环。注意：此时不 flush thinking，让下一轮
+        // 从干净状态开始，避免用户看到重复的思考块。
+        if (!fullContent && fullThinking && !emptyAnswerReminded) {
+          emptyAnswerReminded = true
+          messages.push({
+            role: 'user',
+            content: '你刚才只输出了思考过程，没有给出可见的回答。请基于你刚才的思考，用简体中文给出最终回答。不要重复思考过程，直接回答即可。',
+          })
+          // 清空本轮 thinking 累积器（不归档），下一轮重新开始
+          fullThinking = ''
+          continue
+        }
+        // 最终回答：先归档本轮思考，再归档最终回答
+        flushRoundBlocks()
+        // 二次兜底：救一次后仍空答，给个友好占位，避免 UI 上只有孤零零的思考块。
+        // 把占位文字塞进 fullContent 再 flush，走正常的 text block 归档路径，
+        // 流式 UI 和归档消息都能看到。
+        if (!accumulatedContent && accumulatedThinking) {
+          fullContent = '（模型本轮未给出可见回答，请参考上方思考过程，或重新提问 / 重试）'
+          flushTextBlock()
+        }
+        return { content: accumulatedContent, thinking: accumulatedThinking, usageList, totalUsage, blocks }
       }
+
+      // 本轮 LLM 产出的思考/正文：先归档（与接下来的工具调用形成交错）。
+      // 记录本轮原始正文用于回传 API（flush 会清空累积器）；
+      // reasoning_content 不回传给 DeepSeek API，故 thinking 不需要保留。
+      const roundContent = fullContent
+      flushRoundBlocks()
 
       messages.push({
         role: 'assistant',
-        content: fullContent || '',
+        content: roundContent || '',
         tool_calls: result.toolCalls.map(tc => ({
           id: tc.id,
           type: 'function',
@@ -201,15 +285,23 @@ export function useToolLoop() {
         })),
       })
 
-      const uiStates: ToolCallUIState[] = result.toolCalls.map(tc => ({
+      // 用 reactive() 创建每个 uiState，使其属性变更可被响应式系统追踪。
+      // 这样 streamingBlocks 里的 tool 块 calls（引用同一组对象）能实时响应
+      // status / result / error 的变化，工具完成时图标立刻更新。
+      const uiStates: ToolCallUIState[] = result.toolCalls.map(tc => reactive({
         callId: tc.id,
         name: tc.name,
-        arguments: JSON.parse(tc.arguments || '{}'),
+        arguments: safeParseArguments(tc.arguments),
         status: 'running' as const,
         timestamp: Date.now(),
       }))
       activeToolCalls.push(...uiStates)
       options.onToolCallUpdate?.(activeToolCalls)
+
+      // 工具调用块：calls 引用 activeToolCalls 中同一对象，状态变化自动响应
+      const toolBlockCalls = [...uiStates]
+      blocks.push({ type: 'tool', calls: toolBlockCalls })
+      options.onBlock?.({ type: 'tool', calls: toolBlockCalls })
 
       // Observation: tool.request
       for (const ui of uiStates) {
@@ -401,11 +493,13 @@ export function useToolLoop() {
     }
 
     // 跑满绝对上限仍想调工具：返回已有内容（兜底，避免空答）
+    flushRoundBlocks()
     return {
-      content: fullContent || '未能查到相关内容（搜索结果可能不相关或被干扰）。',
-      thinking: fullThinking,
+      content: accumulatedContent || '未能查到相关内容（搜索结果可能不相关或被干扰）。',
+      thinking: accumulatedThinking,
       usageList,
       totalUsage,
+      blocks,
     }
   }
 

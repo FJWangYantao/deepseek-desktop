@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { Message } from '@/types'
 import { useChatStore } from '@/stores/chat'
 import { useSessionStore } from '@/stores/session'
@@ -7,6 +7,7 @@ import { useQuote } from '@/composables/useQuote'
 import { useNotesStore } from '@/stores/notes'
 import ContentBlock from '@/components/renderer/ContentBlock.vue'
 import ThinkingBubble from '@/components/renderer/ThinkingBubble.vue'
+import ToolCallStatus from './ToolCallStatus.vue'
 import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 import FavoritePopover from '@/components/notes/FavoritePopover.vue'
 import ToastNotification from '@/components/notes/ToastNotification.vue'
@@ -153,6 +154,47 @@ async function exportMessage(format: 'md' | 'html') {
 function retry() {
   chatStore.retryMessage(props.message.id)
 }
+
+// ===== 用户消息编辑重发 =====
+const isEditing = ref(false)
+const editDraft = ref('')
+const editRef = ref<HTMLTextAreaElement>()
+
+function startEdit() {
+  if (chatStore.isGenerating) return
+  editDraft.value = props.message.content
+  isEditing.value = true
+  nextTick(() => {
+    editRef.value?.focus()
+    // 光标移到末尾
+    const len = editRef.value!.value.length
+    editRef.value!.setSelectionRange(len, len)
+  })
+}
+
+function cancelEdit() {
+  isEditing.value = false
+  editDraft.value = ''
+}
+
+function saveEdit() {
+  const trimmed = editDraft.value.trim()
+  if (!trimmed) return
+  isEditing.value = false
+  editDraft.value = ''
+  chatStore.editAndResendMessage(props.message.id, trimmed)
+}
+
+// 编辑中按 Ctrl/Cmd+Enter 保存，Esc 取消
+function onEditKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault()
+    saveEdit()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    cancelEdit()
+  }
+}
 </script>
 
 <template>
@@ -204,7 +246,32 @@ function retry() {
 
     <!-- 用户消息 -->
     <div v-if="message.role === 'user'" class="flex flex-col items-end">
-      <div ref="contentRef" @mouseup="onContentMouseUp" class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm overflow-hidden">
+      <!-- 编辑态：textarea + 保存/取消 -->
+      <div v-if="isEditing" class="w-full max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm overflow-hidden border border-app-accent/40">
+        <textarea
+          ref="editRef"
+          v-model="editDraft"
+          @keydown="onEditKeydown"
+          rows="2"
+          class="w-full bg-transparent text-app-text whitespace-pre-wrap break-words leading-[1.8] resize-none outline-none border-0 focus:ring-0"
+          :style="{ fontSize: 'var(--app-font-size)' }"
+        />
+        <div class="flex items-center justify-end gap-2 mt-2">
+          <button
+            @click="cancelEdit"
+            class="px-3 py-1 text-xs rounded-md text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
+          >取消<span class="opacity-50 ml-1">Esc</span></button>
+          <button
+            @click="saveEdit"
+            :disabled="!editDraft.trim()"
+            class="px-3 py-1 text-xs rounded-md text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            :class="editDraft.trim() ? 'bg-app-accent hover:bg-app-accent-hover' : 'bg-app-accent'"
+          >发送<span class="opacity-70 ml-1">⌘↵</span></button>
+        </div>
+      </div>
+
+      <!-- 正常态 -->
+      <div v-else ref="contentRef" @mouseup="onContentMouseUp" class="max-w-[80%] px-4 py-2.5 bg-app-card rounded-bubble rounded-br-sm overflow-hidden">
         <div v-if="message.quotes?.length" class="mb-2 space-y-1">
           <div
             v-for="(q, i) in message.quotes" :key="i"
@@ -232,10 +299,23 @@ function retry() {
           </span>
         </div>
       </div>
-      <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div v-if="!isEditing" class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          @click="startEdit"
+          :disabled="chatStore.isGenerating"
+          class="w-7 h-7 flex items-center justify-center rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          :class="chatStore.isGenerating ? 'text-app-muted' : 'text-app-muted hover:text-app-accent hover:bg-app-accent-soft'"
+          title="编辑并重发"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
         <button
           @click="retry"
-          class="w-7 h-7 flex items-center justify-center rounded-md text-app-muted hover:text-app-accent hover:bg-app-accent-soft transition-colors"
+          :disabled="chatStore.isGenerating"
+          class="w-7 h-7 flex items-center justify-center rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          :class="chatStore.isGenerating ? 'text-app-muted' : 'text-app-muted hover:text-app-accent hover:bg-app-accent-soft'"
           title="重试"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,8 +342,25 @@ function retry() {
     <div v-else class="flex items-start gap-4">
       <ReplixLogo size="sm" animate state="idle" class="mt-0.5" />
       <div ref="contentRef" @mouseup="onContentMouseUp" class="min-w-0 flex-1">
-        <ThinkingBubble v-if="message.thinking" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
-        <ContentBlock :content="message.content" />
+        <!-- 顶层思考（仅无 contentBlocks 的老消息显示；有 contentBlocks 时 thinking 已内联到块里） -->
+        <ThinkingBubble v-if="message.thinking && !(message.contentBlocks && message.contentBlocks.length > 0)" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
+
+        <!-- 优先用 contentBlocks 内联渲染（ReAct/Plan 多轮：思考段 ↔ 正文段 ↔ 工具调用段交错） -->
+        <template v-if="message.contentBlocks && message.contentBlocks.length > 0">
+          <template v-for="(block, i) in message.contentBlocks" :key="i">
+            <ThinkingBubble v-if="block.type === 'thinking'" :thinking="block.text" :thinking-expanded="false" />
+            <ContentBlock v-else-if="block.type === 'text'" :content="block.text" />
+            <ToolCallStatus v-else :calls="block.calls" />
+          </template>
+        </template>
+
+        <!-- 降级：老消息无 contentBlocks，保持「思考 + 工具调用在前 + 正文」的旧行为 -->
+        <template v-else>
+          <ThinkingBubble v-if="message.thinking" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
+          <ToolCallStatus v-if="message.toolCalls?.length" :calls="message.toolCalls" />
+          <ContentBlock :content="message.content" />
+        </template>
+
         <div class="flex mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity gap-0.5">
           <button
             @click="copyContent"

@@ -5,6 +5,7 @@ import { useStreamRender } from '@/composables/useStreamRender'
 import { renderMarkdown } from '@/composables/useMarkdown'
 import MessageItem from './MessageItem.vue'
 import StreamCursor from '@/components/renderer/StreamCursor.vue'
+import ThinkingBubble from '@/components/renderer/ThinkingBubble.vue'
 import ToolCallStatus from './ToolCallStatus.vue'
 import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 
@@ -55,12 +56,28 @@ watch(
 // 生成开始 → 滚到底（确保等待指示器可见）
 watch(
   () => chatStore.isGenerating,
-  async (val) => { if (val) { await nextTick(); scrollToBottom() } }
+  async (val) => {
+    if (val) { await nextTick(); scrollToBottom() }
+    else {
+      // 生成结束：归档消息挂载需要一帧，连续两帧强制滚到底，
+      // 避免「流式区消失 + 归档消息入场」造成的高度骤变把视口顶到上方
+      await nextTick()
+      scrollToBottom()
+      await nextTick()
+      scrollToBottom()
+    }
+  }
 )
 
 // 工具调用状态变化 → 近底部时滚到底
 watch(
   () => chatStore.activeToolCalls.length,
+  async () => { await nextTick(); if (isNearBottom()) scrollToBottom() }
+)
+
+// 内容块归档（正文段/工具段）→ 近底部时滚到底
+watch(
+  () => chatStore.streamingBlocks.length,
   async () => { await nextTick(); if (isNearBottom()) scrollToBottom() }
 )
 
@@ -103,10 +120,11 @@ onMounted(() => { nextTick(() => { animReady.value = true }) })
 
 // 流式输出结束 → 跳过助手消息入场动画，避免"闪一下再从左滑入"
 // 用时间窗口而非一次性标志：一条回复可能同时入场多个 assistant 元素
-// （工具调用行 + 正文），单次布尔会被第一个元素消费，导致正文仍走滑入动画
+// （工具调用行 + 正文），单次布尔会被第一个元素消费，导致正文仍走滑入动画。
+// 窗口拉大到 1500ms：慢机器上归档消息挂载可能延迟，太短会漏掉导致跳动画。
 let skipAnimUntil = 0
 watch(() => chatStore.isGenerating, (val, oldVal) => {
-  if (oldVal && !val) skipAnimUntil = performance.now() + 600
+  if (oldVal && !val) skipAnimUntil = performance.now() + 1500
 })
 
 function onBeforeEnter(el: Element) {
@@ -147,7 +165,7 @@ function onAfterEnter(el: Element) {
 </script>
 
 <template>
-  <div ref="listRef" class="flex-1 overflow-y-auto px-8 py-10 relative" @scroll="onScroll">
+  <div ref="listRef" class="flex-1 overflow-y-auto px-8 py-10 relative" style="overflow-anchor: none;" @scroll="onScroll">
     <div
       v-if="chatStore.messages.length === 0 && !chatStore.streaming"
       class="flex items-center justify-center h-full"
@@ -160,15 +178,12 @@ function onAfterEnter(el: Element) {
     </div>
     <div class="max-w-[860px] mx-auto">
       <TransitionGroup :css="false" @before-enter="onBeforeEnter" @enter="onEnter" @after-enter="onAfterEnter">
-        <template v-for="msg in chatStore.messages" :key="msg.id">
-          <!-- AI 消息附带的工具调用：拆成独立行，排在 AI 回复之前 -->
-          <ToolCallStatus
-            v-if="msg.role === 'assistant' && msg.toolCalls?.length"
-            :calls="msg.toolCalls"
-            :data-role="'assistant'"
-          />
-          <MessageItem :message="msg" :data-role="msg.role" />
-        </template>
+        <MessageItem
+          v-for="msg in chatStore.messages"
+          :key="msg.id"
+          :message="msg"
+          :data-role="msg.role"
+        />
       </TransitionGroup>
 
       <!-- AI 生成区域：统一头像区域，混合等待/工具调用/思考/流式内容 -->
@@ -176,17 +191,39 @@ function onAfterEnter(el: Element) {
         <div class="flex items-start gap-3">
           <ReplixLogo size="sm" animate state="active" class="mt-0.5" />
           <div class="min-w-0 flex-1">
-            <!-- 等待首 token（无工具调用时） -->
-            <div v-if="chatStore.isGenerating && !chatStore.streaming && !chatStore.streamingThinking && chatStore.activeToolCalls.length === 0" class="flex items-center gap-1 py-1.5">
+            <!-- 等待首 token（无工具调用、无已归档块时） -->
+            <div v-if="chatStore.isGenerating && !chatStore.streaming && !chatStore.streamingThinking && chatStore.activeToolCalls.length === 0 && chatStore.streamingBlocks.length === 0" class="flex items-center gap-1 py-1.5">
               <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 0ms" />
               <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 150ms" />
               <span class="w-2 h-2 rounded-full bg-app-accent animate-bounce" style="animation-delay: 300ms" />
             </div>
 
-            <!-- 工具调用行：混在 AI 流中，逐行排列 -->
-            <ToolCallStatus v-if="chatStore.activeToolCalls.length > 0 && chatStore.isGenerating" :calls="chatStore.activeToolCalls" />
+            <!--
+              已归档的内容块（ReAct/Plan 多轮）：思考段 ↔ 正文段 ↔ 工具调用段按真实顺序交错内联。
+              tool 块的 calls 与 activeToolCalls 同源，状态变化自动响应。
+            -->
+            <template v-if="chatStore.streamingBlocks.length > 0">
+              <template v-for="(block, i) in chatStore.streamingBlocks" :key="i">
+                <ThinkingBubble v-if="block.type === 'thinking'" :thinking="block.text" :thinking-expanded="false" />
+                <div
+                  v-else-if="block.type === 'text'"
+                  class="stream-reveal text-app-text leading-[1.8] markdown-body prose-sm max-w-none
+                         prose-headings:text-app-heading prose-p:text-app-text prose-strong:text-app-text
+                         prose-a:text-app-accent prose-a:no-underline
+                         prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:text-xs prose-code:font-normal
+                         prose-pre:p-0 prose-pre:bg-transparent prose-pre:m-0
+                         prose-li:text-app-text prose-table:border-app-border"
+                  :style="{ fontSize: 'var(--app-font-size)' }"
+                  v-html="renderMarkdown(block.text)"
+                />
+                <ToolCallStatus v-else :calls="block.calls" />
+              </template>
+            </template>
 
-            <!-- 思考过程 -->
+            <!-- 工具调用行（仅 Chat 单轮模式：streamingBlocks 为空时才单独显示） -->
+            <ToolCallStatus v-if="chatStore.activeToolCalls.length > 0 && chatStore.isGenerating && chatStore.streamingBlocks.length === 0" :calls="chatStore.activeToolCalls" />
+
+            <!-- 当前轮思考过程（streamingBlocks 已含历史轮 thinking；这里只显示本轮未归档的） -->
             <div v-if="chatStore.streamingThinking" class="mb-3">
               <details :open="isThinkingActive || chatStore.thinkingManuallyExpanded" @toggle="onThinkingToggle" class="text-xs">
                 <summary class="text-app-muted hover:text-app-heading cursor-pointer font-medium">

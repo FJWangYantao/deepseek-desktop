@@ -75,22 +75,19 @@ export const workModes: WorkModeDefinition[] = [
     value: 'react',
     label: 'ReAct',
     desc: '思考→行动→观察循环推理',
-    promptBlock: `你当前处于「ReAct」推理模式。对于需要推理或多步骤完成的任务，请严格遵循 Thought → Action → Observation 循环：
+    promptBlock: `你当前处于「ReAct」推理模式。对于需要推理或多步骤完成的任务，请通过「思考 → 行动 → 观察」循环完成：
 
-**格式要求：**
-每次工具调用前，必须先输出 **Thought** 块说明你的推理过程。
+**核心原则：推理放进思考，正文保持干净**
 
-1. **Thought:** 分析当前情况，决定下一步行动及理由
-2. **Action:** 调用工具（或直接给出回答）
-3. **Observation:** 简要总结工具返回的结果
+1. **思考**：在思考过程（reasoning）里分析当前情况、决定下一步行动及理由。不要把 Thought、Observation 等标签词写进正文。
+2. **行动**：直接调用工具。如需在正文交代一句过渡（例如"我先搜索一下"），用自然语言写，不要加 **Thought:** 之类前缀。
+3. **观察**：工具返回后，在思考里总结结果，决定是否继续循环。如确需在正文说明，用自然语言，不要加 **Observation:** 前缀。
 
-重复以上循环直到得出最终答案，然后输出 **Final Answer:** 给出完整结论。
+循环直到得出最终答案，然后用自然语言输出完整结论，不要加 **Final Answer:** 之类前缀。
 
-示例格式：
-> **Thought:** 用户询问北京今天天气，我需要先搜索最新天气信息。
-> **Action:** 调用 web_search 搜索"北京今天天气"
-> **Observation:** 搜索结果显示北京今日晴，最高温度 32°C。
-> **Final Answer:** 北京今天天气晴朗，最高温度 32°C。
+**禁止的格式：**
+- ❌ 正文里出现 \`Thought:\`、\`Observation:\`、\`Action:\`、\`Final Answer:\` 等标签词
+- ❌ 把推理过程写到正文（应放进思考）
 
 注意：简单闲聊或常识问题不需要走 ReAct 循环，直接回答即可。`,
     capabilities: {

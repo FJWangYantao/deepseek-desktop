@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, watch, computed, nextTick } from 'vue'
-import type { Message, QuoteItem, UsageData, ToolCallUIState } from '@/types'
+import type { Message, QuoteItem, UsageData, ToolCallUIState, ContentBlock } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
@@ -34,9 +34,13 @@ export const useChatStore = defineStore('chat', () => {
   const thinkingManuallyExpanded = ref(false)
   const bgStreams = reactive<Record<string, { content: string; thinking: string }>>({})
   const bgToolCalls = reactive<Record<string, ToolCallUIState[]>>({})
+  /** 后台会话的流式内容块（用于流式过程内联渲染） */
+  const bgStreamingBlocks = reactive<Record<string, ContentBlock[]>>({})
   const generatingSessions = ref<Record<string, boolean>>({})
   const unreadSessions = ref<Record<string, boolean>>({})
   const activeToolCalls = ref<ToolCallUIState[]>([])
+  /** 当前会话的流式内容块（已归档的 text/tool 段，按交错顺序） */
+  const streamingBlocks = ref<ContentBlock[]>([])
   const lastUsageData = ref<UsageData | null>(null)
 
   // 工具权限审批状态
@@ -69,6 +73,9 @@ export const useChatStore = defineStore('chat', () => {
       if (activeToolCalls.value.length > 0) {
         bgToolCalls[generatingSessionId.value] = [...activeToolCalls.value]
       }
+      if (streamingBlocks.value.length > 0) {
+        bgStreamingBlocks[generatingSessionId.value] = [...streamingBlocks.value]
+      }
     }
 
     const session = sessionStore.getCurrentSession()
@@ -80,12 +87,14 @@ export const useChatStore = defineStore('chat', () => {
       streaming.value = bg?.content ?? ''
       streamingThinking.value = bg?.thinking ?? ''
       activeToolCalls.value = bgToolCalls[newSid] ? [...bgToolCalls[newSid]] : []
+      streamingBlocks.value = bgStreamingBlocks[newSid] ? [...bgStreamingBlocks[newSid]] : []
       isGenerating.value = true
     } else {
       streaming.value = ''
       streamingThinking.value = ''
       isGenerating.value = false
       activeToolCalls.value = []
+      streamingBlocks.value = []
     }
 
     // 清除未读标记
@@ -399,6 +408,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // 准备流式输出
     activeToolCalls.value = []
+    streamingBlocks.value = []
 
     try {
       const toolLoop = useToolLoop()
@@ -447,6 +457,38 @@ export const useChatStore = defineStore('chat', () => {
             bgToolCalls[sid] = [...calls]
           }
         },
+        /**
+         * 内容块归档回调（ReAct/Plan 多轮的内联渲染核心）：
+         * - text 块：该段正文已固定，加入 streamingBlocks；同时清空本地 fullContent
+         *   与 streaming.value，使下一轮的 token 从空开始，避免与已归档段重复。
+         * - thinking 块：该段思考已固定，加入 streamingBlocks；清空 streamingThinking。
+         * - tool 块：calls 引用 activeToolCalls 中同一对象（状态变化自动响应），
+         *   直接加入 streamingBlocks 即可。
+         */
+        onBlock(block) {
+          if (sessionStore.currentId === sid) {
+            streamingBlocks.value = [...streamingBlocks.value, block]
+          } else {
+            bgStreamingBlocks[sid] = [...(bgStreamingBlocks[sid] ?? []), block]
+          }
+          if (block.type === 'text') {
+            // 本段已归档，清空当前流式累积器
+            fullContent = ''
+            if (sessionStore.currentId === sid) {
+              streaming.value = ''
+            } else if (bgStreams[sid]) {
+              bgStreams[sid].content = ''
+            }
+          } else if (block.type === 'thinking') {
+            // 本段思考已归档，清空当前思考累积器
+            fullThinking = ''
+            if (sessionStore.currentId === sid) {
+              streamingThinking.value = ''
+            } else if (bgStreams[sid]) {
+              bgStreams[sid].thinking = ''
+            }
+          }
+        },
         onNeedsApproval(info) {
           return new Promise<boolean>((resolve) => {
             approvalResolver = resolve
@@ -463,6 +505,12 @@ export const useChatStore = defineStore('chat', () => {
       const finalToolCalls = sessionStore.currentId === sid
         ? [...activeToolCalls.value]
         : (bgToolCalls[sid] ? [...bgToolCalls[sid]] : [])
+      // 内容块序列：ReAct/Plan 多轮有交错时才写入；Chat 单轮 loopResult.blocks
+      // 只有一段 text（等同 content），不写 contentBlocks 以保持老消息形态。
+      const finalBlocks = sessionStore.currentId === sid
+        ? [...streamingBlocks.value]
+        : (bgStreamingBlocks[sid] ? [...bgStreamingBlocks[sid]] : [])
+      const hasInterleaved = finalBlocks.some(b => b.type === 'tool')
       const aiMsg: Message = {
         id: generateId(),
         role: 'assistant',
@@ -470,6 +518,7 @@ export const useChatStore = defineStore('chat', () => {
         thinking: fullThinking || undefined,
         thinkingExpanded: thinkingManuallyExpanded.value || undefined,
         toolCalls: finalToolCalls.length > 0 ? finalToolCalls : undefined,
+        contentBlocks: hasInterleaved ? finalBlocks : undefined,
         timestamp: Date.now(),
       }
       const targetSession = sessionStore.sessions.find(s => s.id === sid)
@@ -561,9 +610,11 @@ export const useChatStore = defineStore('chat', () => {
         delete generatingSessions.value[doneSid]
         delete bgStreams[doneSid]
         delete bgToolCalls[doneSid]
+        delete bgStreamingBlocks[doneSid]
       }
       streaming.value = ''
       streamingThinking.value = ''
+      streamingBlocks.value = []
       isGenerating.value = false
       generatingSessionId.value = null
     }
@@ -573,12 +624,8 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = []
   }
 
-  async function retryMessage(messageId: string) {
-    const idx = messages.value.findIndex(m => m.id === messageId)
-    if (idx === -1) return
-    const userMsg = messages.value[idx]
-    if (userMsg.role !== 'user') return
-    // 保存文件和引用信息
+  /** 从用户消息提取附件/引用，供重试或编辑重发复用 */
+  function extractUserContext(userMsg: Message) {
     const files = userMsg.attachments?.filter(a => a.text).map(a => ({
       name: a.name, size: a.size, text: a.text!,
     }))
@@ -597,19 +644,47 @@ export const useChatStore = defineStore('chat', () => {
         const ext = a.name.includes('.') ? ('.' + a.name.split('.').pop()!.toLowerCase()) : '.png'
         return { path: '', name: a.name, ext, size: a.size }
       })
-    // 删除这条用户消息及之后的所有回复
+    return { files, quotesData, imageFiles }
+  }
+
+  /** 删除某条用户消息及其后的所有回复，并按给定 content 重新发送（保留原附件/引用） */
+  async function resendUserMessage(messageId: string, content: string) {
+    const idx = messages.value.findIndex(m => m.id === messageId)
+    if (idx === -1) return
+    const userMsg = messages.value[idx]
+    if (userMsg.role !== 'user') return
+    const { files, quotesData, imageFiles } = extractUserContext(userMsg)
     messages.value = messages.value.slice(0, idx)
     await nextTick()
     sendMessage(
-      userMsg.content,
+      content,
       files && files.length > 0 ? files : undefined,
       quotesData,
       imageFiles && imageFiles.length > 0 ? imageFiles : undefined,
     )
   }
 
+  async function retryMessage(messageId: string) {
+    const idx = messages.value.findIndex(m => m.id === messageId)
+    if (idx === -1) return
+    const userMsg = messages.value[idx]
+    if (userMsg.role !== 'user') return
+    await resendUserMessage(messageId, userMsg.content)
+  }
+
+  /**
+   * 编辑已发送的用户消息并以新内容重新发送。
+   * 行为：删除该用户消息及其后的所有回复，用 newContent 重新走 sendMessage，
+   * 原附件/引用信息保留（与 retryMessage 一致）。
+   */
+  async function editAndResendMessage(messageId: string, newContent: string) {
+    const trimmed = newContent.trim()
+    if (!trimmed) return
+    await resendUserMessage(messageId, trimmed)
+  }
+
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, activeToolCalls, pendingApproval, currentModel, lastUsageData,
-    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage, stopGenerating, resolveApproval,
+    messages, streaming, streamingThinking, thinkingEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, activeToolCalls, streamingBlocks, pendingApproval, currentModel, lastUsageData,
+    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage, editAndResendMessage, stopGenerating, resolveApproval,
   }
 })

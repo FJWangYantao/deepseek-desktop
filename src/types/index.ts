@@ -5,6 +5,15 @@ export interface QuoteItem {
   messageId: string
 }
 
+/**
+ * 内容块：表达「正文段 ↔ 思考段 ↔ 工具调用段」的真实交错顺序。
+ * ReAct/Plan 多轮中每轮的思考 / 过渡文字 / 工具调用天然就是交错点。
+ */
+export type ContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'thinking'; text: string }
+  | { type: 'tool'; calls: ToolCallUIState[] }
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -17,6 +26,13 @@ export interface Message {
   quote?: { text: string; messageId: string }
   /** 工具调用记录（生成完成后持久化到消息上） */
   toolCalls?: ToolCallUIState[]
+  /**
+   * 有序内容块（正文段 / 工具调用段交错），用于内联渲染。
+   * 仅在 ReAct/Plan 等多轮工具模式下生成；老消息无此字段时降级为
+   * 「工具调用块在前 + content 正文」的旧行为。
+   * content 字段保持不变（导出 / 统计 / 记忆提取等仍用 content）。
+   */
+  contentBlocks?: ContentBlock[]
   timestamp: number
 }
 
