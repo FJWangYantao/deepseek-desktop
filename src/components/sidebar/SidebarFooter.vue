@@ -1,26 +1,20 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useNotesStore } from '@/stores/notes'
 
 const router = useRouter()
-const notesStore = useNotesStore()
 </script>
 
 <template>
   <div class="flex flex-col items-center gap-1.5 pt-2 border-t border-app-border w-full px-2">
     <button
       @click="router.push('/notes')"
-      class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors relative"
+      class="w-9 h-9 flex items-center justify-center rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
       title="笔记"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
       </svg>
-      <span
-        v-if="notesStore.count > 0"
-        class="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold rounded-full bg-app-accent text-white px-0.5"
-      >{{ notesStore.count > 99 ? '99+' : notesStore.count }}</span>
     </button>
     <button
       @click="router.push('/memory')"

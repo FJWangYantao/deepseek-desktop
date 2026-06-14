@@ -172,6 +172,19 @@ const permissionModes = [
               <option v-for="t in settings.codeThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
             </select>
           </div>
+          <label class="flex items-start gap-3 cursor-pointer select-none mt-3">
+            <input
+              type="checkbox"
+              v-model="settings.streamReveal"
+              class="mt-0.5 rounded border-app-border/50"
+            />
+            <div class="flex-1">
+              <div class="text-xs text-app-text">流式输出淡入效果</div>
+              <div class="text-xs text-app-muted mt-0.5 leading-relaxed">
+                AI 回复时新段落轻微淡入浮现，关闭后文字直接出现
+              </div>
+            </div>
+          </label>
         </section>
 
         <!-- 主题 -->

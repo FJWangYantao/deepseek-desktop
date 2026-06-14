@@ -575,15 +575,20 @@ html[data-theme="slate"][data-mode="dark"] {
   50% { border-left-color: var(--app-accent); }
 }
 
-/* 流式输出末段淡入：每个 token 到达时整块从底部轻微浮现，
-   营造"沉淀"效果（类似 Claude materialize）。
-   被 prefers-reduced-motion 守卫自动降级为硬切。 */
-.stream-reveal {
-  animation: streamReveal 220ms ease-out;
+/* 流式输出末段淡入：只有最后一个块级元素（正在生成的段落）轻微淡入，
+   已完成的历史段落保持稳定不动（接近 Claude materialize）。
+   每个新段落首次出现时播放一次；后续 token 追加到同段落不再闪烁。
+   被 prefers-reduced-motion 守卫自动降级为硬切。
+   用户在设置中关闭流式淡入时，<html> 加 stream-reveal-off，下面规则禁用动画。 */
+.stream-reveal > *:last-child {
+  animation: streamReveal 280ms ease-out;
+}
+.stream-reveal-off .stream-reveal > *:last-child {
+  animation: none;
 }
 @keyframes streamReveal {
-  0%   { opacity: 0.75; transform: translateY(1px); }
-  100% { opacity: 1;    transform: translateY(0); }
+  0%   { opacity: 0.4; }
+  100% { opacity: 1; }
 }
 
 /* ===== Vue Transition 动画类 ===== */

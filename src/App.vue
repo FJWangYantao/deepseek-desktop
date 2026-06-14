@@ -35,10 +35,16 @@ function applyCodeTheme(theme: string) {
   document.documentElement.setAttribute('data-code-theme', theme)
 }
 
+// 流式淡入开关：关闭时给 <html> 加 class，CSS 据此禁用动画
+function applyStreamReveal(enabled: boolean) {
+  document.documentElement.classList.toggle('stream-reveal-off', !enabled)
+}
+
 onMounted(() => {
   applyFontSize(settings.fontSize)
   applyFontFamily(settings.fontFamily)
   applyCodeTheme(settings.codeTheme)
+  applyStreamReveal(settings.streamReveal)
 })
 
 function handleBeforeUnload() {
@@ -59,6 +65,7 @@ onBeforeUnmount(() => {
 watch(() => settings.fontSize, applyFontSize)
 watch(() => settings.fontFamily, applyFontFamily)
 watch(() => settings.codeTheme, applyCodeTheme)
+watch(() => settings.streamReveal, applyStreamReveal)
 
 // ===== 滚动位置记忆 =====
 // v-show 切换 display:none 时浏览器会重置 scrollTop，

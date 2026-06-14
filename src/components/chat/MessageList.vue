@@ -42,22 +42,6 @@ const streamHtml = computed(() => {
   return renderMarkdown(streamingSafe.value)
 })
 
-// 流式容器 ref：每 token 重建 DOM 后重置淡入动画
-const streamEl = ref<HTMLElement>()
-
-// 每 token 到达 → streamHtml 变 → v-html 整体重建 DOM。
-// 此处重置 .stream-reveal 动画，让新内容从底部轻浮涌现（Claude 风格）。
-// void offsetWidth 强制 reflow，避免 remove→add 被浏览器合并跳过动画重启。
-watch(streamHtml, async () => {
-  if (!streamHtml.value) return
-  await nextTick()
-  const el = streamEl.value
-  if (!el) return
-  el.classList.remove('stream-reveal')
-  void el.offsetWidth
-  el.classList.add('stream-reveal')
-})
-
 // 新消息 → 仅用户消息滚到底（助手回复完成时不强制滚动）
 watch(
   () => chatStore.messages.length,
@@ -216,11 +200,10 @@ function onAfterEnter(el: Element) {
               </details>
             </div>
 
-            <!-- 流式内容 -->
+            <!-- 流式内容（stream-reveal：仅最后一个段落淡入，历史段落稳定） -->
             <div
               v-if="streamHtml"
-              ref="streamEl"
-              class="text-app-text leading-[1.8] markdown-body prose-sm max-w-none
+              class="stream-reveal text-app-text leading-[1.8] markdown-body prose-sm max-w-none
                      prose-headings:text-app-heading prose-p:text-app-text prose-strong:text-app-text
                      prose-a:text-app-accent prose-a:no-underline
                      prose-code:text-inherit prose-code:bg-transparent prose-code:p-0 prose-code:text-xs prose-code:font-normal

@@ -32,6 +32,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const instinctEnabled = ref(localStorage.getItem('ds_instinct_enabled') !== '0')
   const instinctSemanticEnabled = ref(localStorage.getItem('ds_instinct_semantic_enabled') !== '0')
 
+  // 流式输出末段淡入效果（默认开；关闭后流式文字硬切，不淡入）
+  const streamReveal = ref(localStorage.getItem('ds_stream_reveal') !== '0')
+
   // 划词助手提示词（可在设置中修改；空值时调用处回退默认）
   const assistantTranslatePrompt = ref(localStorage.getItem('ds_assistant_translate_prompt') ?? DEFAULT_ASSISTANT_TRANSLATE_PROMPT)
   const assistantExplainPrompt = ref(localStorage.getItem('ds_assistant_explain_prompt') ?? DEFAULT_ASSISTANT_EXPLAIN_PROMPT)
@@ -192,6 +195,9 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(instinctSemanticEnabled, (val) => {
     try { localStorage.setItem('ds_instinct_semantic_enabled', val ? '1' : '0') } catch { /* ignore */ }
   })
+  watch(streamReveal, (val) => {
+    try { localStorage.setItem('ds_stream_reveal', val ? '1' : '0') } catch { /* ignore */ }
+  })
   watch(assistantTranslatePrompt, (val) => {
     try { localStorage.setItem('ds_assistant_translate_prompt', val) } catch { /* ignore */ }
   })
@@ -228,7 +234,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable,
-    instinctEnabled, instinctSemanticEnabled, toolPermissionMode, setToolPermissionMode,
+    instinctEnabled, instinctSemanticEnabled, streamReveal, toolPermissionMode, setToolPermissionMode,
     workMode, setWorkMode,
     assistantTranslatePrompt, assistantExplainPrompt,
     clearAllData,
