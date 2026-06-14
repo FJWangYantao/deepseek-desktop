@@ -4,6 +4,22 @@ import { getTool } from './registry'
 const DEFAULT_DISPLAY_LIMIT = 4000
 const EXECUTION_TIMEOUT = 30_000 // 30 秒
 
+/**
+ * 按工具名区分显示上限（字符数）。
+ * - 搜索类（web_search）返回的是结果摘要，单条不长但条目多，给更大预算，
+ *   避免 10 条结果轻易被截断，丢失排在后面的相关结果。
+ * - 抓取类（web_fetch）已是正文提取后的内容，通常需要全文，给较大预算。
+ * - 其他工具（file_read/write 等）保持默认。
+ */
+const DISPLAY_LIMIT_BY_TOOL: Record<string, number> = {
+  web_search: 12000,
+  web_fetch: 16000,
+}
+
+function displayLimitFor(toolName: string): number {
+  return DISPLAY_LIMIT_BY_TOOL[toolName] ?? DEFAULT_DISPLAY_LIMIT
+}
+
 export async function executeTool(request: ToolCallRequest): Promise<ToolCallResult> {
   const tool = getTool(request.name)
   if (!tool) {
@@ -45,7 +61,8 @@ export async function executeTool(request: ToolCallRequest): Promise<ToolCallRes
     ])
 
     const offset = (args.offset as number) || 0
-    const limit = (args.limit as number) || DEFAULT_DISPLAY_LIMIT
+    // 显式 limit 优先，否则按工具类型取默认值
+    const limit = (args.limit as number) || displayLimitFor(request.name)
     const totalSize = result.length
 
     // 分页截取
