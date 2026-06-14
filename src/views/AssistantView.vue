@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { renderMarkdown } from '@/composables/useMarkdown'
+import { DEFAULT_ASSISTANT_TRANSLATE_PROMPT, DEFAULT_ASSISTANT_EXPLAIN_PROMPT } from '@/data/prompts'
 
 const capturedText = ref('')
 const result = ref('')
@@ -47,8 +48,14 @@ async function doAction(action: 'translate' | 'explain') {
   // 通知主进程放大窗口
   window.electronAPI?.assistantResize(420, 340)
 
+  // 取提示词：直接读 localStorage 拿最新值（助手窗口与主窗口共享同源 localStorage，
+  // 但各自 pinia 实例不跨窗口响应式，故每次现取而非依赖 store ref）
+  const prompt = action === 'translate'
+    ? (localStorage.getItem('ds_assistant_translate_prompt') || DEFAULT_ASSISTANT_TRANSLATE_PROMPT)
+    : (localStorage.getItem('ds_assistant_explain_prompt') || DEFAULT_ASSISTANT_EXPLAIN_PROMPT)
+
   try {
-    const res = await window.electronAPI?.assistantQuery(capturedText.value, action)
+    const res = await window.electronAPI?.assistantQuery(capturedText.value, prompt)
     if (res) result.value = res
   } catch {
     // 静默
@@ -67,12 +74,25 @@ async function copyResult() {
     // ignore
   }
 }
+
+// 复制划选的原文（bar 长条左一按钮）
+async function copyCaptured() {
+  if (!capturedText.value) return
+  try {
+    await navigator.clipboard.writeText(capturedText.value)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 1500)
+  } catch {
+    // ignore
+  }
+}
 </script>
 
 <template>
   <!-- 矮长条模式 -->
   <div v-if="phase === 'bar'" class="bar">
     <div class="bar-actions">
+      <button class="bar-btn" @click="copyCaptured">{{ copied ? '已复制 ✓' : '复制' }}</button>
       <button class="bar-btn" @click="doAction('translate')">翻译</button>
       <button class="bar-btn" @click="doAction('explain')">解释</button>
     </div>

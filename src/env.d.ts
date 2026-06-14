@@ -88,7 +88,7 @@ interface Window {
     // 划词助手
     assistantOnText: (callback: (text: string) => void) => void
     assistantHide: () => Promise<void>
-    assistantQuery: (text: string, action: string) => Promise<string>
+    assistantQuery: (text: string, prompt: string) => Promise<string>
     assistantResize: (width: number, height: number) => Promise<void>
   }
 }

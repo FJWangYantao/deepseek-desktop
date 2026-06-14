@@ -2,10 +2,17 @@
 import { useRouter } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import { useTheme } from '@/composables/useTheme'
+import { DEFAULT_ASSISTANT_TRANSLATE_PROMPT, DEFAULT_ASSISTANT_EXPLAIN_PROMPT } from '@/data/prompts'
 
 const router = useRouter()
 const settings = useSettingsStore()
 const theme = useTheme()
+
+// 划词助手提示词恢复默认
+function resetAssistantPrompts() {
+  settings.assistantTranslatePrompt = DEFAULT_ASSISTANT_TRANSLATE_PROMPT
+  settings.assistantExplainPrompt = DEFAULT_ASSISTANT_EXPLAIN_PROMPT
+}
 
 const themes = [
   { id: 'amber' as const, label: '琥珀', color: '#d97706' },
@@ -117,6 +124,38 @@ const permissionModes = [
                    text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60
                    transition-colors resize-y min-h-[80px]"
           ></textarea>
+        </section>
+
+        <!-- 划词助手 -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-3 block">划词助手提示词</label>
+          <p class="text-xs text-app-muted/70 mb-3 leading-relaxed">划词后"翻译/解释"使用的系统提示词；选中的文字会作为用户消息单独传入，这里只需写指令本身。</p>
+          <div class="space-y-3">
+            <div>
+              <div class="text-xs text-app-muted mb-1">翻译</div>
+              <textarea
+                :value="settings.assistantTranslatePrompt"
+                @input="settings.assistantTranslatePrompt = ($event.target as HTMLTextAreaElement).value"
+                placeholder="翻译提示词..."
+                rows="3"
+                class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors resize-y min-h-[60px]"
+              ></textarea>
+            </div>
+            <div>
+              <div class="text-xs text-app-muted mb-1">解释</div>
+              <textarea
+                :value="settings.assistantExplainPrompt"
+                @input="settings.assistantExplainPrompt = ($event.target as HTMLTextAreaElement).value"
+                placeholder="解释提示词..."
+                rows="3"
+                class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors resize-y min-h-[60px]"
+              ></textarea>
+            </div>
+            <button
+              @click="resetAssistantPrompts"
+              class="text-xs px-3 py-1.5 rounded-md border border-app-border/50 text-app-muted hover:text-app-text hover:border-app-border transition-colors"
+            >恢复默认</button>
+          </div>
         </section>
 
         <!-- 显示 -->

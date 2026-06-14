@@ -67,6 +67,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('assistant:text-captured', (_e, text: string) => callback(text))
   },
   assistantHide: () => ipcRenderer.invoke('assistant:hide'),
-  assistantQuery: (text: string, action: string) => ipcRenderer.invoke('assistant:query', text, action),
+  assistantQuery: (text: string, prompt: string) => ipcRenderer.invoke('assistant:query', text, prompt),
   assistantResize: (width: number, height: number) => ipcRenderer.invoke('assistant:resize', width, height),
 })

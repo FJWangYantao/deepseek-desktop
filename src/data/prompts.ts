@@ -16,6 +16,14 @@ export interface PromptTemplate {
   description: string
 }
 
+// 划词助手默认提示词（用户可在设置中修改；为空时回退到这些默认值）
+// 翻译：英文 prompt + 目标简体中文（源语言不限，英文为主场景）
+export const DEFAULT_ASSISTANT_TRANSLATE_PROMPT =
+  'You are a professional translator. Translate the text below into Simplified Chinese. Output only the translation—no explanations, notes, quotes, or any prefix; preserve the original line breaks and punctuation style; keep proper nouns and technical terms accurate.'
+// 解释：中文 prompt（输出中文更自然），鼓励用 Markdown/公式（结果区已支持渲染）
+export const DEFAULT_ASSISTANT_EXPLAIN_PROMPT =
+  '你是一位耐心的讲解者。请用简体中文解释用户给出的文字：先用一句话点明它是什么，再分点说清含义、背景或用法；遇到专业术语用日常语言和简短例子说明。可以使用 Markdown（列表、加粗、行内代码、$...$ 公式）让讲解更清晰。不要复述原文，不要加“解释：”之类前缀。'
+
 export const promptTemplates: PromptTemplate[] = [
   // ===== 有官方 SYSTEM 提示词（7个）=====
 

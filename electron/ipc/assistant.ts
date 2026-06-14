@@ -11,13 +11,6 @@ import { join } from 'path'
 
 const API_URL = 'https://api.deepseek.com/v1/chat/completions'
 
-const PROMPTS: Record<string, string> = {
-  translate:
-    '你是一个翻译助手。将以下文字翻译为目标语言：如果主要是中文就翻译为英文，如果主要是英文就翻译为中文。直接输出翻译结果，不要任何解释、注释或前缀。',
-  explain:
-    '你是一个知识助手。清晰简洁地解释以下文字的含义。如果涉及专业术语，给出通俗说明。直接输出解释内容，不要任何前缀。',
-}
-
 /** 从加密存储读取 API key（与 secure-storage.ts 相同逻辑） */
 function getApiKey(): string {
   try {
@@ -91,11 +84,9 @@ export function registerAssistantHandlers() {
 
   ipcMain.handle(
     'assistant:query',
-    async (_e, text: string, action: string): Promise<string> => {
+    async (_e, text: string, prompt: string): Promise<string> => {
       const apiKey = getApiKey()
-      if (!apiKey) return ''
-      const prompt = PROMPTS[action]
-      if (!prompt) return ''
+      if (!apiKey || !prompt) return ''
 
       try {
         return await callDeepSeek(prompt, text, apiKey)

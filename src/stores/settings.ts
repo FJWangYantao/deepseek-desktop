@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { ModelOption, ToolPermissionMode, WorkMode } from '@/types'
 import { useStatsStore } from './stats'
-import { promptTemplates, DEFAULT_ROLE_ID } from '@/data/prompts'
+import { promptTemplates, DEFAULT_ROLE_ID, DEFAULT_ASSISTANT_TRANSLATE_PROMPT, DEFAULT_ASSISTANT_EXPLAIN_PROMPT } from '@/data/prompts'
 
 export const useSettingsStore = defineStore('settings', () => {
   // 敏感字段（API Key）改用 safeStorage 加密存储；初始为空字符串，由 loadSecrets 异步填充
@@ -31,6 +31,10 @@ export const useSettingsStore = defineStore('settings', () => {
   // - instinctSemanticEnabled：是否在会话切换时启用 LLM 语义路径（默认开，使用与对话同一份 apiKey）
   const instinctEnabled = ref(localStorage.getItem('ds_instinct_enabled') !== '0')
   const instinctSemanticEnabled = ref(localStorage.getItem('ds_instinct_semantic_enabled') !== '0')
+
+  // 划词助手提示词（可在设置中修改；空值时调用处回退默认）
+  const assistantTranslatePrompt = ref(localStorage.getItem('ds_assistant_translate_prompt') ?? DEFAULT_ASSISTANT_TRANSLATE_PROMPT)
+  const assistantExplainPrompt = ref(localStorage.getItem('ds_assistant_explain_prompt') ?? DEFAULT_ASSISTANT_EXPLAIN_PROMPT)
 
   // 加密存储状态：true=已用 safeStorage 加密；false=平台不支持，回退到 localStorage 明文
   const secureStorageAvailable = ref(false)
@@ -186,6 +190,12 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(instinctSemanticEnabled, (val) => {
     try { localStorage.setItem('ds_instinct_semantic_enabled', val ? '1' : '0') } catch { /* ignore */ }
   })
+  watch(assistantTranslatePrompt, (val) => {
+    try { localStorage.setItem('ds_assistant_translate_prompt', val) } catch { /* ignore */ }
+  })
+  watch(assistantExplainPrompt, (val) => {
+    try { localStorage.setItem('ds_assistant_explain_prompt', val) } catch { /* ignore */ }
+  })
 
   async function clearAllData() {
     useStatsStore().clearAllStats()
@@ -208,6 +218,8 @@ export const useSettingsStore = defineStore('settings', () => {
     mimoApiKey.value = ''
     mimoBaseUrl.value = 'https://api.xiaomimimo.com/v1'
     mimoModel.value = 'mimo-v2.5'
+    assistantTranslatePrompt.value = DEFAULT_ASSISTANT_TRANSLATE_PROMPT
+    assistantExplainPrompt.value = DEFAULT_ASSISTANT_EXPLAIN_PROMPT
     void setToolPermissionMode('confirm')
     void setWorkMode('chat')
   }
@@ -216,6 +228,7 @@ export const useSettingsStore = defineStore('settings', () => {
     apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable,
     instinctEnabled, instinctSemanticEnabled, toolPermissionMode, setToolPermissionMode,
     workMode, setWorkMode,
+    assistantTranslatePrompt, assistantExplainPrompt,
     clearAllData,
   }
 })
