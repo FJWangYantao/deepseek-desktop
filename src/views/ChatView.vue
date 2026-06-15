@@ -5,6 +5,7 @@ import MessageList from '@/components/chat/MessageList.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import InputDialog from '@/components/skills/InputDialog.vue'
 import ToolConfirmDialog from '@/components/chat/ToolConfirmDialog.vue'
+import PlanConfirmDialog from '@/components/chat/PlanConfirmDialog.vue'
 import { useDSLRunner } from '@/composables/useDSLRunner'
 
 const sessionStore = useSessionStore()
@@ -35,6 +36,11 @@ function handleToolDeny() {
       :info="chatStore.pendingApproval"
       @approve="handleToolApprove"
       @deny="handleToolDeny"
+    />
+    <PlanConfirmDialog
+      :visible="chatStore.pendingPlanApproval"
+      @confirm="chatStore.resolvePlanApproval"
+      @cancel="chatStore.dismissPlanApproval"
     />
     <ChatInput />
     <InputDialog

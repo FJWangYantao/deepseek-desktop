@@ -7,6 +7,7 @@ import MessageItem from './MessageItem.vue'
 import StreamCursor from '@/components/renderer/StreamCursor.vue'
 import ThinkingBubble from '@/components/renderer/ThinkingBubble.vue'
 import ToolCallStatus from './ToolCallStatus.vue'
+import TodoListBlock from './TodoListBlock.vue'
 import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 
 const chatStore = useChatStore()
@@ -199,12 +200,13 @@ function onAfterEnter(el: Element) {
             </div>
 
             <!--
-              已归档的内容块（ReAct/Plan 多轮）：思考段 ↔ 正文段 ↔ 工具调用段按真实顺序交错内联。
+              已归档的内容块（ReAct/Plan 多轮）：思考段 ↔ 正文段 ↔ 工具调用段 ↔ todolist 段按真实顺序交错内联。
               tool 块的 calls 与 activeToolCalls 同源，状态变化自动响应。
             -->
             <template v-if="chatStore.streamingBlocks.length > 0">
               <template v-for="(block, i) in chatStore.streamingBlocks" :key="i">
                 <ThinkingBubble v-if="block.type === 'thinking'" :thinking="block.text" :thinking-expanded="false" />
+                <TodoListBlock v-else-if="block.type === 'todolist'" :items="block.items" />
                 <div
                   v-else-if="block.type === 'text'"
                   class="stream-reveal text-app-text leading-[1.8] markdown-body prose-sm max-w-none

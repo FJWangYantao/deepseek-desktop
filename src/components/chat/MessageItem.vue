@@ -8,6 +8,7 @@ import { useNotesStore } from '@/stores/notes'
 import ContentBlock from '@/components/renderer/ContentBlock.vue'
 import ThinkingBubble from '@/components/renderer/ThinkingBubble.vue'
 import ToolCallStatus from './ToolCallStatus.vue'
+import TodoListBlock from './TodoListBlock.vue'
 import ReplixLogo from '@/components/pet/ReplixLogo.vue'
 import FavoritePopover from '@/components/notes/FavoritePopover.vue'
 import ToastNotification from '@/components/notes/ToastNotification.vue'
@@ -345,11 +346,12 @@ function onEditKeydown(e: KeyboardEvent) {
         <!-- 顶层思考（仅无 contentBlocks 的老消息显示；有 contentBlocks 时 thinking 已内联到块里） -->
         <ThinkingBubble v-if="message.thinking && !(message.contentBlocks && message.contentBlocks.length > 0)" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
 
-        <!-- 优先用 contentBlocks 内联渲染（ReAct/Plan 多轮：思考段 ↔ 正文段 ↔ 工具调用段交错） -->
+        <!-- 优先用 contentBlocks 内联渲染（ReAct/Plan 多轮：思考段 ↔ 正文段 ↔ 工具调用段 ↔ todolist 交错） -->
         <template v-if="message.contentBlocks && message.contentBlocks.length > 0">
           <template v-for="(block, i) in message.contentBlocks" :key="i">
             <ThinkingBubble v-if="block.type === 'thinking'" :thinking="block.text" :thinking-expanded="false" />
             <ContentBlock v-else-if="block.type === 'text'" :content="block.text" />
+            <TodoListBlock v-else-if="block.type === 'todolist'" :items="block.items" />
             <ToolCallStatus v-else :calls="block.calls" />
           </template>
         </template>

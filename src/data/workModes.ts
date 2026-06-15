@@ -33,6 +33,35 @@ export function filterToolSchema(
   return all.filter(t => allowedTools.includes(t.function.name))
 }
 
+/** Plan 模式「规划阶段」system 提示（工具已被代码层禁用，LLM 只能输出计划） */
+export const PLAN_PLANNING_PROMPT = `你当前处于「计划与执行」模式的【规划阶段】。
+
+此时你**不能调用任何工具**（系统已禁用）。请只输出计划，不要尝试调用工具：
+1. 先用一两句话简要分析用户需求与目标
+2. 然后输出分步执行计划，**必须用 \`\`\`plan 代码块包裹的 JSON 数组**，每项含 step（序号，从1开始）、title（步骤目标）、tool（拟用工具名，如 web_search/web_fetch/file_write，可省略）。格式示例：
+
+\`\`\`plan
+[
+  { "step": 1, "title": "搜索相关资料", "tool": "web_search" },
+  { "step": 2, "title": "抓取详情页", "tool": "web_fetch" },
+  { "step": 3, "title": "整理并输出结果" }
+]
+\`\`\`
+
+3. JSON 之后可补一句说明，并提示用户确认执行。
+
+重要：\`\`\`plan 块必须出现在你的回复中，系统依赖它渲染待办列表。如果用户的首次消息不包含明确的任务（如普通闲聊），按普通对话回复，不必输出 plan 块。`
+
+/** Plan 模式「执行阶段」system 提示（工具已放开，按计划逐步执行） */
+export const PLAN_EXECUTING_PROMPT = `你当前处于「计划与执行」模式的【执行阶段】。用户已确认执行计划。
+
+按计划逐步执行：
+- **每完成一步，在正文开头用「步骤 N/M」标注当前进度**（例如「步骤 2/5」，M 为总步数）。系统据此自动勾选待办。
+- 完成所有步骤后，输出执行总结
+- 如遇到意外情况，暂停并报告给用户
+
+如果用户提出了新任务（而非确认执行），请先回到规划阶段思路：分析任务并输出新计划（含 \`\`\`plan 块），提示用户确认。`
+
 export const workModes: WorkModeDefinition[] = [
   {
     value: 'chat',
@@ -49,22 +78,8 @@ export const workModes: WorkModeDefinition[] = [
     value: 'plan',
     label: 'Plan',
     desc: '先制定计划，确认后逐步执行',
-    promptBlock: `你当前处于「计划与执行」模式。请严格遵循以下流程：
-
-## 阶段一：制定计划
-收到用户任务后，不要立即调用任何工具。先完成以下步骤：
-1. 分析用户需求，明确目标
-2. 制定一个清晰的分步执行计划
-3. 用有序列表输出计划，每步包含：目标、拟使用的工具、预期结果
-4. 以明确的提示结尾，例如："以上就是执行计划。请回复「执行」开始执行，或提出修改意见。"
-
-## 阶段二：执行计划
-当用户确认执行后（用户消息包含「执行」「确认」「开始」等语义），按计划逐步执行：
-- 每执行一步，标注当前进度（例如 "步骤 2/5"）
-- 如遇到意外情况，暂停并报告给用户
-- 全部完成后输出执行总结
-
-重要：如果用户的首次消息不包含明确的任务（如普通闲聊），按普通对话模式回复，不必强制制定计划。`,
+    // promptBlock 留空：Plan 的提示按 planning/executing 阶段动态拼接（见 chat.ts）
+    promptBlock: '',
     capabilities: {
       maxRounds: 100,
       allowedTools: 'all',

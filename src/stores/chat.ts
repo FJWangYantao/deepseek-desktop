@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, watch, computed, nextTick } from 'vue'
-import type { Message, QuoteItem, UsageData, ToolCallUIState, ContentBlock } from '@/types'
+import type { Message, QuoteItem, UsageData, ToolCallUIState, ContentBlock, TodoItem } from '@/types'
 import { useSessionStore } from './session'
 import { useSettingsStore } from './settings'
 import { useStatsStore } from './stats'
@@ -8,7 +8,7 @@ import { useMemory } from '@/composables/useMemory'
 import { useSkillStore } from './skills'
 import { buildSkillContext } from '@/composables/useSkillContext'
 import { useToolLoop } from '@/composables/useToolLoop'
-import { workModes } from '@/data/workModes'
+import { workModes, PLAN_PLANNING_PROMPT, PLAN_EXECUTING_PROMPT } from '@/data/workModes'
 import {
   recordMessageCompleted,
   extractLightFromMessageCompleted,
@@ -22,6 +22,74 @@ import {
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+}
+
+/**
+ * 判断用户消息是否为「执行确认」（Plan 模式从 planning 切到 executing 的触发条件）。
+ * 启发式：短句（≤8 字）+ 命中执行类关键词。双重约束避免把实质任务误判为确认。
+ */
+function isExecutionConfirm(text: string): boolean {
+  const trimmed = text.trim().toLowerCase()
+  if (trimmed.length > 8) return false
+  return /执行|确认|开始|继续|做吧|可以|好的|按计划|^go$|^run$|^ok$|^yes$/.test(trimmed)
+}
+
+/**
+ * 从文本里提取 ```plan 代码块中的 JSON，解析成 TodoItem[]。
+ * 找不到或解析失败返回 null。同时返回去掉了 plan 块的纯文本，用于正文渲染。
+ */
+function parsePlanJson(text: string): { items: import('@/types').TodoItem[]; textWithoutPlan: string } | null {
+  const match = text.match(/```plan\s*\n([\s\S]*?)```/)
+  if (!match) return null
+  try {
+    const raw = JSON.parse(match[1].trim())
+    if (!Array.isArray(raw)) return null
+    const items: import('@/types').TodoItem[] = raw
+      .filter((it: any) => it && typeof it.title === 'string')
+      .map((it: any, i: number) => ({
+        step: typeof it.step === 'number' ? it.step : i + 1,
+        title: String(it.title),
+        tool: typeof it.tool === 'string' ? it.tool : undefined,
+        done: false,
+      }))
+    if (items.length === 0) return null
+    // 去掉 plan 块及其前后多余空行
+    const textWithoutPlan = text.replace(/```plan\s*\n[\s\S]*?```\s*/, '').trim()
+    return { items, textWithoutPlan }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 从执行阶段 LLM 正文中提取当前进度「步骤 N/M」，返回当前完成的步骤号 N。
+ * 匹配多种写法：步骤 2/5、第 2 步、step 2/5、2/5。
+ */
+function parseCurrentStep(text: string): number | null {
+  // 优先匹配「步骤 N/M」或「第 N 步（共 M 步）」
+  const m1 = text.match(/步骤?\s*(\d+)\s*\/\s*\d+/)
+  if (m1) return parseInt(m1[1], 10)
+  const m2 = text.match(/第\s*(\d+)\s*步/)
+  if (m2) return parseInt(m2[1], 10)
+  const m3 = text.match(/step\s*(\d+)\s*\/\s*\d+/i)
+  if (m3) return parseInt(m3[1], 10)
+  return null
+}
+
+/**
+ * 流式渲染时剥离 plan JSON 块，避免把原始 JSON 显示给用户。
+ * - 已闭合的 ```plan...``` 块：去掉块本身，保留块前和块后的纯文本（如结尾提示语）
+ * - 未闭合（流式中，检测到 ```plan 开头但还没收尾）：截断到 ```plan 之前
+ * 返回剥离后的纯文本，用于流式区显示。
+ */
+function stripPlanBlock(text: string): string {
+  // 未闭合（流式中）：截断到 ```plan 之前，不显示半截 JSON
+  const openIdx = text.indexOf('```plan')
+  if (openIdx !== -1 && !/```plan\s*\n[\s\S]*?```/.test(text)) {
+    return text.slice(0, openIdx).replace(/\s+$/, '')
+  }
+  // 已闭合：去掉块本身，保留前后文本
+  return text.replace(/```plan\s*\n[\s\S]*?```\s*/g, '').trim()
 }
 
 export const useChatStore = defineStore('chat', () => {
@@ -43,6 +111,9 @@ export const useChatStore = defineStore('chat', () => {
   const streamingBlocks = ref<ContentBlock[]>([])
   const lastUsageData = ref<UsageData | null>(null)
 
+  // Plan 模式当前活跃的待办列表（按会话 id 索引）。规划阶段生成，执行阶段回写 done。
+  const activePlanTodos = reactive<Record<string, TodoItem[]>>({})
+
   // 工具权限审批状态
   interface ApprovalInfo { callId: string; name: string; arguments: Record<string, unknown>; reason: string }
   const pendingApproval = ref<ApprovalInfo | null>(null)
@@ -54,6 +125,33 @@ export const useChatStore = defineStore('chat', () => {
       approvalResolver = null
     }
     pendingApproval.value = null
+  }
+
+  // Plan 模式执行确认弹窗：规划阶段 AI 输出计划后弹出，用户点「执行」触发执行
+  const pendingPlanApproval = ref(false)
+  let pendingPlanSessionId: string | null = null
+
+  /**
+   * 用户确认执行计划：切到 executing 阶段，并自动发一条「执行」消息触发执行。
+   */
+  async function resolvePlanApproval() {
+    pendingPlanApproval.value = false
+    const sid = pendingPlanSessionId
+    pendingPlanSessionId = null
+    if (sid) {
+      const session = sessionStore.sessions.find(s => s.id === sid)
+      if (session) session.planStage = 'executing'
+      // 自动发送「执行」触发执行阶段（用空附件，复用 sendMessage）
+      if (sessionStore.currentId === sid) {
+        await sendMessage('执行')
+      }
+    }
+  }
+
+  /** 用户选择修改计划：关闭弹窗，留在 planning 阶段。 */
+  function dismissPlanApproval() {
+    pendingPlanApproval.value = false
+    pendingPlanSessionId = null
   }
 
   const sessionStore = useSessionStore()
@@ -332,6 +430,15 @@ export const useChatStore = defineStore('chat', () => {
     const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`
     const weekDay = ['日', '一', '二', '三', '四', '五', '六'][today.getDay()]
 
+    // Plan 两阶段状态机（须在 system prompt 构建前切换，让 prompt 按阶段注入）：
+    // 每个新问题默认 planning（禁工具），执行确认切到 executing（放开工具）
+    if (settingsStore.workMode === 'plan') {
+      const planSession = sessionStore.sessions.find(s => s.id === sid)
+      if (planSession) {
+        planSession.planStage = isExecutionConfirm(text) ? 'executing' : 'planning'
+      }
+    }
+
     // ===== 构建 system prompt =====
     // 0. 固定前缀（前缀缓存友好，不可变部分放最前面）
     let systemPrompt = '你是一个诚实、严谨的AI助手。遵守以下行为准则：\n' +
@@ -345,7 +452,14 @@ export const useChatStore = defineStore('chat', () => {
 
     // 0.5 工作模式指令
     if (settingsStore.workMode !== 'chat') {
-      const modeBlock = workModes.find(m => m.value === settingsStore.workMode)?.promptBlock
+      let modeBlock: string | undefined
+      if (settingsStore.workMode === 'plan') {
+        // Plan 按当前阶段注入对应文案（planning/executing）
+        const session = sessionStore.sessions.find(s => s.id === sid)
+        modeBlock = session?.planStage === 'executing' ? PLAN_EXECUTING_PROMPT : PLAN_PLANNING_PROMPT
+      } else {
+        modeBlock = workModes.find(m => m.value === settingsStore.workMode)?.promptBlock
+      }
       if (modeBlock) {
         systemPrompt += '\n' + modeBlock + '\n\n'
       }
@@ -414,8 +528,23 @@ export const useChatStore = defineStore('chat', () => {
       const toolLoop = useToolLoop()
       const conversationTurnId = generateId()
       // 按当前工作模式取能力策略（工具白名单 / 轮次上限 / 是否累积）
-      const modePolicy = workModes.find(m => m.value === settingsStore.workMode)?.capabilities
+      let modePolicy = workModes.find(m => m.value === settingsStore.workMode)?.capabilities
         ?? workModes[0].capabilities
+      // Plan + 规划阶段：硬拦截，强制禁用所有工具（空数组 → API 不传 tools → 模型无法调用）
+      const planSession = sessionStore.sessions.find(s => s.id === sid)
+      if (settingsStore.workMode === 'plan' && planSession?.planStage !== 'executing') {
+        modePolicy = { ...modePolicy, allowedTools: [] }
+      }
+      // Plan executing 阶段：把规划阶段生成的 todolist 注入流式块开头，
+      // 这样用户在执行过程中能看到待办列表，且 done 字段会被实时回写。
+      if (settingsStore.workMode === 'plan' && planSession?.planStage === 'executing' && activePlanTodos[sid]?.length) {
+        const todoBlock: ContentBlock = { type: 'todolist', items: activePlanTodos[sid] }
+        if (sessionStore.currentId === sid) {
+          streamingBlocks.value = [todoBlock]
+        } else {
+          bgStreamingBlocks[sid] = [todoBlock]
+        }
+      }
       const loopResult = await toolLoop.run({
         messages: apiMessages,
         model: currentModel.value,
@@ -430,11 +559,15 @@ export const useChatStore = defineStore('chat', () => {
         },
         onToken(token) {
           fullContent += token
+          // Plan planning 阶段：流式显示时剥离 plan JSON 块，避免原始 JSON 暴露给用户
+          const displayContent = (settingsStore.workMode === 'plan' && planSession?.planStage === 'planning')
+            ? stripPlanBlock(fullContent)
+            : fullContent
           if (sessionStore.currentId === sid) {
-            streaming.value = fullContent
+            streaming.value = displayContent
           } else {
             if (!bgStreams[sid]) bgStreams[sid] = { content: '', thinking: '' }
-            bgStreams[sid].content = fullContent
+            bgStreams[sid].content = displayContent
           }
         },
         onThinking(token) {
@@ -479,6 +612,16 @@ export const useChatStore = defineStore('chat', () => {
             } else if (bgStreams[sid]) {
               bgStreams[sid].content = ''
             }
+            // Plan executing：解析正文「步骤 N/M」回写 todolist 的 done
+            const todos = activePlanTodos[sid]
+            if (todos?.length && settingsStore.workMode === 'plan' && planSession?.planStage === 'executing') {
+              const current = parseCurrentStep(block.text)
+              if (current !== null) {
+                for (const t of todos) {
+                  if (t.step <= current) t.done = true
+                }
+              }
+            }
           } else if (block.type === 'thinking') {
             // 本段思考已归档，清空当前思考累积器
             fullThinking = ''
@@ -501,16 +644,31 @@ export const useChatStore = defineStore('chat', () => {
       fullContent = loopResult.content
       fullThinking = loopResult.thinking
 
+      // Plan 规划阶段：从正文提取 ```plan JSON，转成结构化 todolist。
+      // planning 是单轮文本输出（工具禁用），plan 块此时才完整，故在归档时解析。
+      let planTodosForArchive: TodoItem[] | null = null
+      if (settingsStore.workMode === 'plan' && planSession?.planStage === 'planning') {
+        const parsed = parsePlanJson(fullContent)
+        if (parsed) {
+          planTodosForArchive = parsed.items
+          fullContent = parsed.textWithoutPlan
+          // 存到会话级状态，供 executing 阶段回写 done
+          activePlanTodos[sid] = parsed.items
+        }
+      }
+
       // 完成，归档消息到目标会话（含工具调用记录）
       const finalToolCalls = sessionStore.currentId === sid
         ? [...activeToolCalls.value]
         : (bgToolCalls[sid] ? [...bgToolCalls[sid]] : [])
-      // 内容块序列：ReAct/Plan 多轮有交错时才写入；Chat 单轮 loopResult.blocks
-      // 只有一段 text（等同 content），不写 contentBlocks 以保持老消息形态。
+      // 内容块序列：有工具交错、或有 todolist 时写入 contentBlocks
       const finalBlocks = sessionStore.currentId === sid
         ? [...streamingBlocks.value]
         : (bgStreamingBlocks[sid] ? [...bgStreamingBlocks[sid]] : [])
-      const hasInterleaved = finalBlocks.some(b => b.type === 'tool')
+      if (planTodosForArchive) {
+        finalBlocks.push({ type: 'todolist', items: planTodosForArchive })
+      }
+      const hasInterleaved = finalBlocks.some(b => b.type === 'tool' || b.type === 'todolist')
       const aiMsg: Message = {
         id: generateId(),
         role: 'assistant',
@@ -530,6 +688,15 @@ export const useChatStore = defineStore('chat', () => {
         messages.value = targetSession?.messages ?? messages.value
       } else {
         unreadSessions.value = { ...unreadSessions.value, [sid]: true }
+      }
+
+      // Plan 模式 + 规划阶段 + 本轮输出了计划正文 → 弹出「是否执行」确认
+      if (settingsStore.workMode === 'plan'
+          && targetSession?.planStage === 'planning'
+          && fullContent.trim()
+          && sessionStore.currentId === sid) {
+        pendingPlanSessionId = sid
+        pendingPlanApproval.value = true
       }
 
       // 记忆提取 + Observation（fire-and-forget）
@@ -684,7 +851,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    messages, streaming, streamingThinking, thinkingEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, activeToolCalls, streamingBlocks, pendingApproval, currentModel, lastUsageData,
-    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage, editAndResendMessage, stopGenerating, resolveApproval,
+    messages, streaming, streamingThinking, thinkingEnabled, isGenerating, thinkingManuallyExpanded, generatingSessions, unreadSessions, activeToolCalls, streamingBlocks, pendingApproval, pendingPlanApproval, currentModel, lastUsageData,
+    sendMessage, clearMessages, loadFromSession, toggleThinking, retryMessage, editAndResendMessage, stopGenerating, resolveApproval, resolvePlanApproval, dismissPlanApproval,
   }
 })

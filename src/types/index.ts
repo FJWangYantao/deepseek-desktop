@@ -5,14 +5,27 @@ export interface QuoteItem {
   messageId: string
 }
 
+/** TodoList 项：Plan 模式执行计划的一步 */
+export interface TodoItem {
+  /** 步骤序号（从 1 开始，与 LLM 输出的「步骤 N/M」对应） */
+  step: number
+  /** 步骤标题 / 目标 */
+  title: string
+  /** 拟用工具（可选，展示用） */
+  tool?: string
+  /** 是否已完成（执行阶段根据 LLM 正文回写） */
+  done: boolean
+}
+
 /**
- * 内容块：表达「正文段 ↔ 思考段 ↔ 工具调用段」的真实交错顺序。
+ * 内容块：表达「正文段 ↔ 思考段 ↔ 工具调用段 ↔ todolist 段」的真实交错顺序。
  * ReAct/Plan 多轮中每轮的思考 / 过渡文字 / 工具调用天然就是交错点。
  */
 export type ContentBlock =
   | { type: 'text'; text: string }
   | { type: 'thinking'; text: string }
   | { type: 'tool'; calls: ToolCallUIState[] }
+  | { type: 'todolist'; items: TodoItem[] }
 
 export interface Message {
   id: string
@@ -43,6 +56,12 @@ export interface ChatSession {
   messages: Message[]
   createdAt: number
   updatedAt: number
+  /**
+   * Plan 模式两阶段状态机：planning（规划中，工具禁用）/ executing（执行中，工具放开）。
+   * 仅在 workMode==='plan' 时生效；老会话缺失时按 executing 处理（避免锁死）。
+   * 每个新问题重置回 planning，用户回复执行确认后切到 executing。
+   */
+  planStage?: 'planning' | 'executing'
 }
 
 export interface ModelOption {
