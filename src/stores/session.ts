@@ -11,7 +11,8 @@ function loadSessions(): ChatSession[] {
   try {
     const raw = localStorage.getItem('ds_sessions')
     const sessions: ChatSession[] = raw ? JSON.parse(raw) : []
-    // 迁移旧 quote 字段到 quotes；迁移老会话 planStage 默认为 executing（避免锁死）
+    // 迁移旧 quote 字段到 quotes；迁移老会话 planStage 默认为 idle
+    // （idle 表示无活跃计划，普通追问按 chat 行为处理，不会强行规划）
     for (const session of sessions) {
       for (const msg of session.messages) {
         if ((msg as any).quote && !msg.quotes) {
@@ -19,7 +20,7 @@ function loadSessions(): ChatSession[] {
           delete (msg as any).quote
         }
       }
-      if (!session.planStage) session.planStage = 'executing'
+      if (!session.planStage) session.planStage = 'idle'
     }
     return sessions
   } catch {

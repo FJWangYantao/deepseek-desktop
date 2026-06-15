@@ -42,7 +42,8 @@ export const useSettingsStore = defineStore('settings', () => {
   // 加密存储状态：true=已用 safeStorage 加密；false=平台不支持，回退到 localStorage 明文
   const secureStorageAvailable = ref(false)
   // 初始化完成前不持久化敏感字段，防止 watch 在 loadSecrets 中途用空值覆盖磁盘
-  let secretsReady = false
+  // 导出为响应式：UI 可据此判断"敏感字段是否已加载完毕"，避免在异步加载期间误判 apiKey 为空
+  const secretsReady = ref(false)
 
   async function loadSecrets() {
     const api = window.electronAPI
@@ -81,7 +82,7 @@ export const useSettingsStore = defineStore('settings', () => {
       apiKey.value = localStorage.getItem('ds_api_key') ?? ''
       mimoApiKey.value = localStorage.getItem('ds_mimo_api_key') ?? ''
     }
-    secretsReady = true
+    secretsReady.value = true
   }
 
   async function loadToolPermissionMode() {
@@ -152,7 +153,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // 敏感字段持久化：优先 safeStorage，不可用时回退 localStorage
   async function persistSecret(key: string, val: string) {
-    if (!secretsReady) return  // 阻止初始化期 watch 误触发
+    if (!secretsReady.value) return  // 阻止初始化期 watch 误触发
     const api = window.electronAPI
     if (api?.secureSet && secureStorageAvailable.value) {
       try { await api.secureSet(key, val) } catch { /* ignore */ }
@@ -233,7 +234,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   return {
-    apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable,
+    apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable, secretsReady,
     instinctEnabled, instinctSemanticEnabled, streamReveal, toolPermissionMode, setToolPermissionMode,
     workMode, setWorkMode,
     assistantTranslatePrompt, assistantExplainPrompt,

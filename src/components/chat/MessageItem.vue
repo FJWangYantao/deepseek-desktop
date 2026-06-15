@@ -343,9 +343,6 @@ function onEditKeydown(e: KeyboardEvent) {
     <div v-else class="flex items-start gap-4">
       <ReplixLogo size="sm" animate state="idle" class="mt-0.5" />
       <div ref="contentRef" @mouseup="onContentMouseUp" class="min-w-0 flex-1">
-        <!-- 顶层思考（仅无 contentBlocks 的老消息显示；有 contentBlocks 时 thinking 已内联到块里） -->
-        <ThinkingBubble v-if="message.thinking && !(message.contentBlocks && message.contentBlocks.length > 0)" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
-
         <!-- 优先用 contentBlocks 内联渲染（ReAct/Plan 多轮：思考段 ↔ 正文段 ↔ 工具调用段 ↔ todolist 交错） -->
         <template v-if="message.contentBlocks && message.contentBlocks.length > 0">
           <template v-for="(block, i) in message.contentBlocks" :key="i">
@@ -356,7 +353,7 @@ function onEditKeydown(e: KeyboardEvent) {
           </template>
         </template>
 
-        <!-- 降级：老消息无 contentBlocks，保持「思考 + 工具调用在前 + 正文」的旧行为 -->
+        <!-- 降级：无 contentBlocks 的消息走「思考 + 工具调用在前 + 正文」的传统布局 -->
         <template v-else>
           <ThinkingBubble v-if="message.thinking" :thinking="message.thinking" :thinking-expanded="message.thinkingExpanded" />
           <ToolCallStatus v-if="message.toolCalls?.length" :calls="message.toolCalls" />

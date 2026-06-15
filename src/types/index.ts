@@ -57,11 +57,14 @@ export interface ChatSession {
   createdAt: number
   updatedAt: number
   /**
-   * Plan 模式两阶段状态机：planning（规划中，工具禁用）/ executing（执行中，工具放开）。
-   * 仅在 workMode==='plan' 时生效；老会话缺失时按 executing 处理（避免锁死）。
-   * 每个新问题重置回 planning，用户回复执行确认后切到 executing。
+   * Plan 模式三阶段状态机：
+   * - planning：规划中，工具禁用，模型必须输出 plan 块
+   * - executing：执行中，工具放开，按计划逐步执行
+   * - idle：上一轮计划已完成（或老会话默认）。普通追问时保持 idle，
+   *   不注入 plan 提示，也不弹"是否执行"。仅当用户主动请求新计划时回到 planning。
+   * 仅在 workMode==='plan' 时生效。
    */
-  planStage?: 'planning' | 'executing'
+  planStage?: 'planning' | 'executing' | 'idle'
 }
 
 export interface ModelOption {

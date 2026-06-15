@@ -35,6 +35,21 @@ function isExecutionConfirm(text: string): boolean {
 }
 
 /**
+ * 判断用户消息是否在请求一个新计划（idle/executing 阶段下回到 planning 的触发条件）。
+ * 命中常见的"规划/分步/列计划"等显式表达；用于让追问默认走普通问答，
+ * 只有用户明确要求时才重新进入规划阶段。
+ */
+function isPlanRequest(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  if (!t) return false
+  return /(做|来|出|给|生成|制定|规划|安排|设计)\s*(一?个|份|下)?\s*(计划|方案|步骤|todo|task\s*list)/.test(t)
+    || /(分步|逐步|拆解|拆分)/.test(t)
+    || /(列|写)\s*(出|个)?\s*(计划|步骤|todo)/.test(t)
+    || /\bplan\s+(this|it|that|for)\b/.test(t)
+    || /\bmake\s+a\s+plan\b/.test(t)
+}
+
+/**
  * 从文本里提取 ```plan 代码块中的 JSON，解析成 TodoItem[]。
  * 找不到或解析失败返回 null。同时返回去掉了 plan 块的纯文本，用于正文渲染。
  */
@@ -430,12 +445,22 @@ export const useChatStore = defineStore('chat', () => {
     const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`
     const weekDay = ['日', '一', '二', '三', '四', '五', '六'][today.getDay()]
 
-    // Plan 两阶段状态机（须在 system prompt 构建前切换，让 prompt 按阶段注入）：
-    // 每个新问题默认 planning（禁工具），执行确认切到 executing（放开工具）
+    // Plan 三阶段状态机（须在 system prompt 构建前切换，让 prompt 按阶段注入）：
+    // - planning：模型必须输出计划；用户回复"执行/确认/开始"切到 executing
+    // - executing：用户已确认，按计划逐步执行；执行结束后由归档逻辑切到 idle
+    // - idle：无活跃计划。普通追问保持 idle，按 chat 行为回答；
+    //   仅当用户明确说"做个计划/规划一下/分步执行"时才重新回到 planning
     if (settingsStore.workMode === 'plan') {
       const planSession = sessionStore.sessions.find(s => s.id === sid)
       if (planSession) {
-        planSession.planStage = isExecutionConfirm(text) ? 'executing' : 'planning'
+        const prev = planSession.planStage ?? 'idle'
+        if (prev === 'planning') {
+          // 规划阶段：执行确认 → executing；否则保持 planning（让模型重新出计划）
+          planSession.planStage = isExecutionConfirm(text) ? 'executing' : 'planning'
+        } else {
+          // executing / idle：默认保持 idle（普通追问），仅在用户明确请求时回到 planning
+          planSession.planStage = isPlanRequest(text) ? 'planning' : 'idle'
+        }
       }
     }
 
@@ -454,9 +479,16 @@ export const useChatStore = defineStore('chat', () => {
     if (settingsStore.workMode !== 'chat') {
       let modeBlock: string | undefined
       if (settingsStore.workMode === 'plan') {
-        // Plan 按当前阶段注入对应文案（planning/executing）
+        // Plan 按当前阶段注入对应文案：
+        // planning → 强制输出计划；executing → 按计划执行；idle → 不注入（行为 == chat）
         const session = sessionStore.sessions.find(s => s.id === sid)
-        modeBlock = session?.planStage === 'executing' ? PLAN_EXECUTING_PROMPT : PLAN_PLANNING_PROMPT
+        if (session?.planStage === 'executing') {
+          modeBlock = PLAN_EXECUTING_PROMPT
+        } else if (session?.planStage === 'planning') {
+          modeBlock = PLAN_PLANNING_PROMPT
+        } else {
+          modeBlock = undefined
+        }
       } else {
         modeBlock = workModes.find(m => m.value === settingsStore.workMode)?.promptBlock
       }
@@ -531,8 +563,9 @@ export const useChatStore = defineStore('chat', () => {
       let modePolicy = workModes.find(m => m.value === settingsStore.workMode)?.capabilities
         ?? workModes[0].capabilities
       // Plan + 规划阶段：硬拦截，强制禁用所有工具（空数组 → API 不传 tools → 模型无法调用）
+      // executing/idle 不动，按默认 modePolicy 走（idle 等同普通对话）
       const planSession = sessionStore.sessions.find(s => s.id === sid)
-      if (settingsStore.workMode === 'plan' && planSession?.planStage !== 'executing') {
+      if (settingsStore.workMode === 'plan' && planSession?.planStage === 'planning') {
         modePolicy = { ...modePolicy, allowedTools: [] }
       }
       // Plan executing 阶段：把规划阶段生成的 todolist 注入流式块开头，
@@ -665,7 +698,25 @@ export const useChatStore = defineStore('chat', () => {
       const finalBlocks = sessionStore.currentId === sid
         ? [...streamingBlocks.value]
         : (bgStreamingBlocks[sid] ? [...bgStreamingBlocks[sid]] : [])
+      // Plan 规划阶段解析出了计划：streamingBlocks 里的 text 块仍含原始 ```plan JSON
+      // （流式时只对显示路径 strip，没改块本身）。归档前同步剥离，避免渲染回归出 JSON。
       if (planTodosForArchive) {
+        for (let i = 0; i < finalBlocks.length; i++) {
+          const b = finalBlocks[i]
+          if (b.type === 'text') {
+            const stripped = stripPlanBlock(b.text)
+            if (stripped !== b.text) {
+              finalBlocks[i] = { type: 'text', text: stripped }
+            }
+          }
+        }
+        // 剥离后留下的空 text 块直接丢弃，避免归档消息中出现空段
+        for (let i = finalBlocks.length - 1; i >= 0; i--) {
+          const b = finalBlocks[i]
+          if (b.type === 'text' && !b.text.trim()) {
+            finalBlocks.splice(i, 1)
+          }
+        }
         finalBlocks.push({ type: 'todolist', items: planTodosForArchive })
       }
       const hasInterleaved = finalBlocks.some(b => b.type === 'tool' || b.type === 'todolist')
@@ -690,13 +741,25 @@ export const useChatStore = defineStore('chat', () => {
         unreadSessions.value = { ...unreadSessions.value, [sid]: true }
       }
 
-      // Plan 模式 + 规划阶段 + 本轮输出了计划正文 → 弹出「是否执行」确认
+      // Plan 模式 + 规划阶段 + 本轮真的解析出了计划 → 弹出「是否执行」确认
+      // 关键：必须 planTodosForArchive 非空，否则即便 planning 阶段下模型只是闲聊
+      // 也会无中生有弹窗（旧 bug 来源）。
       if (settingsStore.workMode === 'plan'
           && targetSession?.planStage === 'planning'
-          && fullContent.trim()
+          && planTodosForArchive
           && sessionStore.currentId === sid) {
         pendingPlanSessionId = sid
         pendingPlanApproval.value = true
+      }
+
+      // Plan 模式 + 执行阶段：本轮如果是收尾输出（todolist 全部 done，或没有更多步骤），
+      // 把状态切到 idle，让后续追问回到普通对话语境，不再注入计划提示，也不再弹窗。
+      // 判定条件：当前会话有 activePlanTodos 且全部 done。
+      if (settingsStore.workMode === 'plan'
+          && targetSession?.planStage === 'executing'
+          && activePlanTodos[sid]?.length
+          && activePlanTodos[sid].every(t => t.done)) {
+        targetSession.planStage = 'idle'
       }
 
       // 记忆提取 + Observation（fire-and-forget）

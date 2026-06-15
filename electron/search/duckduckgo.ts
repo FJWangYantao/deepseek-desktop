@@ -127,13 +127,18 @@ async function searchBing(query: string): Promise<SearchResult[]> {
 // ===== DuckDuckGo HTML 解析 =====
 
 function parseDDGHtml(html: string): SearchHit[] {
-  const blockRe = /<div class="result[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi
+  // DDG 的赞助/广告条目 class 通常是 "result result--ad" 或 "result--sponsored"，
+  // 旧正则 /class="result[^"]*"/ 会把这些块也吃进来，混进搜索结果。
+  // 这里同样拿到 class 字符串后显式排除广告类。
+  const blockRe = /<div class="(result[^"]*)"[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi
   const linkRe = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/i
   const snippetRe = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/i
 
   const results: SearchHit[] = []
   let match: RegExpExecArray | null
   while ((match = blockRe.exec(html)) !== null) {
+    const classStr = match[1]
+    if (/result--ad|result--sponsored|result--more/.test(classStr)) continue
     const block = match[0]
     const lm = linkRe.exec(block)
     if (!lm) continue

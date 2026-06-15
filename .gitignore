@@ -5,3 +5,8 @@ dist-electron/
 *.log
 .superpowers/
 .claude/
+
+# search benchmark
+tests/search-bench/.llm-cache/
+tests/search-bench/snapshots/snapshot-*.json
+tests/search-bench/snapshots/report-*.md

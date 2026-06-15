@@ -49,7 +49,8 @@ function expandQueries(query: string, sites?: string[]): string[] {
 
   switch (intent) {
     case 'definitional':
-      variants.push(q.replace(/什么是|是什么|的定义|的概念|的含义|啥意思/, '').trim() + ' 定义 解释')
+      // 不再追加 "+ 定义 解释"：这条变体反而把搜索引擎引向词典释义，
+      // 词典站本身已被 site-filter 排除，再加这条变体只会增加噪声。
       break
     case 'howto':
       variants.push(q.replace(/怎么|如何|怎样/, '').trim() + ' 教程 方法')
@@ -66,8 +67,9 @@ function expandQueries(query: string, sites?: string[]): string[] {
       variants.push(q + ' 全文')
       break
     case 'generic': {
-      // 对 generic 中文查询，追加新闻门户限定变体（热点类信息通常在这些站）
-      variants.push(q + ' ' + NEWS_SITES)
+      // 不再为 generic 自动加新闻门户限定：
+      // 这些门户上低质标题党/广告页比例高，主搜本身已能覆盖正经来源。
+      // 真要查最新动态，模型可以显式传 news 倾向的关键词或在 queries 里指定。
       break
     }
   }
@@ -165,10 +167,13 @@ export const webSearchTool: ToolExecutor = {
     const ranked = scoreAndRank(filtered, primaryQuery)
 
     // 片段质量过滤：去除垃圾片段，长片段优先
+    // 广告/SEO 文案常见的诱导词：命中即丢
+    const adPattern = /(立即下载|马上下载|点击进入|点击查看|限时优惠|限时折扣|0元领|免费领取|官方授权|加微信|加客服|私聊|在线咨询|了解详情)/
     const qualityRanked = ranked.filter(r => {
       if (!r.snippet || r.snippet.length < 20) return false
       const navChars = (r.snippet.match(/[|>»›→·]/g) || []).length
       if (navChars > 5) return false
+      if (adPattern.test(r.title) || adPattern.test(r.snippet)) return false
       return true
     }).sort((a, b) => {
       const scoreA = ranked.indexOf(a)
