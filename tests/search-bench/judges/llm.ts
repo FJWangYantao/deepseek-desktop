@@ -66,14 +66,17 @@ export interface LLMJudgeOptions {
 
 const DEFAULT_BASE_URL = 'https://right.codes/claude-aws/v1/chat/completions'
 const DEFAULT_MODEL = 'claude-opus-4-8'
-// 注意：硬编码 API key 提交到 git 后会被自动扫描泄漏；上线/分享前务必清掉。
-// 临时使用没问题，正式仓库建议改回 process.env。
-const DEFAULT_API_KEY = 'sk-f3cde1a2e5fd4c5586f81144492ce4bd'
+// API key 不硬编码，从环境变量读：
+//   LLM_JUDGE_API_KEY (优先) → DEEPSEEK_API_KEY (回落)
+// 临时本地试用想硬编码，把这里换成 'sk-xxx' 即可，但务必在 push 前改回空串。
+const DEFAULT_API_KEY = ''
 
 function resolveConfig(opts: LLMJudgeOptions): { baseURL: string; apiKey: string | undefined; model: string } {
+  // 空串视为"没设"，让 callLLM 的 !apiKey 检查能拦住
+  const fromEnv = process.env.LLM_JUDGE_API_KEY || process.env.DEEPSEEK_API_KEY || DEFAULT_API_KEY
   return {
     baseURL: opts.baseURL ?? process.env.LLM_JUDGE_BASE_URL ?? DEFAULT_BASE_URL,
-    apiKey: opts.apiKey ?? process.env.LLM_JUDGE_API_KEY ?? process.env.DEEPSEEK_API_KEY ?? DEFAULT_API_KEY,
+    apiKey: opts.apiKey ?? (fromEnv || undefined),
     model: opts.model ?? process.env.LLM_JUDGE_MODEL ?? DEFAULT_MODEL,
   }
 }
