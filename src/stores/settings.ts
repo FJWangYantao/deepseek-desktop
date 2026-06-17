@@ -25,6 +25,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const mimoApiKey = ref('')
   // 知乎搜索 token（web_search 知乎分支 + 知乎热榜数据源）；同样走 safeStorage 加密
   const zhihuToken = ref('')
+  // Tavily 搜索 API key（web_search 主搜索源）；同样走 safeStorage 加密
+  const tavilyApiKey = ref('')
   const mimoBaseUrl = ref(localStorage.getItem('ds_mimo_base_url') ?? 'https://api.xiaomimimo.com/v1')
   const mimoModel = ref(localStorage.getItem('ds_mimo_model') ?? 'mimo-v2.5')
 
@@ -59,6 +61,7 @@ export const useSettingsStore = defineStore('settings', () => {
           apiKey.value = await api.secureGet('ds_api_key')
           mimoApiKey.value = await api.secureGet('ds_mimo_api_key')
           zhihuToken.value = await api.secureGet('ds_zhihu_token')
+          tavilyApiKey.value = await api.secureGet('ds_tavily_api_key')
         } catch { /* 解密失败时保持空值 */ }
 
         // 一次性迁移：检测 localStorage 中残留的明文 → 写入加密存储 → 清除明文
@@ -80,12 +83,14 @@ export const useSettingsStore = defineStore('settings', () => {
         apiKey.value = localStorage.getItem('ds_api_key') ?? ''
         mimoApiKey.value = localStorage.getItem('ds_mimo_api_key') ?? ''
         zhihuToken.value = localStorage.getItem('ds_zhihu_token') ?? ''
+        tavilyApiKey.value = localStorage.getItem('ds_tavily_api_key') ?? ''
       }
     } else {
       // 纯浏览器环境（vite dev 直接打开）
       apiKey.value = localStorage.getItem('ds_api_key') ?? ''
       mimoApiKey.value = localStorage.getItem('ds_mimo_api_key') ?? ''
       zhihuToken.value = localStorage.getItem('ds_zhihu_token') ?? ''
+      tavilyApiKey.value = localStorage.getItem('ds_tavily_api_key') ?? ''
     }
     secretsReady.value = true
   }
@@ -174,6 +179,7 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(apiKey, (val) => { persistSecret('ds_api_key', val) })
   watch(mimoApiKey, (val) => { persistSecret('ds_mimo_api_key', val) })
   watch(zhihuToken, (val) => { persistSecret('ds_zhihu_token', val) })
+  watch(tavilyApiKey, (val) => { persistSecret('ds_tavily_api_key', val) })
 
   watch(defaultModel, (val) => {
     try { localStorage.setItem('ds_default_model', val) } catch { /* ignore */ }
@@ -222,6 +228,7 @@ export const useSettingsStore = defineStore('settings', () => {
         await api.secureDelete('ds_api_key')
         await api.secureDelete('ds_mimo_api_key')
         await api.secureDelete('ds_zhihu_token')
+        await api.secureDelete('ds_tavily_api_key')
       } catch { /* ignore */ }
     }
     apiKey.value = ''
@@ -233,6 +240,7 @@ export const useSettingsStore = defineStore('settings', () => {
     activeRoleId.value = DEFAULT_ROLE_ID
     mimoApiKey.value = ''
     zhihuToken.value = ''
+    tavilyApiKey.value = ''
     mimoBaseUrl.value = 'https://api.xiaomimimo.com/v1'
     mimoModel.value = 'mimo-v2.5'
     assistantTranslatePrompt.value = DEFAULT_ASSISTANT_TRANSLATE_PROMPT
@@ -242,7 +250,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   return {
-    apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, zhihuToken, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable, secretsReady,
+    apiKey, defaultModel, fontSize, fontFamily, codeTheme, systemPrompt, showKey, mimoApiKey, mimoBaseUrl, mimoModel, zhihuToken, tavilyApiKey, models, codeThemes, fontOptions, promptTemplates, activeRoleId, selectRole, secureStorageAvailable, secretsReady,
     instinctEnabled, instinctSemanticEnabled, streamReveal, toolPermissionMode, setToolPermissionMode,
     workMode, setWorkMode,
     assistantTranslatePrompt, assistantExplainPrompt,

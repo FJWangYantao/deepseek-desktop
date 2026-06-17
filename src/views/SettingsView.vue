@@ -108,6 +108,19 @@ const permissionModes = [
           />
         </section>
 
+        <!-- Tavily API Key -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-1 block">Tavily API Key</label>
+          <p class="text-xs text-app-muted/60 mb-3">用于 web_search 的主搜索源；留空则自动回退现有 Bing/DDG 搜索。修改后重启生效。</p>
+          <input
+            :type="settings.showKey ? 'text' : 'password'"
+            :value="settings.tavilyApiKey"
+            @input="settings.tavilyApiKey = ($event.target as HTMLInputElement).value"
+            placeholder="tvly-...（可选）"
+            class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors font-mono"
+          />
+        </section>
+
         <!-- 提示词 -->
         <section class="pt-6 border-t border-app-border/30">
           <div class="flex items-center justify-between mb-3">

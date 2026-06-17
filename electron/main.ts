@@ -6,6 +6,7 @@ import { exec } from 'child_process'
 import { registerStorageHandlers } from './ipc/storage'
 import { registerSecureStorageHandlers, readSecret } from './ipc/secure-storage'
 import { setZhihuToken } from './search/zhihu-search'
+import { setTavilyApiKey } from './search/tavily'
 import { setZhihuToken as setZhihuHotToken } from './search-local/sources/zhihu'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
@@ -206,6 +207,10 @@ app.whenReady().then(() => {
   const _zhihuToken = readSecret('ds_zhihu_token')
   setZhihuToken(_zhihuToken)
   setZhihuHotToken(_zhihuToken)
+
+  // 注入 Tavily API key（web_search 主搜索源）；未配置时自动回退 Bing/DDG
+  const _tavilyApiKey = readSecret('ds_tavily_api_key')
+  setTavilyApiKey(_tavilyApiKey)
 
   // F12 / Ctrl+Shift+I 切换 DevTools
   const toggleDevTools = () => {
