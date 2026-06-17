@@ -7,6 +7,9 @@ import { filterResults } from '../../search/site-filter'
 import { scoreAndRank } from '../../search/rank'
 import { searchAll } from '../../search/zhihu-search'
 import type { ZhihuSearchResult } from '../../search/zhihu-search'
+import { createLogger } from '../../logger'
+
+const log = createLogger('web_search')
 
 // ===== 查询意图分类 =====
 
@@ -154,7 +157,13 @@ export async function runWebSearch(
     }
   }
 
-  console.log(`[web_search] ${queryList.length} 个查询方向, 共 ${allQueryVariants.length} 个变体 → ${allQueryVariants.map(q => `"${q}"`).join(', ')}`)
+  log.info('开始搜索', {
+    queryCount: queryList.length,
+    variantCount: allQueryVariants.length,
+    primaryQuery: queryList[0],
+    variants: allQueryVariants,
+    sites: sites?.length ? sites : undefined,
+  })
 
   // 知乎搜索（仅在无 site 限定时，用第一个查询）
   const primaryQuery = queryList[0]
@@ -179,7 +188,7 @@ export async function runWebSearch(
     }
   }
 
-  console.log(`[web_search] ${allQueryVariants.length} 个变体共返回 ${merged.length} 条（去重后）`)
+  log.info('合并去重完成', { variantCount: allQueryVariants.length, mergedCount: merged.length })
 
   const filtered = filterResults(merged)
   const ranked = scoreAndRank(filtered, primaryQuery)
@@ -206,7 +215,11 @@ export async function runWebSearch(
   })
 
   const zhihu = zhihuResults
-  console.log(`[web_search] 最终: ${qualityRanked.length} 条, 知乎: 站内${zhihu.zhihu.length}条/全网${zhihu.global.length}条`)
+  log.info('搜索完成', {
+    finalCount: qualityRanked.length,
+    zhihuStation: zhihu.zhihu.length,
+    zhihuGlobal: zhihu.global.length,
+  })
 
   const parts: string[] = []
 

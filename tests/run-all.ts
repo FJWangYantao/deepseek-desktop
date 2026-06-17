@@ -17,6 +17,7 @@ const suites = [
   'web-search-units.test.ts',
   'web-search-e2e.test.ts',
   'tavily-search.test.ts',
+  'logger.test.ts',
   'markdown-math.test.ts',
   'assistant-chat.test.ts',
 ]

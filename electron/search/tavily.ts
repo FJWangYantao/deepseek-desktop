@@ -1,4 +1,7 @@
 import { searchWebLight, type SearchHit } from './duckduckgo'
+import { createLogger } from '../logger'
+
+const log = createLogger('tavily')
 
 const TAVILY_URL = 'https://api.tavily.com/search'
 let tavilyApiKey = ''
@@ -52,7 +55,7 @@ export async function searchTavilyLight(query: string, opts: TavilySearchOptions
 
     if (!resp.ok) {
       const err = await resp.text().catch(() => '')
-      console.warn(`[tavily] HTTP ${resp.status}: ${err.slice(0, 200)}`)
+      log.warn('HTTP 非 2xx', { status: resp.status, body: err.slice(0, 200) })
       return []
     }
 
@@ -60,7 +63,7 @@ export async function searchTavilyLight(query: string, opts: TavilySearchOptions
     if (!Array.isArray(data.results)) return []
     return data.results.map(toHit).filter((h): h is SearchHit => h !== null)
   } catch (e) {
-    console.warn('[tavily] 调用失败:', e instanceof Error ? e.message : e)
+    log.warn('调用失败', { err: e instanceof Error ? e.message : String(e) })
     return []
   }
 }

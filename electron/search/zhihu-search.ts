@@ -1,4 +1,7 @@
 import * as https from 'https'
+import { createLogger } from '../logger'
+
+const log = createLogger('zhihu')
 
 // 知乎 Bearer token：由主进程启动时从 secure-storage 读取并通过 setZhihuToken 注入。
 // 不在此 import secure-storage——那会引入 electron 依赖，破坏 tsx 测试的 import 链
@@ -48,30 +51,17 @@ function parseItems(raw: string, defaultSource: string, debug = false): ZhihuSea
   try {
     const resp = JSON.parse(raw)
 
-    // 粗暴日志：打印顶层 keys
+    // 首次响应字段摸底（debug 级别，平时不输出，方便事后查响应结构变化）
     if (debug) {
-      console.log(`[ZhihuSearch] 响应顶层 keys:`, Object.keys(resp).join(', '))
-      if (resp.Data) {
-        console.log(`[ZhihuSearch] Data keys:`, Object.keys(resp.Data).join(', '))
-        if (Array.isArray(resp.Data.Items)) {
-          console.log(`[ZhihuSearch] Items 数量: ${resp.Data.Items.length}`)
-          if (resp.Data.Items.length > 0) {
-            const first = resp.Data.Items[0]
-            console.log(`[ZhihuSearch] 首条所有 keys:`, Object.keys(first).join(', '))
-            // 打印所有字符串字段值
-            for (const k of Object.keys(first)) {
-              const v = first[k]
-              if (typeof v === 'string' && v.length > 0) {
-                console.log(`[ZhihuSearch]    ${k}: "${v.slice(0, 100)}"`)
-              }
-            }
-          }
-        } else {
-          console.log(`[ZhihuSearch] Items 不是数组，类型: ${typeof resp.Data.Items}`)
-        }
-      } else {
-        console.log(`[ZhihuSearch] 无 Data 字段`)
-      }
+      const items = Array.isArray(resp?.Data?.Items) ? resp.Data.Items : []
+      const first = items[0] || {}
+      log.debug('响应字段摸底', {
+        topKeys: Object.keys(resp || {}),
+        dataKeys: Object.keys(resp?.Data || {}),
+        itemCount: items.length,
+        firstItemKeys: Object.keys(first),
+        firstTitle: typeof first.Title === 'string' ? first.Title.slice(0, 80) : null,
+      })
     }
 
     const items = resp?.Data?.Items
@@ -90,14 +80,9 @@ function parseItems(raw: string, defaultSource: string, debug = false): ZhihuSea
       }
     }).filter((r: ZhihuSearchResult) => r.title)
 
-    if (debug) {
-      const withSnippet = results.filter(r => r.snippet.length > 0)
-      console.log(`[ZhihuSearch] 解析结果: ${results.length} 条, ${withSnippet.length} 条有摘要, 平均 ${withSnippet.length > 0 ? Math.round(withSnippet.reduce((s, r) => s + r.snippet.length, 0) / withSnippet.length) : 0} 字符`)
-    }
-
     return results
   } catch (e) {
-    if (debug) console.log(`[ZhihuSearch] 解析异常:`, e)
+    log.warn('解析响应失败', { err: e instanceof Error ? e.message : String(e) })
     return []
   }
 }
@@ -140,18 +125,22 @@ let debugOnce = true
 
 export async function zhihuSearch(query: string): Promise<ZhihuSearchResult[]> {
   const url = `https://developer.zhihu.com/api/v1/content/zhihu_search?Query=${encodeURIComponent(query)}`
+  const t0 = Date.now()
   const raw = await httpsGet(url, buildHeaders())
-  console.log(`[ZhihuSearch] 站内搜索 "${query}": ${raw.length} bytes`)
   const d = debugOnce
   if (debugOnce) debugOnce = false
-  return parseItems(raw, '知乎', d)
+  const results = parseItems(raw, '知乎', d)
+  log.info('站内搜索', { query, bytes: raw.length, count: results.length, ms: Date.now() - t0 })
+  return results
 }
 
 export async function globalSearch(query: string): Promise<ZhihuSearchResult[]> {
   const url = `https://developer.zhihu.com/api/v1/content/global_search?Query=${encodeURIComponent(query)}`
+  const t0 = Date.now()
   const raw = await httpsGet(url, buildHeaders())
-  console.log(`[ZhihuSearch] 全网搜索 "${query}": ${raw.length} bytes`)
-  return parseItems(raw, '全网')
+  const results = parseItems(raw, '全网')
+  log.info('全网搜索', { query, bytes: raw.length, count: results.length, ms: Date.now() - t0 })
+  return results
 }
 
 export async function searchAll(query: string): Promise<{ zhihu: ZhihuSearchResult[], global: ZhihuSearchResult[] }> {

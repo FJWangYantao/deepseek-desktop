@@ -7,6 +7,7 @@ import { registerStorageHandlers } from './ipc/storage'
 import { registerSecureStorageHandlers, readSecret } from './ipc/secure-storage'
 import { setZhihuToken } from './search/zhihu-search'
 import { setTavilyApiKey } from './search/tavily'
+import { configureFileLogger, createLogger } from './logger'
 import { setZhihuToken as setZhihuHotToken } from './search-local/sources/zhihu'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
@@ -200,6 +201,10 @@ registerObservationHandlers()
 registerAssistantHandlers()
 
 app.whenReady().then(() => {
+  // 文件 logger:logs/app-YYYY-MM-DD.jsonl;此前的日志只走 console
+  configureFileLogger(app.getPath('userData'))
+  createLogger('main').info('应用启动', { userData: app.getPath('userData') })
+
   createWindow()
 
   // 注入知乎搜索 token（从加密存储读取；web_search 的知乎分支 + 知乎热榜数据源共用）

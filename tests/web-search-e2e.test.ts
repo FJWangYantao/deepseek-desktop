@@ -9,9 +9,10 @@ import { runWebSearch } from '../electron/tools/builtins/web-search'
 import type { SearchHit } from '../electron/search/duckduckgo'
 
 // 静默 runWebSearch 内部的 [web_search] 进度日志，保持测试输出干净
+// （logger 输出格式如 "12:34:56 INFO  [web_search] ..."，所以匹配子串而非前缀）
 const _log = console.log
 console.log = (...a: unknown[]) => {
-  if (typeof a[0] === 'string' && a[0].startsWith('[web_search]')) return
+  if (typeof a[0] === 'string' && /\[(web_search|zhihu|tavily)\]/.test(a[0])) return
   _log(...a)
 }
 
