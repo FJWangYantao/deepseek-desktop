@@ -4,13 +4,15 @@ import { join } from 'path'
 
 // 加密存储文件：与普通 store.json 分离，仅存放敏感数据（API Key 等）
 // 使用 Electron 内置 safeStorage：Windows DPAPI / macOS Keychain / Linux libsecret
-const SECURE_STORE_PATH = join(app.getPath('userData'), 'secure-store.json')
+function getStorePath(): string {
+  return join(app.getPath('userData'), 'secure-store.json')
+}
 
 function loadStore(): Record<string, string> {
   try {
-    if (existsSync(SECURE_STORE_PATH)) {
-      const raw = readFileSync(SECURE_STORE_PATH, 'utf-8')
-      return JSON.parse(raw)
+    const p = getStorePath()
+    if (existsSync(p)) {
+      return JSON.parse(readFileSync(p, 'utf-8'))
     }
   } catch {
     // ignore
@@ -21,22 +23,28 @@ function loadStore(): Record<string, string> {
 function saveStore(store: Record<string, string>) {
   const dir = app.getPath('userData')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(SECURE_STORE_PATH, JSON.stringify(store), 'utf-8')
+  writeFileSync(getStorePath(), JSON.stringify(store), 'utf-8')
+}
+
+/**
+ * 主进程内部读取并解密（与 secure-storage:get IPC 同逻辑）。
+ * 容错：safeStorage 不可用时（如 tsx 测试环境间接 import 本模块）返回空串，不抛错——
+ * 这让依赖本模块的搜索代码能在非 electron 环境（测试）里安全加载。
+ */
+export function readSecret(key: string): string {
+  try {
+    if (!safeStorage?.isEncryptionAvailable?.()) return ''
+    const encrypted = loadStore()[key]
+    if (!encrypted) return ''
+    return safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
+  } catch {
+    return ''
+  }
 }
 
 export function registerSecureStorageHandlers() {
-  // 读取并解密
-  ipcMain.handle('secure-storage:get', (_e, key: string): string => {
-    if (!safeStorage.isEncryptionAvailable()) return ''
-    const store = loadStore()
-    const encrypted = store[key]
-    if (!encrypted) return ''
-    try {
-      return safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
-    } catch {
-      return ''
-    }
-  })
+  // 读取并解密（复用 readSecret）
+  ipcMain.handle('secure-storage:get', (_e, key: string): string => readSecret(key))
 
   // 加密并写入；空值则删除条目
   ipcMain.handle('secure-storage:set', (_e, key: string, value: string): boolean => {

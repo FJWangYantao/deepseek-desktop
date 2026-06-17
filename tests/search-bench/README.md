@@ -53,6 +53,48 @@ npm run bench:search -- --llm --limit=5
 
 不同 provider 的缓存彼此独立(hashKey 包含 model 名),换模型不会读到旧分。
 
+## 离线 replay（改 filter/rank/judge 后做确定性对比）
+
+默认每次跑都打实时网络，结果随搜索引擎漂移——你改了一条 filter 规则，diff 显示 +2%，却分不清是你的规则生效了还是 DDG 今天心情好。
+
+replay 把搜索拆成两段：
+
+- **阶段A**（打网络，会漂移）：`preprocessQuery` + `searchWebLight` → 产出 `raw` hits
+- **阶段B**（纯本地，确定性）：`filterResults` + `scoreAndRank` + 所有 judge
+
+fixture 冻结阶段A的产物。之后改阶段B的代码，用 replay 重放，diff 的每一格变化都纯粹来自你的改动——零网络、秒级、可复现。
+
+### 典型工作流
+
+```bash
+# 1) 在稳定基线上打一次网络，把 raw 冻结成 fixture
+npx tsx tests/search-bench/runner.ts --save-fixture=base
+
+# 2) 改 site-filter / rank / judge 代码
+
+# 3) 反复 replay 验证效果，零网络秒级
+npx tsx tests/search-bench/runner.ts --replay=base
+
+# 4) replay 出来的结果再和某次结果快照对比
+npx tsx tests/search-bench/runner.ts --replay=base --diff=baseline.json
+```
+
+> `--save-fixture` 与 `--replay` 互斥（一个写、一个读 fixture）。`--llm` 可与 `--replay` 叠用（LLM 读的是阶段B产出的 hits，仍确定性，且有独立缓存）。
+
+### replay 的边界（重要）
+
+replay **只覆盖阶段B**。改了下面这些（影响抓取本身），fixture 里的 raw 就过时了，必须重新 `--save-fixture` 重抓：
+
+- `electron/search/query-preprocess.ts`（query 改写）
+- `electron/search/duckduckgo.ts`（抓取 + 解析，含 `searchWebLight`）
+- `cases/index.ts` 里 case 的 `query` 本身
+
+改 `site-filter.ts` / `rank.ts` / judges / runner 合成逻辑 → 直接 replay，无需重抓。
+
+### fixture 进 git
+
+`fixtures/<name>.json` **应该提交**——它是确定性的测试原料，团队共享、跨机器一致；和 `snapshots/`（每次跑的临时成品，已 gitignore）相反。fixture 只含公开搜索结果的 title/url/snippet，无敏感信息。
+
 ## 产出
 
 每次跑都会在 `snapshots/` 下生成两份文件:
@@ -67,11 +109,11 @@ npm run bench:search -- --llm --limit=5
 | **噪声** | 1 − 命中黑名单/广告关键词的比例 | 没有词典/SEO 农场/广告条 |
 | **多样性** | top-10 不同二级域名数 | ≥ 8 个不同域名 |
 | **信息量** | top-10 平均 snippet 字符数 | ≥ 150 字符 |
-| **召回** | 期望关键词至少命中一个的比例 | 题面相关词出现在 top-10 |
+| **召回** | 答案信号词命中比例（自动排除 query 本身的词） | query 之外的答案词出现在 top-10 |
 | **禁域** | 不命中 forbiddenDomains 的比例 | 黑名单完全不出现 |
 | **LLM judge**(可选) | 让模型按 4 个子项打分:relevance/answerable/credibility/freshness | 平均 ≥ 0.8 |
 
-总分 = 上述项的算术平均(召回/禁域/LLM 无对应输入时不计)。
+总分 = 上述项的算术平均(召回/LLM 无对应输入时不计)；**禁域为硬约束：命中禁用域的 case overall 直接归零**（不进平均，避免被软指标稀释）。
 
 ### LLM judge 子项
 

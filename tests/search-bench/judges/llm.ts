@@ -25,7 +25,8 @@
  *
  * 约束：
  * - 默认 off，跑 benchmark 时加 --llm 才启用
- * - 带磁盘缓存（key = sha1(query + top-N urls + titles + model)），跑同样的 case 不重复花钱；
+ * - 带磁盘缓存（key = sha1(query + top-N urls + titles + snippets + model)），跑同样的 case 不重复花钱；
+ *   snippet 纳入 key 是因为 answerable/credibility 维度高度依赖摘要文本，否则同 url+title 换了摘要会读到旧分。
  *   不同 provider/model 的缓存彼此独立——切了模型不会读到上次别人打的分
  * - 调不通时返回 null，benchmark 整体跑下去
  */
@@ -104,7 +105,7 @@ function hashKey(query: string, hits: SearchHitLike[], topN: number, needsFreshn
     q: query,
     f: needsFreshness,
     m: model,                                    // 不同模型/通道的缓存独立
-    items: top.map(h => ({ u: h.url, t: h.title.slice(0, 80) })),
+    items: top.map(h => ({ u: h.url, t: h.title.slice(0, 80), s: h.snippet.slice(0, 120) })),
   })
   return createHash('sha1').update(sig).digest('hex').slice(0, 16)
 }

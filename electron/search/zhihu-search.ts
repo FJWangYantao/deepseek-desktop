@@ -1,6 +1,10 @@
 import * as https from 'https'
 
-const ZHIHU_BEARER_TOKEN = '2408bb15ff55bedb5ac0c598e4c80f01915bea83'
+// 知乎 Bearer token：由主进程启动时从 secure-storage 读取并通过 setZhihuToken 注入。
+// 不在此 import secure-storage——那会引入 electron 依赖，破坏 tsx 测试的 import 链
+// （web-search → zhihu-search → secure-storage → electron，在非 electron 环境崩）。
+let _zhihuToken = ''
+export function setZhihuToken(token: string) { _zhihuToken = token }
 
 export interface ZhihuSearchResult {
   title: string
@@ -33,7 +37,7 @@ function httpsGet(url: string, headers: Record<string, string>): Promise<string>
 
 function buildHeaders(): Record<string, string> {
   return {
-    'Authorization': `Bearer ${ZHIHU_BEARER_TOKEN}`,
+    'Authorization': `Bearer ${_zhihuToken}`,
     'X-Request-Timestamp': Math.floor(Date.now() / 1000).toString(),
     'Content-Type': 'application/json',
     'Accept': 'application/json',

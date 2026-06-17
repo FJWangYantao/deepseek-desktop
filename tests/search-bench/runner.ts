@@ -15,7 +15,7 @@
  */
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { searchWebLight, type SearchHit } from '../../electron/search/duckduckgo'
 import { filterResults } from '../../electron/search/site-filter'
 import { scoreAndRank } from '../../electron/search/rank'
@@ -28,6 +28,50 @@ import {
 import { judgeWithLLM, describeLLMConfig, type LLMJudgeResult } from './judges/llm'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// ===== replay / fixture：解耦"打网络拿 raw"（阶段A）与"filter+rank+judge"（阶段B）=====
+// fixture 冻结阶段A的产物（raw hits），之后改 site-filter/rank/judge（阶段B）时可用
+// --replay 离线、确定性重放，diff 的每一格变化都纯粹来自你的改动。
+// ⚠️ replay 只覆盖阶段B：改了 query-preprocess / duckduckgo（影响抓取本身）必须重抓 fixture。
+export interface FixtureCase {
+  query: string
+  processedQuery: string
+  raw: SearchHit[]
+}
+export interface FixtureData {
+  version: number
+  generatedAt: string
+  cases: Record<string, FixtureCase>
+}
+
+const FIXTURES_DIR = join(__dirname, 'fixtures')
+
+function fixturePath(name: string): string {
+  return join(FIXTURES_DIR, `${name}.json`)
+}
+
+export function loadFixture(name: string): Map<string, FixtureCase> {
+  const p = fixturePath(name)
+  if (!existsSync(p)) {
+    console.error(`fixture 不存在: ${p}`)
+    console.error('  先用 --save-fixture=<name> 打网络生成一次')
+    process.exit(2)
+  }
+  const data = JSON.parse(readFileSync(p, 'utf-8')) as FixtureData
+  return new Map(Object.entries(data.cases))
+}
+
+export function saveFixture(name: string, data: FixtureData): void {
+  if (!existsSync(FIXTURES_DIR)) mkdirSync(FIXTURES_DIR, { recursive: true })
+  writeFileSync(fixturePath(name), JSON.stringify(data, null, 2), 'utf-8')
+}
+
+/** 阶段A（live）：预处理 query + 打网络，返回 raw 与记录用的 processedQuery */
+async function fetchRaw(c: BenchCase): Promise<{ processedQuery: string; raw: SearchHit[] }> {
+  const processedQuery = preprocessQuery(c.query)
+  const raw = await searchWebLight(processedQuery)
+  return { processedQuery, raw }
+}
 
 interface CaseResult {
   caseId: string
@@ -72,26 +116,23 @@ function parseArgs(argv: string[]) {
 }
 
 /**
- * 运行单个 case：调底层搜索管线，跑所有 judge，合成总分，比对硬期望。
- * 不会抛错——搜索失败时返回 0 hits + overall=0，让 benchmark 整体跑完。
+ * 阶段B：给定 raw hits（由调用方 live 抓取或 fixture 提供），跑 filter+rank+所有 judge。
+ * 不打网络——replay 模式下完全确定性。不会抛错，失败时 0 hits + overall=0。
  */
-async function runCase(c: BenchCase, opts: { useLLM: boolean }): Promise<CaseResult> {
-  const start = Date.now()
+export async function runCase(c: BenchCase, raw: SearchHit[], opts: { useLLM: boolean; start: number }): Promise<CaseResult> {
   let hits: SearchHit[] = []
   try {
-    const processed = preprocessQuery(c.query)
-    const raw = await searchWebLight(processed)
     const filtered = filterResults(raw)
     hits = scoreAndRank(filtered, c.query).slice(0, 10)
   } catch (e) {
-    console.error(`[${c.id}] 搜索失败:`, e)
+    console.error(`[${c.id}] 阶段B失败:`, e)
   }
-  const latencyMs = Date.now() - start
+  const latencyMs = Date.now() - opts.start
 
   const noise = judgeNoiseRate(hits)
   const diversity = judgeDomainDiversity(hits)
   const richness = judgeSnippetRichness(hits)
-  const recall = judgeKeywordRecall(hits, c.expectations?.expectKeywords)
+  const recall = judgeKeywordRecall(hits, c.expectations?.expectKeywords, c.query)
   const forbidden = judgeForbiddenDomains(hits, c.expectations?.forbiddenDomains)
 
   // LLM judge：news/factual 启用 freshness。仅在 --llm 时调用。
@@ -101,12 +142,18 @@ async function runCase(c: BenchCase, opts: { useLLM: boolean }): Promise<CaseRes
     llm = await judgeWithLLM(c.query, hits, { needsFreshness, topN: 5 })
   }
 
-  // 合成总分：可用 judge 取算术平均；recall/forbidden/llm 为 null 就跳过
-  const components = [noise.score, diversity.score, richness.score]
-  if (recall) components.push(recall.score)
-  if (forbidden) components.push(forbidden.score)
-  if (llm) components.push(llm.score)
-  const overall = components.reduce((s, v) => s + v, 0) / components.length
+  // 合成总分：可用 judge 取算术平均。
+  // forbidden 是硬约束（gate）：命中禁用域 = 灾难级退化，overall 直接归零，
+  // 不作为平滑项进平均——否则会被 richness 这类软指标稀释掉信号。
+  let overall: number
+  if (forbidden && forbidden.details.hitDomains.length > 0) {
+    overall = 0
+  } else {
+    const components = [noise.score, diversity.score, richness.score]
+    if (recall) components.push(recall.score)
+    if (llm) components.push(llm.score)
+    overall = components.reduce((s, v) => s + v, 0) / components.length
+  }
 
   // 硬期望比对
   const expectationFailures: string[] = []
@@ -188,12 +235,12 @@ function renderReport(results: CaseResult[], baseline?: CaseResult[]): string {
   lines.push(``)
   lines.push(`| 指标 | 值 | 说明 |`)
   lines.push(`|---|---|---|`)
-  lines.push(`| **总分** | **${fmt(overall)}** | 全部 judge 平均（recall/forbidden/llm 仅在适用时计入）|`)
+  lines.push(`| **总分** | **${fmt(overall)}** | 噪声/多样性/信息量/召回/LLM 算术平均；命中禁用域的 case 整体归零 |`)
   lines.push(`| 噪声(无噪音率) | ${fmt(noise)} | 1 − 命中黑名单/广告关键词的比例 |`)
   lines.push(`| 域名多样性 | ${fmt(diversity)} | top-10 不同域名的数量 |`)
   lines.push(`| 片段信息量 | ${fmt(richness)} | 平均 snippet 长度 |`)
-  lines.push(`| 关键词召回 | ${fmt(recall)} | 期望关键词至少命中一个的比例 |`)
-  lines.push(`| 禁域硬约束 | ${fmt(forbidden)} | 不命中 forbiddenDomains 的比例 |`)
+  lines.push(`| 关键词召回 | ${fmt(recall)} | 答案信号词命中比例（已排除 query 自身的词） |`)
+  lines.push(`| 禁域硬约束 | ${fmt(forbidden)} | 不命中 forbiddenDomains 的比例（命中则 overall 直接归零） |`)
   if (llmScores.length > 0) {
     lines.push(`| **LLM judge** | **${fmt(llmAvg)}** | relevance/answerable/credibility(/freshness) 平均；覆盖 ${llmScores.length}/${results.length} case，缓存命中 ${llmCachedCount} |`)
   }
@@ -351,6 +398,15 @@ async function main() {
   const saveName = typeof args.save === 'string' ? args.save : null
   const limit = typeof args.limit === 'string' ? parseInt(args.limit, 10) : null
   const useLLM = args.llm === true || args.llm === '1' || args.llm === 'true'
+  const replayName = typeof args.replay === 'string' ? args.replay : null
+  const saveFixtureName = typeof args['save-fixture'] === 'string' ? args['save-fixture'] : null
+  const isReplay = replayName !== null
+
+  // replay（读 fixture，零网络）与 save-fixture（写 fixture，必打网络）互斥
+  if (isReplay && saveFixtureName) {
+    console.error('--replay 和 --save-fixture 互斥（一个读、一个写 fixture）')
+    process.exit(2)
+  }
 
   if (useLLM) {
     const cfg = describeLLMConfig()
@@ -371,22 +427,66 @@ async function main() {
   if (intentFilter) toRun = toRun.filter(c => c.intent === intentFilter)
   if (limit && limit > 0) toRun = toRun.slice(0, limit)
 
+  // replay 模式：加载 fixture（阶段A 冻结的 raw），之后全程不打网络
+  let fixtureMap: Map<string, FixtureCase> | null = null
+  if (isReplay) {
+    fixtureMap = loadFixture(replayName!)
+    console.log(`replay 模式：从 fixture "${replayName}" 读 raw（零网络，确定性）`)
+    console.log(`  ⚠️ 只覆盖阶段B（filter/rank/judge）；改 query-preprocess/duckduckgo 需重抓`)
+  }
+  // save-fixture 模式：live 跑的同时收集每个 case 的 raw
+  const fixtureData: FixtureData = { version: 1, generatedAt: new Date().toISOString(), cases: {} }
+  const missingInFixture: string[] = []
+
   console.log(`将运行 ${toRun.length} 个 case`)
   if (intentFilter) console.log(`只跑 intent = ${intentFilter}`)
+  if (saveFixtureName) console.log(`同时把 raw 存入 fixture "${saveFixtureName}"`)
   console.log()
 
   const results: CaseResult[] = []
-  // 串行：避免对搜索引擎并发太多导致限流；如需提速可改为 chunk 并发
+  // 串行：live 模式避免对搜索引擎并发限流；replay 模式本就只跑本地、很快
   for (let i = 0; i < toRun.length; i++) {
     const c = toRun[i]
     process.stdout.write(`[${i + 1}/${toRun.length}] ${c.id} - ${c.query} ... `)
-    const r = await runCase(c, { useLLM })
+    // latency 计时覆盖阶段A（live 打网络）+ 阶段B；replay 模式只有阶段B，故接近 0
+    const start = Date.now()
+
+    let raw: SearchHit[]
+    if (isReplay) {
+      const fc = fixtureMap!.get(c.id)
+      if (!fc) { missingInFixture.push(c.id); process.stdout.write('⚠️ fixture 缺失\n'); continue }
+      raw = fc.raw
+    } else {
+      try {
+        const { processedQuery, raw: r } = await fetchRaw(c)
+        raw = r
+        if (saveFixtureName) fixtureData.cases[c.id] = { query: c.query, processedQuery, raw: r }
+      } catch (e) {
+        console.error(`\n[${c.id}] 抓取失败:`, e instanceof Error ? e.message : e)
+        raw = []
+        if (saveFixtureName) fixtureData.cases[c.id] = { query: c.query, processedQuery: preprocessQuery(c.query), raw: [] }
+      }
+    }
+
+    const r = await runCase(c, raw, { useLLM, start })
     const flag = r.expectationFailures.length > 0 ? '❌' : '✅'
     const llmTag = r.scores.llm !== null
       ? ` LLM${fmt(r.scores.llm)}${r.details.llm?.cached ? '·缓' : ''}`
       : ''
     process.stdout.write(`${flag} 总分${fmt(r.scores.overall)}${llmTag} ${r.latencyMs}ms\n`)
     results.push(r)
+  }
+
+  if (missingInFixture.length > 0) {
+    console.error(`\n✗ fixture "${replayName}" 缺少 ${missingInFixture.length} 个 case：${missingInFixture.join(', ')}`)
+    console.error('  该 fixture 可能是用更小的 --limit/--intent 存的；重新 --save-fixture 覆盖一次')
+    process.exit(2)
+  }
+
+  // save-fixture：把这次 live 抓到的 raw 落盘
+  if (saveFixtureName) {
+    saveFixture(saveFixtureName, fixtureData)
+    console.log(`fixture 已写入：tests/search-bench/fixtures/${saveFixtureName}.json`)
   }
 
   // 加载基线（如指定）
@@ -423,7 +523,10 @@ async function main() {
   process.exit(failed > 0 ? 1 : 0)
 }
 
-main().catch(e => {
-  console.error(e)
-  process.exit(2)
-})
+// 仅在直接执行 runner.ts 时跑 main；被 selftest 等模块 import 时不触发（避免打网络副作用）
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(e => {
+    console.error(e)
+    process.exit(2)
+  })
+}

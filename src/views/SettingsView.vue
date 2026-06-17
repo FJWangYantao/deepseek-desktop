@@ -95,6 +95,19 @@ const permissionModes = [
           </div>
         </section>
 
+        <!-- 知乎搜索 Token -->
+        <section class="pt-6 border-t border-app-border/30">
+          <label class="text-xs font-medium text-app-muted mb-1 block">知乎搜索 Token</label>
+          <p class="text-xs text-app-muted/60 mb-3">用于 web_search 的知乎摘要补充与知乎热榜；留空则关闭知乎（不影响主搜索）。修改后重启生效。</p>
+          <input
+            :type="settings.showKey ? 'text' : 'password'"
+            :value="settings.zhihuToken"
+            @input="settings.zhihuToken = ($event.target as HTMLInputElement).value"
+            placeholder="（可选）"
+            class="w-full px-3.5 py-2.5 text-sm border border-app-border/50 rounded-lg bg-transparent text-app-text placeholder:text-app-muted/50 focus:outline-none focus:border-app-text/60 transition-colors font-mono"
+          />
+        </section>
+
         <!-- 提示词 -->
         <section class="pt-6 border-t border-app-border/30">
           <div class="flex items-center justify-between mb-3">

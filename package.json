@@ -8,7 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "npx tsx tests/run-all.ts",
-    "bench:search": "npx tsx tests/search-bench/runner.ts"
+    "bench:search": "npx tsx tests/search-bench/runner.ts",
+    "bench:selftest": "npx tsx tests/search-bench/selftest.ts"
   },
   "keywords": [],
   "author": "",

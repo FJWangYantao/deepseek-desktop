@@ -86,21 +86,39 @@ export function judgeSnippetRichness(hits: SearchHitLike[], topN = 10): { score:
 }
 
 /**
- * 期望关键词召回：title/snippet 中至少命中其中一个关键词的比例。
- * 没有给 expectKeywords 时返回 null（不计入总分）。
+ * 期望关键词召回：title/snippet 中命中的关键词比例。
+ *
+ * 自动剔除"出现在 query 文本里的词"——这类词搜索引擎必然命中（它就是按这些词搜的），
+ * 命中它不构成有效信号；只对 query 之外的"答案信号词"（如 fact 类的年份 '1881'、
+ * howto 类的 'proxy_pass'）算召回，结果才真正反映"是否回答了 query"，而不是"是否
+ * 重复了 query 自己的词"。
+ *
+ * 评分 = 命中的显著词 / 显著词总数（连续值，有区分度）；全是 query 词（无显著词）时
+ * 退化为全量比例。没有给 expectKeywords 时返回 null（不计入总分）。
  */
-export function judgeKeywordRecall(hits: SearchHitLike[], keywords: string[] | undefined, topN = 10): { score: number; details: { hitCount: number; missedKeywords: string[] } } | null {
+export function judgeKeywordRecall(
+  hits: SearchHitLike[],
+  keywords: string[] | undefined,
+  query: string,
+  topN = 10,
+): { score: number; details: { hitCount: number; evaluatedKeywords: string[]; missedKeywords: string[] } } | null {
   if (!keywords || keywords.length === 0) return null
   const top = hits.slice(0, topN)
-  if (top.length === 0) return { score: 0, details: { hitCount: 0, missedKeywords: keywords } }
+  if (top.length === 0) return { score: 0, details: { hitCount: 0, evaluatedKeywords: keywords, missedKeywords: keywords } }
+
+  const queryLower = query.toLowerCase()
+  const significant = keywords.filter(k => !queryLower.includes(k.toLowerCase()))
+  // 全是 query 词（无显著词）时退化为全量，避免分母为 0
+  const evaluated = significant.length > 0 ? significant : keywords
+
   const lowerHits = top.map(h => `${h.title} ${h.snippet}`.toLowerCase())
-  const hitKeywords = keywords.filter(k => {
+  const hitKeywords = evaluated.filter(k => {
     const lk = k.toLowerCase()
     return lowerHits.some(text => text.includes(lk))
   })
-  const score = hitKeywords.length > 0 ? 1 : 0  // 二元判定：至少命中一个就 1，全 miss 就 0
-  const missedKeywords = keywords.filter(k => !hitKeywords.includes(k))
-  return { score, details: { hitCount: hitKeywords.length, missedKeywords } }
+  const score = hitKeywords.length / evaluated.length
+  const missedKeywords = evaluated.filter(k => !hitKeywords.includes(k))
+  return { score, details: { hitCount: hitKeywords.length, evaluatedKeywords: evaluated, missedKeywords } }
 }
 
 /**

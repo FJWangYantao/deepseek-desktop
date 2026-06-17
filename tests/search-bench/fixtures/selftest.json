@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "generatedAt": "2026-06-16T13:49:06.622Z",
+  "cases": {
+    "def-1": {
+      "query": "Transformer 是什么",
+      "processedQuery": "Transformer 是什么",
+      "raw": [
+        {
+          "title": "（通俗版）Transformer到底是什么？一篇给你讲得明明白白",
+          "url": "https://zhuanlan.zhihu.com/p/1995435550648325668",
+          "snippet": "2026年1月19日   Transformer 是奠定现代人工智能（尤其是大语言模型,例如: CHATGPT,DeepSeek等）的基石架构，也是引爆这一轮AI技术革命的奇点。 所以理解这个架构是非常必要的！"
+        },
+        {
+          "title": "【超详细】【原理篇&amp;实战篇】一文读懂Transformer-CSDN博客",
+          "url": "https://blog.csdn.net/weixin_42475060/article/details/121101749",
+          "snippet": "2026年1月4日   Transformer是一种用于自然语言处理（NLP）和其他序列到序列（sequence-to-sequence）任务的深度学习模型架构，它在2017年由Vaswani等人首次提出。 Transformer架构引入 …"
+        },
+        {
+          "title": "一文搞懂 LLM 的 Transformer！看完能和别人吹一年 ...",
+          "url": "https://www.cnblogs.com/jyzhao/p/19275222/yi-wen-gao-dong-llm-de-transformer-kan-wan-neng-he",
+          "snippet": "2025年11月27日   如果你想对当下 AI LLM (大语言模型) 的工作原理有所了解，揭开 ChatGPT、DeepSeek 背后的秘密，那一定要认识一下本文的主角 Transformer。 当提起 Transformer 这个话题 …"
+        },
+        {
+          "title": "Transformer 模型 - 菜鸟教程",
+          "url": "https://www.runoob.com/pytorch/transformer-model.html",
+          "snippet": "Transformer 模型 Transformer 是一种基于注意力机制的深度学习模型，最初由 Vaswani 等人在 2017 年的论文《Attention is All You Need》中提出。 它彻底改变了自然语言处理（NLP）领域，并逐渐扩 …"
+        },
+        {
+          "title": "Transformers（谷歌2017年提出的基于自注意力的神经网络 ...",
+          "url": "https://baike.baidu.com/item/Transformers/64418590",
+          "snippet": "Transformers是由谷歌研究团队于2017年提出的深度学习架构，其核心创新是通过并行化序列处理和自注意力机制替代传统循环神经网络，解决了传统RNN在长序列训练中的效率瓶颈。"
+        },
+        {
+          "title": "Transformer是什么？为什么学 AI 绕不开 Transformer？ | AI铺子",
+          "url": "https://www.aipuzi.cn/ai-tutorial/what-is-transformer.html",
+          "snippet": "2026年3月30日   深度解析Transformer架构原理及其在AI领域的核心地位。 本文从定义、架构、数学原理到应用场景，详细阐述为何Transformer成为现代人工智能的基石，是学习AI不可绕开的必经之路。"
+        },
+        {
+          "title": "Transformer到底是什么？为什么我还是无法理解Transformer？",
+          "url": "https://cloud.tencent.com/developer/article/2654871",
+          "snippet": "2026年4月14日   Transformer是一种革命性神经网络架构，基于自注意力机制实现并行计算和长距离依赖捕捉。 核心组件包括多头注意力、位置编码和前馈网络，分为编码器（理解输入）和解码器（生成 …"
+        },
+        {
+          "title": "搞不懂Transformer？我用大白话给你讲明白 | 人人都是产品经理",
+          "url": "https://www.woshipm.com/ai/6268234.html",
+          "snippet": "2025年9月13日   Transformer的伟大之处，远不止于此。 它不仅仅是自然语言处理（NLP）领域的突破，它的核心思想——捕捉序列内部的依赖关系——是一种通用的能力 。 语言是词语的序列，但科学 …"
+        },
+        {
+          "title": "第二章：Transformer 模型 &#183; Transformers快速入门",
+          "url": "https://transformers.run/c1/transformer/",
+          "snippet": "2026年2月24日   正如第一章所述，自从 BERT 和 GPT 模型取得重大成功之后， Transformer 模型已经替代循环神经网络（RNN）、卷积神经网络（CNN）等传统神经网络结构，成为各种 NLP 模型的标 …"
+        }
+      ]
+    },
+    "def-2": {
+      "query": "RAG 含义",
+      "processedQuery": "RAG 含义 -site:dict.baidu.com -site:zdic.net",
+      "raw": [
+        {
+          "title": "一文读懂：大模型RAG（检索增强生成）含高级方法",
+          "url": "https://www.zhihu.com/tardis/zm/art/675509396",
+          "snippet": "2026年5月2日   而RAG就是解决上述问题的有效方案。 一句话总结： RAG（中文为检索增强生成） = 检索技术 + LLM 提示。 例如， …"
+        },
+        {
+          "title": "RAG 与知识检索 | 菜鸟教程",
+          "url": "https://www.runoob.com/ai-agent/retrieval-augmented-generation.html",
+          "snippet": "RAG 与知识检索 RAG（Retrieval-Augmented Generation，检索增强生成）是目前最主流的 LLM 落地架构之一。 RAG 的核心思想 …"
+        },
+        {
+          "title": "RAG 是什么？16 种 RAG 方案一次讲清！AI 应用开发必学 ...",
+          "url": "https://www.cnblogs.com/yupi/p/19914426",
+          "snippet": "2026年4月23日   而这篇文章，是对 RAG 技术的一个全景科普，从最初的 Naive RAG、到现在最主流的 Agentic RAG，总共 16 种主 …"
+        },
+        {
+          "title": "10分钟带你从零搭建本地RAG：向量 + BM25 + RRF 混合 ...",
+          "url": "https://cloud.tencent.com/developer/article/2654879",
+          "snippet": "2026年4月14日   本文详解RAG技术实现本地知识库问答系统，包含混合检索（BM25+向量检索+RRF融合）完整流程。通 …"
+        },
+        {
+          "title": "万字详解 RAG 基础概念 | JavaGuide",
+          "url": "https://javaguide.cn/ai/rag/rag-basis.html",
+          "snippet": "2026年5月25日   深入解析 RAG（检索增强生成）核心概念，涵盖 RAG 工作原理、Embedding、相似度度量、RAG vs 微调、RAG …"
+        },
+        {
+          "title": "2025及未来RAG技术演进：四大创新机制深度解析-百度开发 ...",
+          "url": "https://developer.baidu.com/article/detail.html?id=7514024",
+          "snippet": "2026年6月7日   本文聚焦RAG（检索增强生成）技术的底层原理与创新方向，解析其如何通过检索外部知识源优化大语言模型输出， …"
+        },
+        {
+          "title": "2026 年 RAG 技术最新进展与落地实践指南 | RadarAI",
+          "url": "https://radarai.top/articles/2026-%E5%B9%B4-RAG-%E6%8A%80%E6%9C%AF%E6%9C%80%E6%96%B0%E8%BF%9B%E5%B1%95%E4%B8%8E%E8%90%BD%E5%9C%B0%E5%AE%9E%E8%B7%B5%E6%8C%87%E5%8D%97",
+          "snippet": "2026 年 RAG 正从「向量检索+生成」迈向 Graph-RAG、Agentic RAG 与长期记忆系统。 本文解析 RAG 技术最新演进、失效原因、 …"
+        },
+        {
+          "title": "All-in-RAG | 大模型应用开发实战：RAG技术全栈指南",
+          "url": "https://datawhalechina.github.io/all-in-rag/",
+          "snippet": "2026年6月5日   本项目从实践出发，结合最新的RAG技术发展趋势，构建了一套完整的RAG学习体系，帮助开发者： 系统掌握RAG技 …"
+        },
+        {
+          "title": "2026年RAG技术全景解析（非常详细），从前沿研究到落地 ...",
+          "url": "https://blog.csdn.net/m0_59164520/article/details/158391213",
+          "snippet": "强化学习从论文走向产品：2025年RL+RAG的研究成果密集发表（SmartRAG@ICLR、MMOA-RAG@NeurIPS、RAG …"
+        },
+        {
+          "title": "必收藏！一篇吃透RAG到底是什么？ - 知乎",
+          "url": "https://zhuanlan.zhihu.com/p/2020146942852755666",
+          "snippet": "2026年3月25日   RAG 的全称是「Retrieval-Augmented Generation」，翻译过来就是「检索增强生成」。 听起来有点高大上，我用 …"
+        }
+      ]
+    },
+    "def-3": {
+      "query": "量子退火 概念",
+      "processedQuery": "量子退火 概念",
+      "raw": [
+        {
+          "title": "量子（现代物理概念）_百度百科",
+          "url": "https://baike.baidu.com/item/%E9%87%8F%E5%AD%90/135660",
+          "snippet": "一个物理量如果存在最小的不可分割的 基本单位，则这个物理量是量子化的，并把最小单位称为量子。 量子英文名称量子一词来自拉丁语quantus，意为“有多少”，代表“相当数量的某物质”。 在物理学中常 …"
+        },
+        {
+          "title": "什么是量子力学？用最通俗的话讲清这个神秘的理论 - 知乎",
+          "url": "https://zhuanlan.zhihu.com/p/1911545126808949535",
+          "snippet": "2025年6月7日   很多人问：“量子力学到底是什么？ ” 是不是只有科学家才能听懂？ 是不是和薛定谔的猫、平行宇宙有关？ 其实，量子力学是一种描述微观世界规律的工具，它并不玄，只是反直觉。 想理 …"
+        },
+        {
+          "title": "量子究竟是什么？一文搞懂，拒绝被坑 - 知乎",
+          "url": "https://zhuanlan.zhihu.com/p/266261222",
+          "snippet": "2020年10月16日   原子、质子、电子都是构成物质的实物粒子，可量子却不是粒子，它是一种物理概念，不是实物。 在微观世界中，某些物理量的变化不是连续的，只能以最小单位的倍数跳跃式改变， …"
+        },
+        {
+          "title": "什么是量子科技？都有哪些应用？一文了解_新闻频道_央视网 ...",
+          "url": "https://news.cctv.com/2025/09/21/ARTIsDIZPQJx7agYgKGXRf93250921.shtml",
+          "snippet": "2025年9月21日   2025年3月，我国自主研发的量子计算原型机“祖冲之三号”问世，刷新超导体系全球量子计算优越性新纪录。 2025年7月，我国科研团队打造出“纳米双光子工厂”，制备出保真度达99.4%的 …"
+        },
+        {
+          "title": "“十五五”提到的量子科技，商业化落地到哪一步了？-36氪",
+          "url": "https://www.36kr.com/p/3537010317826434",
+          "snippet": "2025年11月3日   产业集群加速形成：以合肥、北京、上海、深圳等地为核心，围绕“量子+”打造产业园区，吸引上下游企业集聚，形成涵盖芯片制造、设备集成 ..."
+        },
+        {
+          "title": "量子力学中的 “量子” 到底什么意思？是一种基本粒子吗 ...",
+          "url": "https://www.163.com/dy/article/KCI3KBUQ0511A3AG.html",
+          "snippet": "2025年10月23日   就像 “硬币” 是具体的物体，而 “一元” 是描述硬币面值的单位，“量子” 更接近 “单位” 的概念，而非具体的 “粒子”。 随着量子力学的发展，科学家们发现，不仅能量是量子化的，微观世界的 …"
+        },
+        {
+          "title": "量子，究竟是什么？ - 新华网",
+          "url": "https://www.news.cn/liangzi/20260226/f23b02eb82ee4ef99bce79d61282aadc/c.html",
+          "snippet": "2026年2月26日   物理学家正全力以赴地寻找能够统一宏观与微观的量子引力理论。 与此同时，日益精密的实验也在不断探索经典世界与量子世界的边界。 这一切，或许能让我们更接近那个终极问题的答 …"
+        },
+        {
+          "title": "量子，到底是什么？",
+          "url": "https://m.gmw.cn/2026-05/29/content_1304475334.htm",
+          "snippet": "2026年5月29日   经典物理规则适用于我们看得见、摸得着的宏观世界，而量子力学，则是解释原子、光子、电子等微观粒子运行规律的核心理论，也是量子计算、量子通信、量子精密测量等所有量子技术 …"
+        },
+        {
+          "title": "首页 | 量子物理与量子信息研究部",
+          "url": "https://quantum.ustc.edu.cn/",
+          "snippet": "2025年11月27日   量子物理与量子信息研究部成立于2001年，研究部主任为 潘建伟院士。研究领域为量子光学与量子信息，研究方向包括量子力学基本原理检验、光纤量子通信、自由空间量子通信、量子 …"
+        },
+        {
+          "title": "量子力学（描述微观尺度物质的基本物理规律的物理学理论 ...",
+          "url": "https://baike.baidu.com/item/%E9%87%8F%E5%AD%90%E5%8A%9B%E5%AD%A6/131692",
+          "snippet": "2025年10月7日   量子力学是描述微观尺度物质的基本物理规律的物理学理论。 量子力学的现象与经典力学不同，它用概率来描述物质的动力学。 虽然量子力学的现象常常违反经典力学的直觉，但是低速 …"
+        }
+      ]
+    }
+  }
+}

@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url'
 import { existsSync } from 'fs'
 import { exec } from 'child_process'
 import { registerStorageHandlers } from './ipc/storage'
-import { registerSecureStorageHandlers } from './ipc/secure-storage'
+import { registerSecureStorageHandlers, readSecret } from './ipc/secure-storage'
+import { setZhihuToken } from './search/zhihu-search'
+import { setZhihuToken as setZhihuHotToken } from './search-local/sources/zhihu'
 import { registerAvatarHandlers } from './ipc/avatar'
 import { registerFileHandlers } from './ipc/files'
 import { registerExportHandlers } from './ipc/export'
@@ -198,6 +200,12 @@ registerAssistantHandlers()
 
 app.whenReady().then(() => {
   createWindow()
+
+  // 注入知乎搜索 token（从加密存储读取；web_search 的知乎分支 + 知乎热榜数据源共用）
+  // 知乎 token 由设置页填写、走 safeStorage 加密；改后重启生效。
+  const _zhihuToken = readSecret('ds_zhihu_token')
+  setZhihuToken(_zhihuToken)
+  setZhihuHotToken(_zhihuToken)
 
   // F12 / Ctrl+Shift+I 切换 DevTools
   const toggleDevTools = () => {

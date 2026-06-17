@@ -14,6 +14,8 @@ const suites = [
   'clawhub-installer.test.ts',
   'skill-runtime.test.ts',
   'mode-policy.test.ts',
+  'web-search-units.test.ts',
+  'web-search-e2e.test.ts',
   'markdown-math.test.ts',
   'assistant-chat.test.ts',
 ]

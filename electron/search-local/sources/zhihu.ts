@@ -1,7 +1,9 @@
 import * as https from 'https'
 import type { DataSource, LocalSearchItem } from '../types'
 
-const ZHIHU_BEARER_TOKEN = '2408bb15ff55bedb5ac0c598e4c80f01915bea83'
+// 知乎 Bearer token：由主进程启动时注入（setZhihuToken），不直接 import secure-storage（electron）。
+let _zhihuToken = ''
+export function setZhihuToken(token: string) { _zhihuToken = token }
 
 function httpsRequest(url: string, headers: Record<string, string>): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -40,7 +42,7 @@ export const zhihuSource: DataSource = {
   async fetch() {
     const timestamp = Math.floor(Date.now() / 1000).toString()
     const raw = await httpsRequest('https://developer.zhihu.com/api/v1/content/hot_list', {
-      'Authorization': `Bearer ${ZHIHU_BEARER_TOKEN}`,
+      'Authorization': `Bearer ${_zhihuToken}`,
       'X-Request-Timestamp': timestamp,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
