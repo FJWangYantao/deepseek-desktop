@@ -1,4 +1,5 @@
 import * as https from 'https'
+import type { SearchHit } from './duckduckgo'
 import { createLogger } from '../logger'
 
 const log = createLogger('zhihu')
@@ -148,5 +149,27 @@ export async function searchAll(query: string): Promise<{ zhihu: ZhihuSearchResu
   return {
     zhihu: zhihu.status === 'fulfilled' ? zhihu.value : [],
     global: global.status === 'fulfilled' ? global.value : [],
+  }
+}
+
+/**
+ * 把知乎全网搜索结果适配成 SearchHit，给主搜索链使用。
+ * 知乎全网召回的是综合互联网内容（新闻/政府站/百科/知乎专栏...），可作为主搜索源。
+ * 单独的站内 zhihuSearch() 仍保留为【知乎】面板，因为问答型内容语义独立。
+ *
+ * 没有 token 时返回空（让调用方自动 fallback 到下一级）。
+ * 失败时也返回空（已在 globalSearch 内 catch parse 错误；这里再兜一次网络异常）。
+ */
+export async function searchZhihuGlobalAsHits(query: string): Promise<SearchHit[]> {
+  if (!_zhihuToken) return []
+  const q = query.trim()
+  if (!q) return []
+  try {
+    const items = await globalSearch(q)
+    return items
+      .filter(r => r.title && r.url)
+      .map(r => ({ title: r.title, url: r.url, snippet: r.snippet || '' }))
+  } catch {
+    return []
   }
 }

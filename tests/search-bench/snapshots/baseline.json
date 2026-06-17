@@ -1,0 +1,2612 @@
+[
+  {
+    "caseId": "def-1",
+    "query": "Transformer 是什么",
+    "intent": "definitional",
+    "latencyMs": 2,
+    "hitCount": 7,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7000000000000001,
+      "richness": 0.6030612244897958,
+      "recall": 1,
+      "forbidden": 1,
+      "llm": null,
+      "overall": 0.825765306122449
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 5,
+      "domains": [
+        "runoob.com",
+        "cloud.tencent.com",
+        "zhuanlan.zhihu.com",
+        "cnblogs.com",
+        "baike.baidu.com"
+      ],
+      "avgSnippetLen": 81,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "Transformer 模型 - 菜鸟教程",
+        "url": "https://www.runoob.com/pytorch/transformer-model.html",
+        "snippet": "Transformer 模型 Transformer 是一种基于注意力机制的深度学习模型，最初由 Vaswani 等人在 2017 年的论文《Attention is All You …"
+      },
+      {
+        "title": "Transformer 架构 - 菜鸟教程",
+        "url": "https://www.runoob.com/nlp/transformer-architecture.html",
+        "snippet": "Transformer 架构 Transformer 架构是一种基于自注意力机制（Self-Attention）的深度学习模型，由 Google 团队在 2017 年的论文  …"
+      },
+      {
+        "title": "Transformer到底是什么？为什么我还是无法理解Transformer？",
+        "url": "https://cloud.tencent.com/developer/article/2654871",
+        "snippet": "2026年4月14日   Transformer是一种革命性神经网络架构，基于自注意力机制实现并行计算和长距离依赖捕捉。 核心组件包括多头注 …"
+      },
+      {
+        "title": "（通俗版）Transformer到底是什么？一篇给你讲得明明白白",
+        "url": "https://zhuanlan.zhihu.com/p/1995435550648325668",
+        "snippet": "2026年1月19日   Transformer 是奠定现代人工智能（尤其是大语言模型,例如: CHATGPT,DeepSeek等）的基石架构，也是引爆这一 …"
+      },
+      {
+        "title": "【AI大模型知识点扫盲】Transformer到底是个啥？（说人话版）",
+        "url": "https://zhuanlan.zhihu.com/p/1913954824254358379",
+        "snippet": "2025年6月5日   Transformer 架构的整体结构 Transformer是一种专门处理序列数据 (比如句子)的深度学习模型。 它的核心是个叫“ 自 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "forbiddenDomains": [
+        "dict.baidu.com",
+        "zdic.net"
+      ],
+      "expectKeywords": [
+        "Transformer",
+        "注意力",
+        "attention"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "def-2",
+    "query": "RAG 含义",
+    "intent": "definitional",
+    "latencyMs": 0,
+    "hitCount": 0,
+    "scores": {
+      "noise": 0,
+      "diversity": 0.3,
+      "richness": 0,
+      "recall": 0,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.075
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 0,
+      "domains": [],
+      "avgSnippetLen": 0,
+      "missedKeywords": [
+        "检索",
+        "retrieval",
+        "生成"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "检索",
+        "retrieval",
+        "生成"
+      ]
+    },
+    "expectationFailures": [
+      "未命中任何期望关键词: 检索/retrieval/生成"
+    ]
+  },
+  {
+    "caseId": "def-3",
+    "query": "量子退火 概念",
+    "intent": "definitional",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.6814285714285714,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8953571428571429
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "baike.baidu.com",
+        "news.cctv.com",
+        "zhuanlan.zhihu.com",
+        "163.com",
+        "36kr.com",
+        "m.gmw.cn",
+        "quantum.ustc.edu.cn",
+        "news.cn"
+      ],
+      "avgSnippetLen": 99,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "量子（现代物理概念）_百度百科",
+        "url": "https://baike.baidu.com/item/%E9%87%8F%E5%AD%90/135660",
+        "snippet": "一个物理量如果存在最小的不可分割的 基本单位，则这个物理量是量子化的，并把最小单位称为量子。 量子英文名称量子一词来自拉丁语quantus，意为“有多少”，代表“相当数量的某物质”。 在物理学中常 …"
+      },
+      {
+        "title": "什么是量子科技？都有哪些应用？一文了解_新闻频道_央视网 ...",
+        "url": "https://news.cctv.com/2025/09/21/ARTIsDIZPQJx7agYgKGXRf93250921.shtml",
+        "snippet": "2025年9月21日   2025年3月，我国自主研发的量子计算原型机“祖冲之三号”问世，刷新超导体系全球量子计算优越性新纪录。 2025年7月，我国科研团队打造出“纳米双光子工厂”，制备出保真度达99.4%的 …"
+      },
+      {
+        "title": "什么是量子力学？用最通俗的话讲清这个神秘的理论 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/1911545126808949535",
+        "snippet": "2025年6月7日   很多人问：“量子力学到底是什么？ ” 是不是只有科学家才能听懂？ 是不是和薛定谔的猫、平行宇宙有关？ 其实，量子力学是一种描述微观世界规律的工具，它并不玄，只是反直觉。 想理 …"
+      },
+      {
+        "title": "量子力学中的 “量子” 到底什么意思？是一种基本粒子吗 ...",
+        "url": "https://www.163.com/dy/article/KCI3KBUQ0511A3AG.html",
+        "snippet": "2025年10月23日   就像 “硬币” 是具体的物体，而 “一元” 是描述硬币面值的单位，“量子” 更接近 “单位” 的概念，而非具体的 “粒子”。 随着量子力学的发展，科学家们发现，不仅能量是量子化的，微观世界的 …"
+      },
+      {
+        "title": "“十五五”提到的量子科技，商业化落地到哪一步了？-36氪",
+        "url": "https://www.36kr.com/p/3537010317826434",
+        "snippet": "2025年11月3日   产业集群加速形成：以合肥、北京、上海、深圳等地为核心，围绕“量子+”打造产业园区，吸引上下游企业集聚，形成涵盖芯片制造、设备集成 ..."
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "量子",
+        "退火",
+        "原理",
+        "计算"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "def-4",
+    "query": "WebAssembly 是什么",
+    "intent": "definitional",
+    "latencyMs": 1,
+    "hitCount": 9,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.95,
+      "richness": 0.7642857142857142,
+      "recall": 0.5,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8035714285714286
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 9,
+      "domains": [
+        "developer.mozilla.org",
+        "cnblogs.com",
+        "developer.aliyun.com",
+        "juejin.cn",
+        "mdn.org.cn",
+        "wasmsource.com",
+        "zhuanlan.zhihu.com",
+        "web.developers.google.cn",
+        "cloud.tencent.com"
+      ],
+      "avgSnippetLen": 118,
+      "missedKeywords": [
+        "字节码"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "WebAssembly 概念 - WebAssembly | MDN",
+        "url": "https://developer.mozilla.org/zh-CN/docs/WebAssembly/Guides/Concepts",
+        "snippet": "2025年10月14日   WebAssembly 是一种运行在现代 Web 浏览器中的新型代码，不仅提供新的性能特性，同时还在性能方面有着巨大提升。 它的设计本意并非是供开发者直接编辑的代码，而是为诸如 C …"
+      },
+      {
+        "title": "WebAssembly完全入门——了解wasm的前世今身 ...",
+        "url": "https://www.cnblogs.com/detectiveHLH/p/9928915.html",
+        "snippet": "2018年11月8日   WebAssembly 或者 wasm 是一个可移植、体积小、加载快并且兼容 Web 的全新格式. 当然，我知道，即使你看了定义也不知道WebAssembly到底是什么东西。 废话不多说，我们通过一 …"
+      },
+      {
+        "title": "十分钟搞懂 WebAssembly - \\N",
+        "url": "https://developer.aliyun.com/article/1110304",
+        "snippet": "2022年12月12日   如今几乎每个人都在谈论 WebAssembly。 这篇文章将带你了解什么是 WebAssembly 以及它是如何工作的。 JavaScript 有什么问题？ 什么是 WebAssembly？ 这是一种类似于 C/C++那 …"
+      },
+      {
+        "title": "WebAssembly 上手入门1. 什么是 WebAssembly ...",
+        "url": "https://juejin.cn/post/7484992785951555595",
+        "snippet": "2025年3月24日   4. 总结 本文介绍了 WebAssembly 的基本概念、环境搭建、C/C++ 代码编译为 WebAssembly，以及与 JavaScript 双向交互的示例。 WebAssembly 具有高性能、跨平台、多语言 …"
+      },
+      {
+        "title": "WebAssembly 概念 - WebAssembly | MDN - MDN 文档",
+        "url": "https://mdn.org.cn/en-US/docs/WebAssembly/Guides/Concepts",
+        "snippet": "2025年10月22日   什么是 WebAssembly？ WebAssembly 是一种可以在现代 Web 浏览器中运行的新型代码，提供新功能和显著的性能提升。 它并非主要用于手写，而是旨在成为 C、C++、Rust 等源语 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "WebAssembly",
+        "wasm",
+        "字节码"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "def-5",
+    "query": "gRPC 定义",
+    "intent": "definitional",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7000000000000001,
+      "richness": 0.6642857142857143,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8410714285714286
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 5,
+      "domains": [
+        "grpc.io",
+        "github.com",
+        "grpc.org.cn",
+        "cnblogs.com",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 95,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "gRPC",
+        "url": "https://grpc.io/",
+        "snippet": "gRPC is a modern open source high performance Remote Procedure Call (RPC) framework that can run in any environment. It can …"
+      },
+      {
+        "title": "GitHub - grpc/grpc: C++ based gRPC (C++, Python, Ruby, …",
+        "url": "https://github.com/grpc/grpc",
+        "snippet": "gRPC is a modern, open source, high-performance remote procedure call (RPC) framework that can run anywhere. gRPC enables …"
+      },
+      {
+        "title": "grpc - GitHub",
+        "url": "https://github.com/grpc",
+        "snippet": "Repositories grpc Public C++ based gRPC (C++, Python, Ruby, Objective-C, PHP, C#) C++ 44,891 Apache-2.0 11,162 703 606 …"
+      },
+      {
+        "title": "gRPC 简介 | gRPC 框架",
+        "url": "https://grpc.org.cn/docs/what-is-grpc/introduction/",
+        "snippet": "2026年6月2日   gRPC 客户端和服务器可以在各种环境中运行并相互通信——从 Google 内部的服务器到您自己的桌面——并且可以使 …"
+      },
+      {
+        "title": "gRPC：高性能跨语言 RPC 框架 - 小飞技术快餐 - 博客园",
+        "url": "https://www.cnblogs.com/codecraft001/articles/20373614",
+        "snippet": "2026年6月8日   gRPC：高性能跨语言 RPC 框架 gRPC 在 GitHub 上已经拿到 44,857 Star 了。 Google 开源了这个框架，专门解决一 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "gRPC",
+        "RPC",
+        "protobuf"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "how-1",
+    "query": "Vue3 Composition API 怎么用",
+    "intent": "howto",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.85,
+      "richness": 0.6155357142857143,
+      "recall": 0.5,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.7413839285714285
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 7,
+      "domains": [
+        "runoob.com",
+        "cnblogs.com",
+        "zhuanlan.zhihu.com",
+        "vuejs.org",
+        "cn.vuejs.org",
+        "vueframework.com",
+        "vuejs.ac.cn"
+      ],
+      "avgSnippetLen": 84,
+      "missedKeywords": [
+        "响应式"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "Vue3 教程 | 菜鸟教程",
+        "url": "https://www.runoob.com/vue3/vue3-tutorial.html",
+        "snippet": "Vue3 教程 Vue.js（读音 /vjuː/, 类似于 view） 是一套构建用户界面的渐进式框架。 Vue 只关注视图层， 采用自底向上增量开发的设计 …"
+      },
+      {
+        "title": "Vue3基础知识汇总与实战指南 - 教程 - gccbuaa - 博客园",
+        "url": "https://www.cnblogs.com/gccbuaa/p/19288608",
+        "snippet": "2025年11月30日   一、Vue3 核心特性与环境搭建 1.1 Vue3 核心升级点 Vue3 在语法、性能、扩展性上实现全面升级，核心变化包 …"
+      },
+      {
+        "title": "尤雨溪力荐！Vue3 生态最强大的 14 个 UI 组件库！",
+        "url": "https://zhuanlan.zhihu.com/p/1942000485826532348",
+        "snippet": "2025年8月25日   在 Vue3 官网 的「Ecosystem → UI Components」菜单里，官方维护了一份精挑细选的组件库清单：全部基于 Vue3 …"
+      },
+      {
+        "title": "最全系列的vue3入门教程『图文并茂』 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/16927189466",
+        "snippet": "2025年1月7日   Vue 3 简介Vue 3 是一个流行的开源JavaScript框架，用于构建用户界面和单页面应用。它带来了许多新特性和改进， …"
+      },
+      {
+        "title": "Vue.js - The Progressive JavaScript Framework | Vue.js",
+        "url": "https://vuejs.org/",
+        "snippet": "Vue.js - The Progressive JavaScript Framework The Progressive JavaScript Framework An approachable, performant and versatile …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "Composition",
+        "组件",
+        "响应式"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "how-2",
+    "query": "docker volume 如何挂载",
+    "intent": "howto",
+    "latencyMs": 1,
+    "hitCount": 9,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.95,
+      "richness": 0.7228571428571429,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.9182142857142856
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 9,
+      "domains": [
+        "docker.com",
+        "runoob.com",
+        "cnblogs.com",
+        "blog.51cto.com",
+        "baike.baidu.com",
+        "cloud.tencent.com",
+        "zhuanlan.zhihu.com",
+        "docker.org.cn",
+        "docker.github.net.cn"
+      ],
+      "avgSnippetLen": 109,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "Docker: Accelerated Container Application Development",
+        "url": "https://www.docker.com/",
+        "snippet": "Docker is a platform designed to help developers build, share, and run container applications. We handle the tedious setup, so you can focus on the code."
+      },
+      {
+        "title": "Docker 教程 | 菜鸟教程",
+        "url": "https://www.runoob.com/docker/docker-tutorial.html",
+        "snippet": "Docker 教程 Docker 是一个开源的应用容器引擎，基于 Go 语言 并遵从 Apache2.0 协议开源。 Docker 可以让开发者打包他们的应用以及依赖包到一个轻量级、可移植的容器中，然后发布到任何流行的 …"
+      },
+      {
+        "title": "Docker是什么？最全Docker使用教程（小白到高手） - 实践",
+        "url": "https://www.cnblogs.com/wzzkaifa/p/19100924",
+        "snippet": "2025年9月19日   在当今的云原生时代，Docker 已经成为开发者必备技能。无论是后端工程师、运维人员，还是正在学习全栈开发的同学，几乎都会遇到“容器化部署”的话题。那么，Docker究竟是什么？又 …"
+      },
+      {
+        "title": "Docker安装教程：Windows/Mac/Linux全攻略 ...",
+        "url": "https://blog.51cto.com/qian5201314/14373769",
+        "snippet": "2025年12月10日   现代 Docker Desktop 依赖于 WSL2 （Windows Subsystem for Linux 2）作为后端，而 WSL2 需要开启 Hyper-V。 检查虚拟化是否开启： 按下 Ctrl + Shift + Esc 打开任务管理器，切 …"
+      },
+      {
+        "title": "Docker_百度百科",
+        "url": "https://baike.baidu.com/item/Docker/13344470",
+        "snippet": "2023年4月18日   Docker是一组平台即服务（PaaS）的产品。它基于操作系统层级的虚拟化技术，将软件与其依赖项打包为容器。托管容器的软件称为Docker引擎。Docker能够帮助开发者在轻量级容器 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "volume",
+        "挂载",
+        "-v"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "how-3",
+    "query": "pytorch 训练循环 教程",
+    "intent": "howto",
+    "latencyMs": 0,
+    "hitCount": 9,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.95,
+      "richness": 0.6647619047619048,
+      "recall": 0,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.6536904761904762
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 9,
+      "domains": [
+        "runoob.com",
+        "pytorch.org",
+        "geeksforgeeks.org",
+        "github.com",
+        "ibm.com",
+        "pytorch-cn.com",
+        "baike.baidu.com",
+        "cloud.tencent.com",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 95,
+      "missedKeywords": [
+        "神经网络",
+        "模型"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "PyTorch 教程 | 菜鸟教程",
+        "url": "https://www.runoob.com/pytorch/pytorch-tutorial.html",
+        "snippet": "PyTorch 是一个开源的机器学习库，主要用于进行计算机视觉（CV）、自然语言处理（NLP）、语音识别等领域的研究和开发。 …"
+      },
+      {
+        "title": "PyTorch",
+        "url": "https://pytorch.org/",
+        "snippet": "2026年6月10日   PyTorch Foundation is the deep learning community home for the open source PyTorch framework and ecosystem."
+      },
+      {
+        "title": "PyTorch - GeeksforGeeks",
+        "url": "https://www.geeksforgeeks.org/deep-learning/getting-started-with-pytorch/",
+        "snippet": "2026年6月9日   PyTorch is a Python-based deep learning library that runs on CPU by default and supports GPU acceleration using …"
+      },
+      {
+        "title": "GitHub - pytorch/pytorch: Tensors and Dynamic neural networks …",
+        "url": "https://github.com/pytorch/pytorch",
+        "snippet": "2026年5月13日   PyTorch is a community-driven project with several skillful engineers and researchers contributing to it. PyTorch is …"
+      },
+      {
+        "title": "What is PyTorch? - IBM",
+        "url": "https://www.ibm.com/think/topics/pytorch",
+        "snippet": "2025年11月17日   PyTorch is a software-based open source deep learning framework to build neural networks, pairing the Torch …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.25,
+      "expectKeywords": [
+        "pytorch",
+        "训练",
+        "神经网络",
+        "模型"
+      ]
+    },
+    "expectationFailures": [
+      "未命中任何期望关键词: pytorch/训练/神经网络/模型"
+    ]
+  },
+  {
+    "caseId": "how-4",
+    "query": "nginx 反向代理 配置 步骤",
+    "intent": "howto",
+    "latencyMs": 0,
+    "hitCount": 7,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7749999999999999,
+      "richness": 0.796530612244898,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8928826530612245
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 6,
+      "domains": [
+        "cloud.tencent.com",
+        "nginx.mosong.cc",
+        "nginx.ac.cn",
+        "nginx.org",
+        "caijiao.org",
+        "baike.baidu.com"
+      ],
+      "avgSnippetLen": 126,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "Nginx 入门指南：Web服务器与反向代理的强大工具",
+        "url": "https://cloud.tencent.com/developer/article/2574039",
+        "snippet": "2025年10月6日   结语 Nginx 是一个强大而灵活的工具，掌握它可以显著提升你的 Web 应用性能和可靠性。 从简单的静态文件服务器到复杂的负载均衡反向代理，Nginx 都能胜任。 本文只是 Nginx 功能 …"
+      },
+      {
+        "title": "Nginx中文手册 | Nginx 教程",
+        "url": "https://nginx.mosong.cc/guide/",
+        "snippet": "2025年3月30日   Nginx 是一款轻量级的 Web 服务器/反向代理服务器及电子邮件（IMAP/POP3）代理服务器，其特点是占有内存少，并发能力强。 做Web项目，大概率会使用到。 本Nginx手册，将为大家 …"
+      },
+      {
+        "title": "nginx - Nginx 文档",
+        "url": "https://nginx.ac.cn/",
+        "snippet": "2026年4月14日   NGINX Ingress Controller 将 Kubernetes 应用程序和服务与稳固的请求处理、身份验证、自助服务 CRD 以及简易调试功能连接起来。 请勿将其与 Kubernetes 社区的独立项目 ingress …"
+      },
+      {
+        "title": "nginx: download",
+        "url": "https://nginx.org/en/download.html",
+        "snippet": "2026年5月28日   nginx-1.16.1 pgp nginx/Windows-1.16.1 pgp CHANGES-1.14 nginx-1.14.2 pgp nginx/Windows-1.14.2 pgp CHANGES-1.12 nginx-1.12.2 pgp nginx/Windows-1.12.2 pgp CHANGES …"
+      },
+      {
+        "title": "nginx 文档 - Nginx 文档",
+        "url": "https://nginx.ac.cn/en/docs/",
+        "snippet": "2026年4月16日   nginx 文档 简介 安装 nginx 从源代码构建 nginx 新手指南 管理员指南 控制 nginx 连接处理方法 设置哈希表 调试日志 记录到 syslog 配置文件中的测量单位 命令行参数 Windows 版 nginx …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "nginx",
+        "反向",
+        "服务器",
+        "配置"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "how-5",
+    "query": "python 虚拟环境 创建方法",
+    "intent": "howto",
+    "latencyMs": 0,
+    "hitCount": 9,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7749999999999999,
+      "richness": 0.8576190476190476,
+      "recall": 0,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.6581547619047619
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 6,
+      "domains": [
+        "python.org",
+        "runoob.com",
+        "liaoxuefeng.com",
+        "pythonlang.cn",
+        "baike.baidu.com",
+        "python.github.net.cn"
+      ],
+      "avgSnippetLen": 140,
+      "missedKeywords": [
+        "venv",
+        "virtualenv"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "Welcome to Python.org",
+        "url": "https://www.python.org/",
+        "snippet": "The mission of the Python Software Foundation is to promote, protect, and advance the Python programming language, and to support and facilitate the growth of a diverse and international …"
+      },
+      {
+        "title": "Download Python | Python.org",
+        "url": "https://www.python.org/downloads/",
+        "snippet": "Starting with the Python 3.11.0, Python 3.10.7, and Python 3.9.14 releases, CPython release artifacts are signed with Sigstore. See our dedicated Sigstore Information page for how it works."
+      },
+      {
+        "title": "Python 基础教程 | 菜鸟教程",
+        "url": "https://www.runoob.com/python/python-tutorial.html",
+        "snippet": "Python 基础教程 Python 是一种解释型、面向对象、动态数据类型的高级程序设计语言。 Python 由 Guido van Rossum 于 1989 年底发明，第一个公开发行版发行于 1991 年。 像 Perl 语言一样, Python  …"
+      },
+      {
+        "title": "简介 - Python教程 - 廖雪峰的官方网站",
+        "url": "https://www.liaoxuefeng.com/wiki/1016959663602400",
+        "snippet": "2026年5月22日   简介 廖雪峰 资深软件开发工程师，业余马拉松选手。 这是小白的Python新手教程，具有如下特点： 中文，免费，零起点，完整示例，基于最新的Python 3版本。 Python是一种计算机程 …"
+      },
+      {
+        "title": "下载 Python | Python.org - Python 编程语言",
+        "url": "https://pythonlang.cn/downloads/",
+        "snippet": "2025年12月15日   历史 Python 是由 Guido van Rossum 于 20 世纪 90 年代初在荷兰 Stichting Mathematisch Centrum（国家数学和计算机科学研究学会）创造的，作为一种名为 ABC 的语言的后继 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "venv",
+        "虚拟环境",
+        "virtualenv"
+      ]
+    },
+    "expectationFailures": [
+      "未命中任何期望关键词: venv/虚拟环境/virtualenv"
+    ]
+  },
+  {
+    "caseId": "cmp-1",
+    "query": "PostgreSQL 和 MySQL 区别",
+    "intent": "comparison",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7000000000000001,
+      "richness": 0.7510714285714285,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8627678571428572
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 5,
+      "domains": [
+        "developer.aliyun.com",
+        "cloud.tencent.com",
+        "cnblogs.com",
+        "developer.baidu.com",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 115,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "MySQL 和 PostgreSQL，我到底选择哪个？-阿里云开发者社区",
+        "url": "https://developer.aliyun.com/article/1331170",
+        "snippet": "2023年9月19日   结论 MySQL 和 PostgreSQL 都是强大的关系型数据库管理系统，具有各自的特点和优势。 MySQL 简单易用、性能优越，适用于处理大量读操作和小型项目；而 PostgreSQL 强大灵活、 …"
+      },
+      {
+        "title": "面试官：说说MySQL与PostgreSQL之间的区别，该如何技术 ...",
+        "url": "https://cloud.tencent.com/developer/article/1796238",
+        "snippet": "2021年3月2日   MySQL与PostgreSQL都是优秀的开源数据库，各有优势。 MySQL适合互联网应用，读写速度快；PostgreSQL更适合企业级应用，支持复杂查询和数据完整性。 选择时需根据项目需求、 …"
+      },
+      {
+        "title": "postgresql和MYSQL的对比 - 数据库小白（专注） - 博客园",
+        "url": "https://www.cnblogs.com/xulinforDB/p/20071262",
+        "snippet": "2026年5月18日   以下报告基于 2024-2025 年公开测评数据，在“硬件配置相同、参数均经官方推荐优化”前提下，对 MySQL 8.0 与 PostgreSQL 15‥16 进行纯性能维度对比。 结论首先给出，随后提供详细 …"
+      },
+      {
+        "title": "Postgresql与MySQL：深度对比与选型指南-百度开发者中心",
+        "url": "https://developer.baidu.com/article/detail.html?id=4113420",
+        "snippet": "2025年10月13日   简介： 本文全面对比PostgreSQL与MySQL在架构设计、功能特性、性能优化、扩展性及适用场景的差异，提供技术选型建议与实操指导。 PostgreSQL （简称Postgres）采用多进程架 …"
+      },
+      {
+        "title": "探索 PostgreSQL 和 MySQL 之间的主要差异和相似之处",
+        "url": "https://cloud.tencent.com/developer/article/2567018",
+        "snippet": "2025年9月11日   PostgreSQL和MySQL是两大主流关系数据库，各有优势。 PostgreSQL适合企业级应用，支持复杂查询、地理空间数据和JSON存储，具备强大的并发处理能力。 MySQL则以轻量级著 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "PostgreSQL",
+        "MySQL",
+        "区别"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "cmp-2",
+    "query": "React vs Vue 对比",
+    "intent": "comparison",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.8378571428571429,
+      "recall": 0.5,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8094642857142857
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "zh-hans.react.dev",
+        "react.dev",
+        "runoob.com",
+        "developer.mozilla.org",
+        "reactjs.cn",
+        "react.nodejs.cn",
+        "18.reactjs.ac.cn",
+        "github.com"
+      ],
+      "avgSnippetLen": 136,
+      "missedKeywords": [
+        "Vue"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "快速入门 – React 中文文档",
+        "url": "https://zh-hans.react.dev/learn",
+        "snippet": "使用 Hook 以 use 开头的函数被称为 Hook。 useState 是 React 提供的一个内置 Hook。 你可以在 React API 参考 中找到其他内置的 Hook。 你也可以通过组合现有的 Hook 来编写属于你自己的 Hook。 …"
+      },
+      {
+        "title": "React",
+        "url": "https://react.dev/",
+        "snippet": "React is the library for web and native user interfaces. Build user interfaces out of individual pieces called components written in JavaScript. React is designed to let you seamlessly combine …"
+      },
+      {
+        "title": "React 教程 | 菜鸟教程",
+        "url": "https://www.runoob.com/react/react-tutorial.html",
+        "snippet": "React 教程 React 是一个用于构建用户界面的 JAVASCRIPT 库。 React 主要用于构建 UI，很多人认为 React 是 MVC 中的 V（视图）。 React 起源于 Facebook 的内部项目，用来架设 Instagram 的网站， …"
+      },
+      {
+        "title": "React 入门 - 学习 Web 开发 | MDN",
+        "url": "https://developer.mozilla.org/zh-CN/docs/Learn_web_development/Core/Frameworks_libraries/React_getting_started",
+        "snippet": "2026年6月8日   本文会引导我们进入一段 React 学习之旅。 我们将逐步了解有关它的背景和用例的一些细节，在自己的电脑上建起基本的 React 工具链，创建并使用一个简单的入门应用程序，以学习一些 …"
+      },
+      {
+        "title": "React 官方中文文档 | React中文文档镜像",
+        "url": "https://www.reactjs.cn/",
+        "snippet": "React 是用于开发 web 和原生用户界面的工具库。 用 React 开发的用户界面是由一个个独立的组件构建的，而每个组件则是用 JavaScript 编写的。 React 可以让你无缝组合由个人、团队和组织编写的组 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "React",
+        "Vue"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "cmp-3",
+    "query": "gRPC 和 REST 差异",
+    "intent": "comparison",
+    "latencyMs": 1,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7000000000000001,
+      "richness": 0.6642857142857143,
+      "recall": 0.5,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.7160714285714286
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 5,
+      "domains": [
+        "grpc.io",
+        "github.com",
+        "grpc.org.cn",
+        "cnblogs.com",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 95,
+      "missedKeywords": [
+        "REST"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "gRPC",
+        "url": "https://grpc.io/",
+        "snippet": "gRPC is a modern open source high performance Remote Procedure Call (RPC) framework that can run in any environment. It can …"
+      },
+      {
+        "title": "GitHub - grpc/grpc: C++ based gRPC (C++, Python, Ruby, …",
+        "url": "https://github.com/grpc/grpc",
+        "snippet": "gRPC is a modern, open source, high-performance remote procedure call (RPC) framework that can run anywhere. gRPC enables …"
+      },
+      {
+        "title": "grpc - GitHub",
+        "url": "https://github.com/grpc",
+        "snippet": "Repositories grpc Public C++ based gRPC (C++, Python, Ruby, Objective-C, PHP, C#) C++ 44,891 Apache-2.0 11,162 703 606 …"
+      },
+      {
+        "title": "gRPC 简介 | gRPC 框架",
+        "url": "https://grpc.org.cn/docs/what-is-grpc/introduction/",
+        "snippet": "2026年6月2日   gRPC 客户端和服务器可以在各种环境中运行并相互通信——从 Google 内部的服务器到您自己的桌面——并且可以使 …"
+      },
+      {
+        "title": "gRPC：高性能跨语言 RPC 框架 - 小飞技术快餐 - 博客园",
+        "url": "https://www.cnblogs.com/codecraft001/articles/20373614",
+        "snippet": "2026年6月8日   gRPC：高性能跨语言 RPC 框架 gRPC 在 GitHub 上已经拿到 44,857 Star 了。 Google 开源了这个框架，专门解决一 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "gRPC",
+        "REST"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "cmp-4",
+    "query": "TCP 和 UDP 区别",
+    "intent": "comparison",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7749999999999999,
+      "richness": 0.7274999999999999,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.875625
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 6,
+      "domains": [
+        "blog.51cto.com",
+        "developer.aliyun.com",
+        "baike.baidu.com",
+        "zhuanlan.zhihu.com",
+        "cnblogs.com",
+        "cloud.tencent.com"
+      ],
+      "avgSnippetLen": 110,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "【计算机网络】彻底搞懂TCP和UDP的区别（超详细，带 ...",
+        "url": "https://blog.51cto.com/u_1150085/13331682",
+        "snippet": "2025年2月17日   在计算机网络中，TCP（传输控制协议）和UDP（用户数据报协议）是两种重要的传输层协议。 它们在许多方面有显著的区别，适用于不同的使用场景。 本文通过以下几点详细解释TCP …"
+      },
+      {
+        "title": "TCP与UDP核心机制与应用场景深度对比-开发者社区-阿里云",
+        "url": "https://developer.aliyun.com/article/1632460",
+        "snippet": "2024年11月1日   写在最后 TCP和UDP是传输层协议中的两大支柱，各自有着独特的特性和应用场景。 TCP以其可靠性、数据顺序保证和流量控制而广泛应用于需要高可靠性的场合，如文件传输和远程登 …"
+      },
+      {
+        "title": "TCP/UDP协议_百度百科",
+        "url": "https://baike.baidu.com/item/TCP%2FUDP%E5%8D%8F%E8%AE%AE/7719820",
+        "snippet": "TCP (Transmission Control Protocol)和UDP (User Datagram Protocol)协议属于 传输层 协议，其中TCP提供IP环境下的数据 可靠传输，它提供的服务包括 数据流 传送、可靠性、有效流控、全双工操 …"
+      },
+      {
+        "title": "TCP和UDP的区别全面对比讲解 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/2000143402185008788",
+        "snippet": "2026年1月29日   TCP（Transmission Control Protocol，传输控制协议）和 UDP（User Datagram Protocol，用户数据报协议）都是 TCP/IP 协议栈 中传输层的核心协议，负责在主机之间为 应用层  …"
+      },
+      {
+        "title": "面试官：说说UDP和TCP的区别及应用场景 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/108579426",
+        "snippet": "2020年2月26日   这次聊聊TCP和UDP的区别和场景 TCP/IP 中有两个具有代表性的传输层协议，分别是 TCP 和 UDP。 来看看传输层位于 OSI七层协议 和TCP/IP四层协议的位置： 那么TCP和UDP的区别和 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "TCP",
+        "UDP"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "cmp-5",
+    "query": "Redis 和 Memcached 比较",
+    "intent": "comparison",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.85,
+      "richness": 0.6916071428571429,
+      "recall": 0.5,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.7604017857142857
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 7,
+      "domains": [
+        "runoob.com",
+        "redis.io",
+        "github.com",
+        "redis.ac.cn",
+        "cnblogs.com",
+        "zhuanlan.zhihu.com",
+        "redis.net.cn"
+      ],
+      "avgSnippetLen": 101,
+      "missedKeywords": [
+        "Memcached"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "Redis 教程 | 菜鸟教程",
+        "url": "https://www.runoob.com/redis/redis-tutorial.html",
+        "snippet": "REmote DIctionary Server (Redis) 是一个由 Salvatore Sanfilippo 写的 key-value 存储系统，是跨平台的非关系型数据库。 Redis 是一 …"
+      },
+      {
+        "title": "Redis - Real-time data for agents &amp; apps",
+        "url": "https://redis.io/",
+        "snippet": "Developers love Redis. Unlock the full potential of the Redis database with Redis Enterprise and start building blazing fast apps."
+      },
+      {
+        "title": "Download Redis now and learn what fast really means",
+        "url": "https://redis.io/downloads/",
+        "snippet": "Download the in-memory data store used by millions of developers as a cache. Optimize your apps with Redis. Try it today and boost …"
+      },
+      {
+        "title": "GitHub - redis/redis: For developers, who are building real-time …",
+        "url": "https://github.com/redis/redis",
+        "snippet": "2020年8月11日   Redis Community Edition (Redis CE) was renamed Redis Open Source with the v8.0 release. Redis Ltd. also offers …"
+      },
+      {
+        "title": "安装 Redis | Redis - Redis 教程",
+        "url": "https://redis.ac.cn/docs/install/install-redis/",
+        "snippet": "2025年11月18日   如果您安装了 Redis Stack，则需要下载 基本 init 脚本，然后修改它和以下说明以符合 Redis Stack 在您的平台上安 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "Redis",
+        "Memcached"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "news-1",
+    "query": "OpenAI 最新发布",
+    "intent": "news",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 0.875,
+      "diversity": 0.7749999999999999,
+      "richness": 0.6433928571428571,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8233482142857143
+    },
+    "details": {
+      "noiseRate": 0.125,
+      "noiseHits": [
+        "apifox.com | OpenAI 官网入口地址：如何轻松找到"
+      ],
+      "uniqueDomains": 6,
+      "domains": [
+        "openai.smapply.org",
+        "baike.baidu.com",
+        "developers.openai.ac.cn",
+        "apifox.com",
+        "github.com",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 90,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "OpenAI",
+        "url": "https://openai.smapply.org/",
+        "snippet": "OpenAI’s mission is to ensure that artificial general intelligence (AGI) benefits all of humanity. In service of that mission, we …"
+      },
+      {
+        "title": "OpenAI_百度百科",
+        "url": "https://baike.baidu.com/item/OpenAI/19758408",
+        "snippet": "OpenAI是2015年12月11日由萨姆&#183;奥尔特曼、埃隆&#183;马斯克、彼得&#183;蒂尔等科技领袖创立的一家研究和部署人工智能的公司，总部位于美 …"
+      },
+      {
+        "title": "OpenAI 开发者 - OpenAI 教程",
+        "url": "https://developers.openai.ac.cn/",
+        "snippet": "2026年4月16日   帮助中心 账户与账单相关常见问题 开发者论坛 与其他开发者交流探讨 OpenAI 创业支持 为有志于使用 OpenAI 构建 …"
+      },
+      {
+        "title": "OpenAI 官网入口地址：如何轻松找到",
+        "url": "https://apifox.com/apiskills/openai-official-portal/",
+        "snippet": "OpenAI OpenAI是一个强大的开放人工智能研究平台，其提供了一系列深度学习和自然语言处理的工具和技术。 使用OpenAI可以获得 …"
+      },
+      {
+        "title": "OpenAI - GitHub",
+        "url": "https://github.com/openai/",
+        "snippet": "JavaScript 3,125 368 0 29 Updated 12 minutes ago skills Public Skills Catalog for Codex Python 22,329 1,518 52 224 Updated 52 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.3,
+      "expectKeywords": [
+        "OpenAI"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "news-2",
+    "query": "NVIDIA 最新 GPU 消息",
+    "intent": "news",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7749999999999999,
+      "richness": 0.8815714285714285,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.9141428571428571
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 6,
+      "domains": [
+        "nvidia.cn",
+        "nvidia.com",
+        "nvidia.com.tw",
+        "baike.baidu.com",
+        "nvidia.co.uk",
+        "nvidia.custhelp.com"
+      ],
+      "avgSnippetLen": 146,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "NVIDIA GeForce 驱动程序 - N 卡驱动 | NVIDIA",
+        "url": "https://www.nvidia.cn/geforce/drivers/",
+        "snippet": "2 天之前   NVIDIA does extensive testing across the top creative applications to ensure the highest levels of performance, stability, and functionality. These drivers are certified by Microsoft’s Windows"
+      },
+      {
+        "title": "World Leader in Artificial Intelligence Computing | NVIDIA",
+        "url": "https://www.nvidia.com/",
+        "snippet": "1 天前   NVIDIA invents the GPU and drives advances in AI, HPC, gaming, creative design, autonomous vehicles, and robotics."
+      },
+      {
+        "title": "Download The Official NVIDIA Drivers | NVIDIA",
+        "url": "https://www.nvidia.com/en-us/drivers/",
+        "snippet": "1 天前   Enterprise customers with a current Virtual GPU (vGPU) software license (NVIDIA vPC, NVIDIA vApps or NVIDIA RTX Virtual Workstation (vWS), can log into the enterprise software download …"
+      },
+      {
+        "title": "人工智能计算领域的领导者 | NVIDIA",
+        "url": "https://www.nvidia.cn/",
+        "snippet": "1 天前   SMS was acquired by NVIDIA Corporation of Santa Clara, CA in May 2022 and was dissolved as a separate corporate entity. NVIDIA is incorporating SMS technology into its Omniverse platform …"
+      },
+      {
+        "title": "NVIDIA 驱动程序下载",
+        "url": "https://www.nvidia.com.tw/Download/indexsg.aspx?lang=tw",
+        "snippet": "Download drivers for NVIDIA products including GeForce graphics cards, nForce motherboards, Quadro workstations, and more. Update your graphics card drivers today."
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.3,
+      "expectKeywords": [
+        "NVIDIA",
+        "英伟达"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "news-3",
+    "query": "苹果 最新发布会",
+    "intent": "news",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.6124285714285714,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8781071428571429
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "baike.baidu.com",
+        "apple.com",
+        "news.qq.com",
+        "icloud.com.cn",
+        "zhuanlan.zhihu.com",
+        "support.apple.com",
+        "apple.com.cn",
+        "i4.cn"
+      ],
+      "avgSnippetLen": 83,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "苹果（蔷薇科苹果属植物）_百度百科",
+        "url": "https://baike.baidu.com/item/%E8%8B%B9%E6%9E%9C/14822460",
+        "snippet": "苹果，学名Malus pumila Mill.，别称西洋苹果、柰，属于蔷薇科苹果属的植物。 苹果是全球最广泛种植和销售的水果之一，具有悠久 …"
+      },
+      {
+        "title": "Apple",
+        "url": "https://www.apple.com/",
+        "snippet": "Discover the innovative world of Apple and shop everything iPhone, iPad, Apple Watch, Mac, and Apple TV, plus explore …"
+      },
+      {
+        "title": "苹果公司_百度百科",
+        "url": "https://baike.baidu.com/item/%E8%8B%B9%E6%9E%9C%E5%85%AC%E5%8F%B8/304038",
+        "snippet": "苹果公司（Apple Inc.，股票代码：AAPL），是美国的一家跨国科技公司，总部位于美国加州库比蒂诺硅谷，由史蒂夫&#183;乔布斯和斯蒂 …"
+      },
+      {
+        "title": "WWDC 2026前瞻：苹果押注AI重构，Siri迎来15年来最大变革",
+        "url": "https://news.qq.com/rain/a/20260519A03MJL00",
+        "snippet": "文｜吴彬编辑｜徐青阳苹果公司于5月19日凌晨正式公布了2026年全球开发者大会（WWDC 2026）将于6月8日至12日在加利福尼亚州 …"
+      },
+      {
+        "title": "iCloud",
+        "url": "https://www.icloud.com.cn/",
+        "snippet": "Log in to iCloud to access your photos, mail, notes, documents and more. Sign in with your Apple Account or create a new account to …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.3,
+      "expectKeywords": [
+        "苹果",
+        "Apple"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "news-4",
+    "query": "AI 监管 最新动态",
+    "intent": "news",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.7076785714285714,
+      "recall": null,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8692261904761903
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "ai-bot.cn",
+        "cloud.tencent.com",
+        "runoob.com",
+        "zhuanlan.zhihu.com",
+        "163.com",
+        "36kr.com",
+        "baike.baidu.com",
+        "web.developers.google.cn"
+      ],
+      "avgSnippetLen": 105,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "AI工具集官网 | 1000+ AI工具集合，国内外AI工具集导航大全",
+        "url": "https://ai-bot.cn/",
+        "snippet": "1 天前   AI工具集官网收录了国内外数百个AI工具，该导航网站包括AI写作工具、AI图像生成和背景移除、AI视频制作、AI音频转录、AI辅助编程、AI音乐生成、AI绘画设计、AI对话聊天等AI工具集合大 …"
+      },
+      {
+        "title": "什么是AI？现在的AI和三年前的AI有什么区别？",
+        "url": "https://cloud.tencent.com/developer/article/2585453",
+        "snippet": "2025年11月9日   人工智能（AI）技术三年间实现跨越式发展，从单一任务型AI升级为多模态通用大模型。2022年AI仍以深度学习为主，2025年已具备创造性生成、多模态融合和自主执行能力。ChatGPT …"
+      },
+      {
+        "title": "AI 底层架构 - 菜鸟教程",
+        "url": "https://www.runoob.com/ai-agent/ai-architecture.html",
+        "snippet": "AI 底层架构 下图展示了基础大模型到智能体应用的完整 AI 系统架构： 层级 核心组件 核心作用 典型能力 基础层（模型） LLM &amp; Token、Transformer 架构、Token.."
+      },
+      {
+        "title": "一文读懂人工智能（AI）是什么？ - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/706749176",
+        "snippet": "2024年7月3日   一、 AI的定义 AI是人工智能（Artificial Intelligence）的缩写，它是一种模拟人类智能的技术，使机器能够像人一样学习、思考和做出决策，从而能够自主地执行各种任务。人工智能不仅仅 …"
+      },
+      {
+        "title": "AI究竟是什么？这篇文章终于用大白话全说清楚了！",
+        "url": "https://www.163.com/dy/article/J3M06EVC0556703U.html",
+        "snippet": "2024年6月2日   AI究竟是什么？这篇文章终于用大白话全说清楚了！,ai,原理,大白话,人工智能,视频生成模型 上方蓝字关注我们 人工智能究竟是什么？简单来说，人工智能就像是模仿人类思考方式的软件 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.35
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "news-5",
+    "query": "比特币 价格 今日",
+    "intent": "news",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.7000000000000001,
+      "richness": 0.7044642857142857,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8511160714285715
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 5,
+      "domains": [
+        "528btc.com",
+        "baike.baidu.com",
+        "bitbrowser.cn",
+        "bitdock.cn",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 104,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "比特币资讯,动态,行情 - 币界网",
+        "url": "https://www.528btc.com/bitcoin/",
+        "snippet": "2025年12月23日   Tom Lee迪拜演讲：加密超级周期依然稳固 为何我仍然坚持 BitMine董事长Tom Lee在迪拜币安区块链周上表示，2025的主线是“代币化”，比特币和以太坊价格已见底，传统四年周期正被 …"
+      },
+      {
+        "title": "比特（计算机专业术语）_百度百科",
+        "url": "https://baike.baidu.com/item/%E6%AF%94%E7%89%B9/3431582",
+        "snippet": "比特（BIT，Binary digit），计算机专业术语，是信息量单位，是由英文BIT音译而来。 同时也是二进制数字中的位，信息量的度量单位，为信息量的最小单位。 在需要作出不同选择的情况下把备选的刺 …"
+      },
+      {
+        "title": "比特浏览器下载-产品下载-指纹浏览器下载 - BitBrowser",
+        "url": "https://www.bitbrowser.cn/download/",
+        "snippet": "产品更新日志 比特浏览器 7.1.2 升级日志 比特浏览器 7.1.0 升级日志 比特浏览器 7.0.8 升级日志 查看更多更新日志 已通过以下国内外知名杀毒软件检测，请放心使用 360安全卫士 腾讯管家 金山毒霸 小红伞 …"
+      },
+      {
+        "title": "BitDock比特工具栏-官方网站",
+        "url": "http://www.bitdock.cn/",
+        "snippet": "2026年5月2日   BitDock Windows上的极简工具栏，优雅的桌面助手，免费下载即用 设计师 我是一名UI设计师，平常就喜欢在网站上搜集各式各样的美化工具，在没有使用BitDock之前，使用的是2个 …"
+      },
+      {
+        "title": "bit、byte、KB、B、字节、位、字符的关系 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/11535865548",
+        "snippet": "2024年12月9日   一、基本概念（一）位（bit）定义：bit是计算机表示数据最小的单位，也叫比特位，一个位就代表一个0或1（即二进制）1。（二）字节（Byte，简写为B）定义：字节是计算机信息技术用 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.35,
+      "expectKeywords": [
+        "比特币",
+        "行情",
+        "价格"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "fact-1",
+    "query": "鲁迅 出生年份",
+    "intent": "factual",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.6745714285714286,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8936428571428572
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "baike.baidu.com",
+        "zhuanlan.zhihu.com",
+        "weread.qq.com",
+        "jingdianbook.com",
+        "news.qq.com",
+        "luxunlib.com",
+        "sohu.com",
+        "fanqienovel.com"
+      ],
+      "avgSnippetLen": 97,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "鲁迅（中国文学家、思想家、革命家，中国现代文学的奠基人 ...",
+        "url": "https://baike.baidu.com/item/%E9%B2%81%E8%BF%85/36231",
+        "snippet": "鲁迅（1881年9月25日—1936年10月19日），原名周樟寿，后改名周树人，字豫山，后改字豫才，浙江绍兴人。 中国文学家、思想家、革命家。 鲁迅1902年去日本学医，后从事文艺工作。 1909年回国，先 …"
+      },
+      {
+        "title": "人物简介-鲁迅 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/20645345861",
+        "snippet": "鲁迅生平‌ 鲁迅（1881年9月25日—1936年10月19日），原名周樟寿，后改名周树人，字豫山，后改字豫才，浙江绍兴人。 他是中国著名的文学家、思想家、革命家、教育家、美术家、书法家和民主战士， …"
+      },
+      {
+        "title": "鲁迅-全部作品在线阅读-微信读书",
+        "url": "https://weread.qq.com/web/search/books?author=%E9%B2%81%E8%BF%85&amp;ii=fae32570813aba244g0117c4",
+        "snippet": "1936年10月，鲁迅先生在上海逝世。 鲁迅先生纪念委员会为&quot;扩大鲁迅精神的影响，以唤醒国魂，争取光明&quot;编印了鲁迅逝后第一版《鲁迅全集》。 《全集》由蔡元培任主席的鲁迅先生纪念委员会负责编 …"
+      },
+      {
+        "title": "鲁迅全集_鲁迅作品集 - 经典书库",
+        "url": "https://www.jingdianbook.com/luxun/",
+        "snippet": "「鲁迅」 故事新编 序言 理水 采薇 铸剑 非攻 奔月 出关 补天 『故事新编』目录 「鲁迅」 古籍序跋集 《古小说钩沉》序 谢承《后汉书》序 [附]关于汪辑本《谢承后汉书》 [附]汪辑本《谢承后汉书》校记 谢 …"
+      },
+      {
+        "title": "鲁迅（鲁迅）_百度百科",
+        "url": "https://baike.baidu.com/item/%E9%B2%81%E8%BF%85/11072004",
+        "snippet": "百度百科是一部内容开放、自由的网络百科全书，旨在创造一个涵盖所有领域知识，服务所有互联网用户的中文知识性百科全书。在这里你可以参与词条编辑，分享贡献你的知识。"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "1881",
+        "鲁迅"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "fact-2",
+    "query": "珠穆朗玛峰 海拔 多少",
+    "intent": "factual",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 1,
+      "richness": 0.5219999999999999,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8805
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 10,
+      "domains": [
+        "greattibettour.com",
+        "baike.baidu.com",
+        "igsnrr.cas.cn",
+        "kepuchina.cn",
+        "sohu.com",
+        "zhuanlan.zhihu.com",
+        "news.qq.com",
+        "163.com",
+        "bilibili.com",
+        "msn.cn"
+      ],
+      "avgSnippetLen": 74,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "珠穆朗玛峰（Qomolangma）——世界最高峰，海拔8848米",
+        "url": "https://www.greattibettour.com/cn/tibet-attractions/mount-everest",
+        "snippet": "珠穆朗玛峰，这座喜马拉雅山脉的最高峰，海拔8848米（29029英尺），是世界最高峰。 在藏语中，珠穆朗玛峰也被称为“珠穆朗玛”。 …"
+      },
+      {
+        "title": "珠穆朗玛峰（喜马拉雅山脉主峰、世界最高峰）_百度百科",
+        "url": "https://baike.baidu.com/item/%e7%8f%a0%e7%a9%86%e6%9c%97%e7%8e%9b%e5%b3%b0/3058",
+        "snippet": "珠穆朗玛峰（英语：Mount Qomolangma；藏语：ཇོ་མོ་གླང་མ་；尼泊尔语：सगरमाथा），简称珠峰，岩面高程8844.43米，雪面高程8848.86 …"
+      },
+      {
+        "title": "世界最高峰——珠穆朗玛峰 -- 地理科学与资源研究所",
+        "url": "https://www.igsnrr.cas.cn/cbkx/kpyd/dlzs/land/202009/t20200910_5692591.html",
+        "snippet": "2007年3月15日   珠穆朗玛峰位于中国和尼泊尔两国边界上。 它的北坡在我国西藏境内，南坡在尼泊尔境内。 珠穆朗玛峰是喜马拉雅 …"
+      },
+      {
+        "title": "珠穆朗玛峰居然每年都在不断长高！它会一直长下去吗？",
+        "url": "https://www.kepuchina.cn/article/articleinfo?business_type=100&amp;ar_id=711646",
+        "snippet": "5 天之前   珠穆朗玛峰成为一座海拔极高的山峰，最主要的原因就是它的位置，这里是印度与欧亚碰撞的前沿地带。 根据卫星监测，就 …"
+      },
+      {
+        "title": "世界第一高峰，海拔8848.86米的珠穆朗玛峰，雄伟地矗立在 ...",
+        "url": "https://www.sohu.com/a/860620949_100199564",
+        "snippet": "2025年2月18日   珠穆朗玛峰位于中国与尼泊尔边境，东经86&#176;55′31″，北纬27&#176;59′17″。 它像一位巨人，横亘在青藏高原南缘，俯瞰着 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "8848",
+        "珠穆朗玛"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "fact-3",
+    "query": "哈勃望远镜 发射时间",
+    "intent": "factual",
+    "latencyMs": 1,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.7589999999999999,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.91475
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "nasachina.cn",
+        "baike.baidu.com",
+        "science.nasa.gov",
+        "esahubble.org",
+        "news.qq.com",
+        "zhuanlan.zhihu.com",
+        "habo.qq.com",
+        "sat.huijiwiki.com"
+      ],
+      "avgSnippetLen": 117,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "哈勃 | NASA中文",
+        "url": "https://www.nasachina.cn/tag/%E5%93%88%E5%8B%83",
+        "snippet": "2025年6月1日   A bright galaxy with unusual blue spiral arms is shown against a dark starfield. The outer part of the spiral appears as a blue ring, while the inner part appears to have separate — and mo"
+      },
+      {
+        "title": "爱德文&#183;哈勃_百度百科",
+        "url": "https://baike.baidu.com/item/%E7%88%B1%E5%BE%B7%E6%96%87%C2%B7%E5%93%88%E5%8B%83/5255338",
+        "snippet": "1923～1924年，哈勃用 威尔逊山天文台 的254厘米 反射望远镜 拍摄了 仙女座 大星云和 M33 的照片，把它们的边缘部分分解为恒星，在分析一批 造父变星 的亮度以后断定，这些造父变星和它们所在的星 …"
+      },
+      {
+        "title": "Hubble Space Telescope - NASA Science",
+        "url": "https://science.nasa.gov/mission/hubble/",
+        "snippet": "5 天之前   From the planets in our solar system to the far reaches of the cosmos, explore NASA's Hubble Space Telescope's three decades of discoveries."
+      },
+      {
+        "title": "ESA/Hubble",
+        "url": "https://esahubble.org/",
+        "snippet": "The ESA page for the Hubble Space Telescope, the space-based observatory that has revolutionised modern astronomy."
+      },
+      {
+        "title": "哈勃还能再续命吗？_腾讯新闻",
+        "url": "https://news.qq.com/rain/a/20260609A0AZWN00",
+        "snippet": "2026年6月9日   换句话说，雨燕的救援任务可能成为哈勃未来命运的一个样板。 参考 [1]https://science.nasa.gov/mission/hubble/multimedia/online-activities/interactive-orbiting-hubble/"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "1990",
+        "哈勃"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "fact-4",
+    "query": "Linux 内核 创始人 是谁",
+    "intent": "factual",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.85,
+      "richness": 0.8469642857142856,
+      "recall": 0.6666666666666666,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.840907738095238
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 7,
+      "domains": [
+        "runoob.com",
+        "baike.baidu.com",
+        "linux.org",
+        "knightli.com",
+        "ubuntu.cn",
+        "ubuntu.com",
+        "cn.ubuntu.com"
+      ],
+      "avgSnippetLen": 138,
+      "missedKeywords": [
+        "Torvalds"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "Linux 教程 | 菜鸟教程",
+        "url": "https://www.runoob.com/linux/linux-tutorial.html",
+        "snippet": "Linux 是一种自由和开放源码的类 UNIX 操作系统。 Linux 英文解释为 Linux is not Unix。 Linux 是在 1991 由林纳斯&#183;托瓦兹在赫尔辛基大学上学时创立的，主要受到 Minix 和 Unix 思想的启发。 本教程， …"
+      },
+      {
+        "title": "Linux_百度百科",
+        "url": "https://baike.baidu.com/item/Linux/27050",
+        "snippet": "Linux，一般指GNU/Linux（单独的Linux内核并不可直接使用，一般搭配GNU套件，故得此称呼），是一种免费使用和自由传播的类UNIX操作系统，其内核由林纳斯&#183;本纳第克特&#183;托瓦兹（Linus Benedict …"
+      },
+      {
+        "title": "Download Linux | Linux.org",
+        "url": "https://www.linux.org/pages/download/",
+        "snippet": "2017年5月1日   24 Popular Linux Distributions Explore different Linux distributions and find the one that fits your needs. Try distrowatch.com for more options."
+      },
+      {
+        "title": "2026 年 Linux 桌面发行版怎么选：Ubuntu、Deepin/UOS ...",
+        "url": "https://knightli.com/2026/05/07/linux-desktop-distro-comparison-2026/",
+        "snippet": "2026年5月7日   2026 年选 Linux 桌面发行版，重点不是谁最“纯”，也不是谁最“先进”，而是谁能让你每天顺手用下去。 桌面端和服务器不同。服务器更看重生命周期、包稳定性和运维规范；桌面端还要看 …"
+      },
+      {
+        "title": "Linux.org",
+        "url": "https://www.linux.org/",
+        "snippet": "2026年5月21日   For anyone running Linux who wants, or needs, to run a Windows program, there are few ways to do it and sometimes it doesn't work. Some Windows apps will not run on WINE, or the …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "Linus",
+        "Torvalds",
+        "托瓦兹"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "fact-5",
+    "query": "光速 数值",
+    "intent": "factual",
+    "latencyMs": 0,
+    "hitCount": 9,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.4693333333333334,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8423333333333334
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "baike.baidu.com",
+        "sohu.com",
+        "zhihu.com",
+        "jingyan.baidu.com",
+        "thepaper.cn",
+        "163.com",
+        "zhuanlan.zhihu.com",
+        "msn.cn"
+      ],
+      "avgSnippetLen": 69,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "光速（物理学名词）_百度百科",
+        "url": "https://baike.baidu.com/item/%E5%85%89%E9%80%9F/363222",
+        "snippet": "真空中的光速是一个重要的物理学基本常数，通常表示为c，光速的数值是 c=299792458m/s。 光的本质是电磁波，光速的数值可以从 …"
+      },
+      {
+        "title": "深度科普：光速为何是宇宙速度上限？到底是什么限制了光速 ...",
+        "url": "https://www.sohu.com/a/920653085_122023402",
+        "snippet": "2025年8月4日   光速在相对论的时空框架中具有特殊的地位，它是时空的固有属性，是四维时空的一个基本参数。 这意味着光速不仅 …"
+      },
+      {
+        "title": "真空中光速为什么是 299792458 米/秒？ - 知乎",
+        "url": "https://www.zhihu.com/question/20050608",
+        "snippet": "2013年9月2日   这是有史料记载最早的光速测量实验。 1676年，科学家通过观测木星的一颗卫星艾欧的公转周期变化，首次测定光速 …"
+      },
+      {
+        "title": "真空中的光速是3&#215;10多少 - 百度经验",
+        "url": "https://jingyan.baidu.com/article/a3aad71a15aa4bf0fa009601.html",
+        "snippet": "2022年12月4日   光在真空中的速度：光速在真空是3&#215;10的八次方每秒。 光速是指光波或电磁波在真空或介质中的传播速度。 真空中 …"
+      },
+      {
+        "title": "科普｜光速为什么不多不少正好是299792458米/秒？",
+        "url": "https://www.thepaper.cn/newsDetail_forward_27326406",
+        "snippet": "1905年，爱因斯坦（Albert Einstein）彻底放弃了以太，以光速恒定和物理规律在不同运动参照系下的不变性为前提，建立了狭义相对 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "299792458",
+        "光速",
+        "30万"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "pol-1",
+    "query": "个人信息保护法 全文",
+    "intent": "policy",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 1,
+      "richness": 0.6612857142857143,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.9153214285714286
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 10,
+      "domains": [
+        "bypc.gov.cn",
+        "yixian.gov.cn",
+        "nic.bucea.edu.cn",
+        "sis.scu.edu.cn",
+        "xxhc.shengda.edu.cn",
+        "npc.gov.cn",
+        "stats.gov.cn",
+        "trs.gov.cn",
+        "cifutures.com.cn",
+        "flk.npc.gov.cn"
+      ],
+      "avgSnippetLen": 94,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "《中华人民共和国个人信息保护法》（全文）",
+        "url": "https://www.bypc.gov.cn/zfxxgk/bmdwxzjd/bmdw/qwtgdhlyj/fdzdgknr/lzyj/zcfg/art/2023/art_32dd518ed54d4c719cd9f50aa8438ce3.html",
+        "snippet": "2022年8月9日   中华人民共和国主席令第九十一号《中华人民共和国个人信息保护法》已由中华人民共和国第十三届全国人民代表大会常务委员会第三十次会议于2021年8月20日通过，现予公布，自2021 …"
+      },
+      {
+        "title": "中华人民共和国个人信息保护法",
+        "url": "https://www.yixian.gov.cn/group1/M00/04/36/wKiM92YKSquAV-_hAAPiAlilHM4673.pdf",
+        "snippet": "2024年3月20日   为了保护个人信息权益, 规范个人信息处理活动,促进个人信息合理利用, 根据宪法, 制定本法。 自然人的个人信息受法律保护,任 何组织、个人不得侵害自然人的个人信息权益。 在中华人民 …"
+      },
+      {
+        "title": "中华人民共和国个人信息保护法",
+        "url": "https://nic.bucea.edu.cn/docs/2025-05/d9269ee494904ab5a87a5c70b1aa5f94.pdf",
+        "snippet": "2021年8月20日   第一条 为了保护个人信息权益, 规范个人信息处理活动,促进个人信息合理利用, 根据宪法, 制定本法。 第二条 自然人的个人信息受法律保护, 任何组织、个人不得侵害自然人的个人信息权 …"
+      },
+      {
+        "title": "中华人民共和国个人信息保护法",
+        "url": "https://sis.scu.edu.cn/tempImg/upload/file/20211021/1634804460691002847.pdf",
+        "snippet": "2021年8月20日   为了保护个人信息权益,规范个人信息处理活动,促进个人信息 合理利用,根据宪法,制定本法。 第二条 自然人的个人信息受法律保护,任何组织、个人不得侵害自然人 的个人信息权益。 第三 …"
+      },
+      {
+        "title": "中华人民共和国个人信息保护法",
+        "url": "https://xxhc.shengda.edu.cn/__local/6/26/B8/8B1153DB25DDFE93D0B8D036AC1_A0B4E724_6B9E4.pdf",
+        "snippet": "2024年12月4日   为了保护个人信息权益,规范个人信息处理活动,促进个人信息合理利用,根据宪法,制定本法。 自然人的个人信息受法律保护,任何组织、个人不得侵害自然人的个人信息权益。 在中华人民共 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "个人信息",
+        "保护法"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "pol-2",
+    "query": "数据安全法 主要内容",
+    "intent": "policy",
+    "latencyMs": 0,
+    "hitCount": 9,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.85,
+      "richness": 0.49333333333333335,
+      "recall": 0,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.5858333333333333
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 7,
+      "domains": [
+        "baike.baidu.com",
+        "data.stats.gov.cn",
+        "stats.gov.cn",
+        "nda.gov.cn",
+        "cloud.tencent.com",
+        "wanfangdata.com.cn",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 71,
+      "missedKeywords": [
+        "数据安全"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "数据（计算机术语）_百度百科",
+        "url": "https://baike.baidu.com/item/%E6%95%B0%E6%8D%AE/5947370",
+        "snippet": "2022年11月17日   数据（data）是事实或观察的结果，是对客观事物的逻辑归纳，是用于表示客观事物的未经加工的原始素材。 数据 …"
+      },
+      {
+        "title": "国家数据",
+        "url": "https://data.stats.gov.cn/",
+        "snippet": "2026年6月10日   数据解读 国家统计局城市司首席统计师董莉娟解读2026年5月份CPI和PPI数据 2026-06-10 居民收支稳步增长 人民生 …"
+      },
+      {
+        "title": "数据 - 国家统计局",
+        "url": "https://www.stats.gov.cn/sj/",
+        "snippet": "2026年6月10日   数据发布 5月份国民经济运行总体平稳、向新向优 2026年5月份规模以上工业增加值增长4.5% 2026-06-16 2026 …"
+      },
+      {
+        "title": "《全国数据资源调查报告（2025年）》正式发布-国家数据局",
+        "url": "https://www.nda.gov.cn/sjj/swdt/xwfb/0429/20260429164803571173880_pc.html",
+        "snippet": "2026年4月29日   调查结果显示，我国数据要素市场化价值化进程显著提速，数据资源供给体系、数据流通体系和数据开发利用体系协 …"
+      },
+      {
+        "title": "数据（汉语词语）_百度百科",
+        "url": "https://baike.baidu.com/item/%E6%95%B0%E6%8D%AE/33305",
+        "snippet": "数据，拼音sh&#249; j&#249;，指对客观事物进行记录、可被识别和处理的符号集合，是信息的具体表现形式。 从法律角度看，数据是指任何以电 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "数据安全"
+      ]
+    },
+    "expectationFailures": [
+      "未命中任何期望关键词: 数据安全"
+    ]
+  },
+  {
+    "caseId": "pol-3",
+    "query": "生成式人工智能服务管理办法",
+    "intent": "policy",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.9,
+      "richness": 0.6835714285714285,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.895892857142857
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 8,
+      "domains": [
+        "fgw.sh.gov.cn",
+        "cac.gov.cn",
+        "baike.baidu.com",
+        "it.shutcm.edu.cn",
+        "gov.cn",
+        "sohu.com",
+        "moj.gov.cn",
+        "statics.scnu.edu.cn"
+      ],
+      "avgSnippetLen": 100,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "生成式人工智能服务管理暂行办法_国务院部门文件_中国政府网",
+        "url": "https://fgw.sh.gov.cn/cmsres/17/178abb4ba3ea47418032d3dda62792c1/1af920f35823ecd5df559a7ced014751.pdf",
+        "snippet": "2024年12月11日   《 生成式人工智能服务管理暂行办法》 已经2023 年5 月23日国家互联网信息办公室2023 年第12 次室务会会议审议通过,并经国家发展和改革委员会、 教育部、 科学技术部、 工业和信息 …"
+      },
+      {
+        "title": "国家网信办等七部门联合公布《生成式人工智能服务管理暂行 ...",
+        "url": "https://www.cac.gov.cn/2023-07/13/c_1690898326795531.htm",
+        "snippet": "2023年7月13日   近日，国家网信办联合国家发展改革委、教育部、科技部、工业和信息化部、公安部、广电总局公布《生成式人工智能服务管理暂行办法》（以下称《办法》），自2023年8月15日起施行 …"
+      },
+      {
+        "title": "生成式人工智能服务管理暂行办法_百度百科",
+        "url": "https://baike.baidu.com/item/%E7%94%9F%E6%88%90%E5%BC%8F%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E6%9C%8D%E5%8A%A1%E7%AE%A1%E7%90%86%E6%9A%82%E8%A1%8C%E5%8A%9E%E6%B3%95/63202594",
+        "snippet": "《生成式人工智能服务管理暂行办法》是为促进生成式人工智能健康发展和规范应用，维护国家安全和社会公共利益，保护公民、法人和其他组织的合法权益而制定的办法，自2023年8月15日起施行。"
+      },
+      {
+        "title": "生成式人工智能服务管理暂行办法",
+        "url": "https://it.shutcm.edu.cn/2025/0606/c5773a167459/page.htm",
+        "snippet": "2025年6月6日   《生成式人工智能服务管理暂行办法》已经2023年5月23日国家互联网信息办公室2023年第12次室务会会议审议通过，并经国家发展和改革委员会、教育部、科学技术部、工业和信 …"
+      },
+      {
+        "title": "生成式人工智能服务管理暂行办法_国务院部门文件_中国政府网",
+        "url": "https://www.gov.cn/zhengce/zhengceku/202307/content_6891752.htm",
+        "snippet": "2023年7月10日   《生成式人工智能服务管理暂行办法》已经2023年5月23日国家互联网信息办公室2023年第12次室务会会议审议通过，并经国家发展和改革委员会、教育部、科学技术部、工业和信 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "生成式",
+        "人工智能",
+        "管理"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "pol-4",
+    "query": "医疗保障基金 监管 条例",
+    "intent": "policy",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 1,
+      "richness": 0.6788571428571428,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.9197142857142857
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 10,
+      "domains": [
+        "baike.baidu.com",
+        "ybj.jszwfw.gov.cn",
+        "taicang.gov.cn",
+        "nhc.gov.cn",
+        "si12333.cn",
+        "nhsa.gov.cn",
+        "fuwu.nhsa.gov.cn",
+        "39.net",
+        "dxy.cn",
+        "gov.cn"
+      ],
+      "avgSnippetLen": 98,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "医疗（汉语词语）_百度百科",
+        "url": "https://baike.baidu.com/item/%E5%8C%BB%E7%96%97/3232414",
+        "snippet": "2026年3月7日   医疗指与疾病治疗、预防、诊断以及健康维护相关的活动和过程，涉及医学专业人员和医疗设施的使用，以及医疗技术和药物的应用 [8] [16]。 在中文中，“医疗”一词拼音为yī li&#225;o，基本解释 …"
+      },
+      {
+        "title": "ybj.jszwfw.gov.cn",
+        "url": "https://ybj.jszwfw.gov.cn/hsa-local/web/hallEnter/",
+        "snippet": "Provides access to Jiangsu's medical insurance services, including registration, information updates, and benefits management."
+      },
+      {
+        "title": "医疗卫生 _ 太仓市人民政府 - taicang.gov.cn",
+        "url": "https://www.taicang.gov.cn/taicang/ylws/zwfw_list.shtml",
+        "snippet": "2026年5月18日   医疗卫生 太仓渔港诊所备案变动公示 2026-06-09 太仓市报考2026年度江苏省中医医术确有专长人员医师资格考核报名（县级初审合格）人员情况公示 2026-06-02 共青团太仓市卫生健康 …"
+      },
+      {
+        "title": "中华人民共和国国家卫生健康委员会",
+        "url": "https://www.nhc.gov.cn/",
+        "snippet": "2026年5月24日   关于印发2026年纠正医药购销领域和医疗服务中不正之风工作要点的通知 （06-08） 国家卫生健康委办公厅关于进一步健全城市社区卫生服务体系 提升服务能力的通知 （06-02）"
+      },
+      {
+        "title": "太仓智慧医保&#183;公共服务信息系统",
+        "url": "https://si12333.cn/platform/muac.html",
+        "snippet": "2021年10月12日   太仓医保网上申报系统，因我市人社和医保系统拆分，现医保网上申报系统升级为太仓智慧医保公共服务系统，原苏州数字证书认证中心的key仍可正常使用。2022年9月切换至江苏医保 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.25,
+      "expectKeywords": [
+        "医保",
+        "监管"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "pol-5",
+    "query": "网络安全法 通过时间",
+    "intent": "policy",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.85,
+      "richness": 0.6921428571428572,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8855357142857143
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 7,
+      "domains": [
+        "speedtest.cn",
+        "baike.baidu.com",
+        "runoob.com",
+        "javaguide.cn",
+        "csguide.cn",
+        "test.ustc.edu.cn",
+        "developer.baidu.com"
+      ],
+      "avgSnippetLen": 102,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "测速网 - 专业测网速, 网速测试, 宽带提速, 游戏测速, 直播测速 ...",
+        "url": "https://www.speedtest.cn/",
+        "snippet": "测速网（SpeedTest.cn）提供网速测试，网络质量测试，宽带测速，Wi-Fi测速，5G测速，IPv6测速，带宽检测，路由器测速，网关测速，宽带提速，宽带升级，网络加速，内网测速，专网测速，视频测 …"
+      },
+      {
+        "title": "网络（由节点和连线构成的图）_百度百科",
+        "url": "https://baike.baidu.com/item/%E7%BD%91%E7%BB%9C/143243",
+        "snippet": "1994年5月21日   在1999年之前，人们一般认为网络的结构都是随机的。 但随着Barabasi和Watts在1999年分别发现了网络的无标度和小世界特性并分别在世界著名的《科学》和《自然》杂志上发表了 …"
+      },
+      {
+        "title": "计算机网络基础知识总结 | 菜鸟教程",
+        "url": "https://www.runoob.com/w3cnote/summary-of-network.html",
+        "snippet": "2016年5月31日   它将计算机网络体系结构的通信协议划分为七层，自下而上依次为：物理层（Physics Layer）、数据链路层（Data Link Layer）、网络层（Network Layer）、传输层（Transport Layer） …"
+      },
+      {
+        "title": "《计算机网络》（谢希仁）内容总结 | JavaGuide",
+        "url": "https://javaguide.cn/cs-basics/network/computer-network-xiexiren-summary.html",
+        "snippet": "2026年5月18日   基于《计算机网络》教材的学习笔记，梳理术语与分层模型等核心知识点，便于期末复习与面试巩固。 重点围绕 1. 计算机网络概述、2. 物理层（Physical Layer）、3. 数据链路层（Data …"
+      },
+      {
+        "title": "计算机网络超详细系统学习路线（2025年最新） - 编程指北",
+        "url": "https://csguide.cn/roadmap/basic/how_to_learn_networking.html",
+        "snippet": "2026年6月6日   编程指北提供的计算机网络完整学习指南，从网络分层模型到TCP/IP协议栈，包含HTTP、TCP、UDP、IP等核心协议详解，以及网络安全、性能优化等进阶知识，适合从入门到精通 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "expectKeywords": [
+        "网络安全",
+        "2016"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "gen-1",
+    "query": "黄仁勋 女儿 订婚",
+    "intent": "generic",
+    "latencyMs": 1,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.85,
+      "richness": 0.7268571428571428,
+      "recall": 0,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.6442142857142857
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 7,
+      "domains": [
+        "baike.baidu.com",
+        "xinhanyu.com",
+        "hanyuguoxue.com",
+        "hanzidb.org",
+        "zh.wiktionary.org",
+        "hancibao.com",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 110,
+      "missedKeywords": [
+        "黄仁勋",
+        "女儿"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "黄姓（汉字姓氏）_百度百科",
+        "url": "https://baike.baidu.com/item/%E9%BB%84%E5%A7%93/617028",
+        "snippet": "2022年1月24日   按照司马迁的《史记&#183;秦本纪 》记载，黄氏，为嬴姓十四氏之一，是远古时期伯益的后裔，伯益长子大廉为黄夷首领，在夏朝建立古黄国，商朝以国为氏。 《竹书纪年》载：“（夏）后相 …"
+      },
+      {
+        "title": "黄的意思,黄的解释,黄的笔画,黄的拼音,黄的部首-新汉语",
+        "url": "https://www.xinhanyu.com/zidian/zi-9ec4",
+        "snippet": "1 天前   黄的拼音是hu&#225;ng，黄字总笔画11画，黄的偏旁部首是黄部，新汉语网介绍黄字的意思，黄的详细解释，黄的拼音、读音、笔顺，还包括黄的近义词、反义词、组词、翻译、五笔输入法、异体字、 …"
+      },
+      {
+        "title": "黃的意思,黃的解释,黃的拼音,黃的部首,黃的笔顺-汉语国学",
+        "url": "https://www.hanyuguoxue.com/zidian/zi-40643",
+        "snippet": "名 1. 一种似土地的颜色，为三原色之一。 引证 《说文解字 &#183; 黄部》：“黄，地之色也。 ” 2. 黄帝的简称。 例如 炎黄子孙、黄老之术。 3. 姓。 如宋代有黄庭坚。 4. 二一四部首之一。 动 1. 变黄而枯萎。 引证 …"
+      },
+      {
+        "title": "Chinese character 黄 huang2 - meaning, pinyin, strokes, …",
+        "url": "http://hanzidb.org/character/%E9%BB%84",
+        "snippet": "English translation (based on CEDICT): 黃|黄 [Hu&#225;ng]: - surname Huang or Hwang 黃|黄 [hu&#225;ng]: - yellow - pornographic - to fall through"
+      },
+      {
+        "title": "黄 - 維基詞典，自由的多語言詞典",
+        "url": "https://zh.wiktionary.org/zh-hant/%E9%BB%84",
+        "snippet": "2026年6月8日   吳音: おう (ō，常用)← わう (wau， 歷史) 漢音: こう (kō，常用)← くわう (kwau， 歷史) 訓讀: き (ki，黄, 常用)、 こ (ko，黄, 常用†) 名乘: うい (ui)、 れい (rei)"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.3,
+      "expectKeywords": [
+        "黄仁勋",
+        "女儿"
+      ]
+    },
+    "expectationFailures": [
+      "未命中任何期望关键词: 黄仁勋/女儿"
+    ]
+  },
+  {
+    "caseId": "gen-2",
+    "query": "马斯克 推特 收购 价格",
+    "intent": "generic",
+    "latencyMs": 0,
+    "hitCount": 9,
+    "scores": {
+      "noise": 0.8888888888888888,
+      "diversity": 0.85,
+      "richness": 0.6676190476190476,
+      "recall": 0,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.6016269841269841
+    },
+    "details": {
+      "noiseRate": 0.1111111111111111,
+      "noiseHits": [
+        "toutiao.com | 中华马文化：骠、骥、骁、骏、驹、骒、骊、骐、骅、骝、骓 ..."
+      ],
+      "uniqueDomains": 7,
+      "domains": [
+        "zhuanlan.zhihu.com",
+        "toutiao.com",
+        "baike.baidu.com",
+        "baike.sogou.com",
+        "hanyuguoxue.com",
+        "news.qq.com",
+        "sohu.com"
+      ],
+      "avgSnippetLen": 96,
+      "missedKeywords": [
+        "Twitter"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "中国马图鉴（一） - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/665540506",
+        "snippet": "2023年11月7日   说起马绝大部分都只知道汗血宝马，或者只知道八骏图。 那么今天我们就来深刻了解一下马吧~ 广义上讲，所有生活在中国土地上的马儿都是中国马；狭义上讲中国马指的是地方马种。 1. …"
+      },
+      {
+        "title": "关于马的45个有趣的事实 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/374833939",
+        "snippet": "2021年5月24日   公马（成年雄性马）在交配时会发出很大的吼叫声，所有的马都会使用鼻息来警告其他人潜在的危险。 20.大约460万美国人以一种或另一种方式从事马业。 美国的马业每年仅对900万匹 …"
+      },
+      {
+        "title": "中华马文化：骠、骥、骁、骏、驹、骒、骊、骐、骅、骝、骓 ...",
+        "url": "https://www.toutiao.com/article/7296029564604531226/",
+        "snippet": "2023年10月31日   驿 (y&#236;)：古代驿站中供传递公文或官员来往使用的马。 古代战车一般有四马拉动，中间两匹为 服，两服之间有 辕、轭 相连，外侧两匹为 骖、騑， 一说服左边的马叫“ 骖 ”，服右边的马叫“  …"
+      },
+      {
+        "title": "马（奇蹄目马科马属草食性动物）_百度百科",
+        "url": "https://baike.baidu.com/item/%E9%A9%AC/7204564",
+        "snippet": "根据马原产地的自然环境条件，以及外形特征和性能等方面的差异，可将马分为草原种、沙漠种、山地种和森林种。 草原种分布在广阔的草原区；沙漠种生活在干燥沙漠地带；山地种，善走山路；森林种 …"
+      },
+      {
+        "title": "马（汉语文字）_百度百科",
+        "url": "https://baike.baidu.com/item/%E9%A9%AC/34268",
+        "snippet": "马（拼音：mǎ）是汉语通用规范一级汉字（常用字），此字始见于商代甲骨文及商代金文。 马的古字形像一头身足尾俱全的马的侧面形象，本义就是指这种动物。 后又假借为大。 马也用作姓氏。 马是汉 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.3,
+      "expectKeywords": [
+        "马斯克",
+        "推特",
+        "Twitter"
+      ]
+    },
+    "expectationFailures": [
+      "未命中任何期望关键词: 马斯克/推特/Twitter"
+    ]
+  },
+  {
+    "caseId": "gen-3",
+    "query": "OpenAI Sam Altman 履历",
+    "intent": "generic",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 0.875,
+      "diversity": 0.7749999999999999,
+      "richness": 0.84,
+      "recall": 0.5,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.7474999999999999
+    },
+    "details": {
+      "noiseRate": 0.125,
+      "noiseHits": [
+        "apifox.com | OpenAI 官网入口地址：如何轻松找到"
+      ],
+      "uniqueDomains": 6,
+      "domains": [
+        "openai.smapply.org",
+        "github.com",
+        "baike.baidu.com",
+        "developers.openai.ac.cn",
+        "apifox.com",
+        "zhuanlan.zhihu.com"
+      ],
+      "avgSnippetLen": 136,
+      "missedKeywords": [
+        "Altman"
+      ],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "OpenAI",
+        "url": "https://openai.smapply.org/",
+        "snippet": "OpenAI’s mission is to ensure that artificial general intelligence (AGI) benefits all of humanity. In service of that mission, we sometimes provide grants (in the form of monetary compensation or API "
+      },
+      {
+        "title": "OpenAI - GitHub",
+        "url": "https://github.com/openai/",
+        "snippet": "JavaScript 3,125 368 0 29 Updated 12 minutes ago skills Public Skills Catalog for Codex Python 22,329 1,518 52 224 Updated 52 minutes ago openai-java Public The official Java library for the OpenAI AP"
+      },
+      {
+        "title": "OpenAI_百度百科",
+        "url": "https://baike.baidu.com/item/OpenAI/19758408",
+        "snippet": "OpenAI是2015年12月11日由萨姆&#183;奥尔特曼、埃隆&#183;马斯克、彼得&#183;蒂尔等科技领袖创立的一家研究和部署人工智能的公司，总部位于美国旧金山，公司核心宗旨在于“实现安全的通用人工智能 (AGI)”，现任 …"
+      },
+      {
+        "title": "OpenAI 开发者 - OpenAI 教程",
+        "url": "https://developers.openai.ac.cn/",
+        "snippet": "2026年4月16日   帮助中心 账户与账单相关常见问题 开发者论坛 与其他开发者交流探讨 OpenAI 创业支持 为有志于使用 OpenAI 构建产品的创始人提供资源 服务状态 查看 OpenAI 各项服务的运行状态"
+      },
+      {
+        "title": "OpenAI 官网入口地址：如何轻松找到",
+        "url": "https://apifox.com/apiskills/openai-official-portal/",
+        "snippet": "OpenAI OpenAI是一个强大的开放人工智能研究平台，其提供了一系列深度学习和自然语言处理的工具和技术。 使用OpenAI可以获得以下优点： 更准确的预测或推荐：OpenAI 的模型可以训练和预测特定 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.3,
+      "expectKeywords": [
+        "Altman",
+        "OpenAI"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "gen-4",
+    "query": "GTA6 发布 时间",
+    "intent": "generic",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 0.9,
+      "diversity": 0.85,
+      "richness": 0.6107142857142857,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8401785714285714
+    },
+    "details": {
+      "noiseRate": 0.1,
+      "noiseHits": [
+        "gamersky.com | 《GTA6》发售日彻底实锤！不用担心再跳票了 _ 游民星空 ..."
+      ],
+      "uniqueDomains": 7,
+      "domains": [
+        "news.qq.com",
+        "gamersky.com",
+        "zhuanlan.zhihu.com",
+        "sohu.com",
+        "ithome.com",
+        "rockstargames.com",
+        "baike.baidu.com"
+      ],
+      "avgSnippetLen": 83,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "《GTA6》或将无缘TGA年度游戏评选_腾讯新闻",
+        "url": "https://news.qq.com/rain/a/20260614A038PF00",
+        "snippet": "3 天之前   第一，为《GTA6》这类自带顶级流量、拥有庞大粉丝基础的IP重磅大作，设立专属的独立评选奖项，实现奖项分类评选； …"
+      },
+      {
+        "title": "《GTA6》发售日彻底实锤！不用担心再跳票了 _ 游民星空 ...",
+        "url": "https://www.gamersky.com/news/202605/2141567.shtml",
+        "snippet": "2026年5月18日   《GTA6》发售日期再次确认，这次稳了！ 点击查看游民星空专题页面，一览所有最新情报。 专题链接&gt;&gt; Take-Two …"
+      },
+      {
+        "title": "终于定了！GTA6 售价、发售日期全面曝光 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/2030205685699457967",
+        "snippet": "2026年4月22日   等了整整数年，《GTA6》终于迎来最关键的官方实锤！Take-Two CEO 斯特劳斯・泽尔尼克正式确认定价与发售核 …"
+      },
+      {
+        "title": "愚人节暴击！《GTA6》PC版11.19同步发售，配置亲民到离谱",
+        "url": "https://www.sohu.com/a/1003830353_121212001",
+        "snippet": "2026年4月1日，Rockstar Games官方推特正式官宣，《侠盗猎车手6（GTA6）》PC版将在2026年11月19日，和PS5、Xbox主机版同 …"
+      },
+      {
+        "title": "GTA6 定档细节解析，开放世界玩法再升级 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/2021996128397174125",
+        "snippet": "2026年3月30日   《GTA6》的主线任务数量高达179个，涵盖抢劫、赛车、侦探、卧底等多种类型，更引入分支选择机制——玩家在过 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.3,
+      "expectKeywords": [
+        "GTA",
+        "发布"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "gen-5",
+    "query": "诺贝尔物理学奖 2024",
+    "intent": "generic",
+    "latencyMs": 0,
+    "hitCount": 10,
+    "scores": {
+      "noise": 1,
+      "diversity": 0.85,
+      "richness": 0.7071428571428571,
+      "recall": 1,
+      "forbidden": null,
+      "llm": null,
+      "overall": 0.8892857142857142
+    },
+    "details": {
+      "noiseRate": 0,
+      "noiseHits": [],
+      "uniqueDomains": 7,
+      "domains": [
+        "baike.baidu.com",
+        "nobelpress.org",
+        "baike.sogou.com",
+        "news.qq.com",
+        "zhuanlan.zhihu.com",
+        "nobelists.org",
+        "sohu.com"
+      ],
+      "avgSnippetLen": 105,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "阿尔弗雷德&#183;贝恩哈德&#183;诺贝尔_百度百科",
+        "url": "https://baike.baidu.com/item/%E9%98%BF%E5%B0%94%E5%BC%97%E9%9B%B7%E5%BE%B7%C2%B7%E8%B4%9D%E6%81%A9%E5%93%88%E5%BE%B7%C2%B7%E8%AF%BA%E8%B4%9D%E5%B0%94/1709774",
+        "snippet": "阿尔弗雷德&#183;贝恩哈德&#183;诺贝尔（Alfred Bernhard Nobel，1833年10月21日~1896年12月10日），出生于斯德哥尔摩，瑞典化学家、工程师、发明家、军工装备制造商和矽藻土炸药的发明者。 1833年10月21 …"
+      },
+      {
+        "title": "诺贝尔奖（以瑞典化学家诺贝尔命名的奖项）_百度百科",
+        "url": "https://baike.baidu.com/item/%E8%AF%BA%E8%B4%9D%E5%B0%94%E5%A5%96/187878",
+        "snippet": "诺贝尔奖（瑞典语：Nobel priset，英语：Nobel Prize）是指根据诺贝尔1895年的遗嘱而设立的五个奖项，包括：物理学奖、化学奖、和平奖、生理学或医学奖和文学奖，旨在表彰在物理学、化学、和平、 …"
+      },
+      {
+        "title": "诺贝尔奖奖项 | 诺贝尔奖讯 - NobelPress.org",
+        "url": "https://nobelpress.org/prizes",
+        "snippet": "诺贝尔奖拓展活动 各种延伸机构和拓展活动被开发出来，以激励数代人并传播关于诺贝尔奖的知识。 THE NOBEL PRIZE Press - 诺贝尔奖中文网站，历届诺奖得主中文信息、新闻，及获奖者著作 - …"
+      },
+      {
+        "title": "诺贝尔 _ 百科",
+        "url": "https://baike.sogou.com/m/v160077.htm",
+        "snippet": "诺贝尔（Alfred Bernhard Nobel，1833年10月21日-1896年12月10日），全称阿尔弗雷德&#183;贝恩哈德&#183;诺贝尔，出生于 斯德哥尔摩， 瑞典 国籍， 瑞典化学家 、 发明家 、工业家、工程师、军工装备制造商和 …"
+      },
+      {
+        "title": "2025诺贝尔奖全揭晓，获奖者名单完整盘点！_腾讯新闻",
+        "url": "https://news.qq.com/rain/a/20251019A0218W00",
+        "snippet": "2025年10月19日   诺贝尔和平奖 当地时间10月10日，诺贝尔奖委员会宣布将2025年度诺贝尔和平奖授予： 委内瑞拉民主活动家玛丽亚&#183;科里娜&#183;马查多（Maria Corina Machado）"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.25,
+      "expectKeywords": [
+        "诺贝尔",
+        "Nobel",
+        "物理"
+      ]
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "reg-1",
+    "query": "2027年二十一大可能议题",
+    "intent": "regression",
+    "latencyMs": 1,
+    "hitCount": 10,
+    "scores": {
+      "noise": 0.9,
+      "diversity": 0.95,
+      "richness": 0.4464,
+      "recall": null,
+      "forbidden": 1,
+      "llm": null,
+      "overall": 0.7654666666666667
+    },
+    "details": {
+      "noiseRate": 0.1,
+      "noiseHits": [
+        "toutiao.com | 为什么2027年被视为中国的重要时间节点？ - 今日头条"
+      ],
+      "uniqueDomains": 9,
+      "domains": [
+        "baike.baidu.com",
+        "clockzone.net",
+        "calendar411.com",
+        "word.baidu.com",
+        "wannianli.tianqi.com",
+        "k.sina.com.cn",
+        "toutiao.com",
+        "zhuanlan.zhihu.com",
+        "rili.com.cn"
+      ],
+      "avgSnippetLen": 67,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "2027年_百度百科",
+        "url": "https://baike.baidu.com/item/2027%E5%B9%B4/7710238",
+        "snippet": "国际电信联盟宣布2027年世界无线电通信大会将于10月11日至11月12日在中国上海举办，这是首次在亚太地区举办该会议。 美国国防 …"
+      },
+      {
+        "title": "中国 - 2027年节假日完整列表 &#183; ClockZone",
+        "url": "https://clockzone.net/zh-CN/holiday/CN/2027",
+        "snippet": "中国 2027 年节假日详情 本页面提供 中国 2027 年的完整节假日列表，包括所有法定假期、银行假期和重要纪念日的准确日期。 这些 …"
+      },
+      {
+        "title": "和中国大陆2027年年历 - 月曆网",
+        "url": "https://www.calendar411.com/ho-cn2/calendar/2027/0",
+        "snippet": "和中国大陆月历 - 公元2027年1月，农历丙午年，马年。和中国大陆2027年1月的法定节假日及纪念日有1月1日中国大陆元旦。和中国 …"
+      },
+      {
+        "title": "2027年节日放假一览表",
+        "url": "https://word.baidu.com/view/e1b1331d49fe04a1b0717fd5360cba1aa9118cbe.html",
+        "snippet": "2027年春节放假起始日为2月17日（星期三），为保障群众有充足时间返乡团聚、休闲度假，故调休2月15日、16日两天，与假期衔接 …"
+      },
+      {
+        "title": "中国2027年年历",
+        "url": "https://www.calendar411.com/cn2/calendar/2027/0",
+        "snippet": "中国大陆2027年7月的法定节假日及纪念日有7月1日香港回归纪念日，7月27日火把节。 中国大陆2027年8月的法定节假日及纪念日有8 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "forbiddenDomains": [
+        "dict.baidu.com",
+        "zdic.net",
+        "csdn.net",
+        "baijiahao.baidu.com"
+      ],
+      "minUniqueDomains": 5
+    },
+    "expectationFailures": []
+  },
+  {
+    "caseId": "reg-2",
+    "query": "什么是大模型",
+    "intent": "regression",
+    "latencyMs": 0,
+    "hitCount": 8,
+    "scores": {
+      "noise": 0.875,
+      "diversity": 0.85,
+      "richness": 0.6916071428571429,
+      "recall": 1,
+      "forbidden": 1,
+      "llm": null,
+      "overall": 0.8541517857142857
+    },
+    "details": {
+      "noiseRate": 0.125,
+      "noiseHits": [
+        "toutiao.com | 什么是大模型？一文读懂大模型定义、特点、应用场景及前景"
+      ],
+      "uniqueDomains": 7,
+      "domains": [
+        "zhuanlan.zhihu.com",
+        "developer.baidu.com",
+        "toutiao.com",
+        "baike.baidu.com",
+        "cnblogs.com",
+        "36kr.com",
+        "aibook.ren"
+      ],
+      "avgSnippetLen": 101,
+      "missedKeywords": [],
+      "forbiddenHit": [],
+      "llm": null
+    },
+    "topHits": [
+      {
+        "title": "什么是大模型（LLMs）？一文读懂什么是大模型 - 知乎",
+        "url": "https://zhuanlan.zhihu.com/p/1900212961517213051",
+        "snippet": "2025年5月24日   大模型 （Large Model,也称基础模型，即 Foundation Model），是指具有大量参数和复杂结构的机器学习模型，能够处理海量数据、完成各种复杂的任务，如自然语言处理、计算机视觉、 …"
+      },
+      {
+        "title": "什么是大模型？一文读懂大模型的核心原理与应用-百度开发 ...",
+        "url": "https://developer.baidu.com/article/detail.html?id=3659155",
+        "snippet": "2025年9月18日   简介： 本文深度解析大模型的基本概念，从定义、技术原理到应用场景全面阐述，帮助读者系统理解大模型的核心价值。 参数规模：传统模型参数通常在百万级（如早期CNN），而大模 …"
+      },
+      {
+        "title": "什么是大模型？一文读懂大模型定义、特点、应用场景及前景",
+        "url": "https://www.toutiao.com/article/7448112385217036836/",
+        "snippet": "2024年12月14日   本文以大模型的基本概念为起点，对大模型领域中易混淆的相关概念加以区分，同时针对大模型的发展历程、特点和分类、泛化与微调进行了详实解读，旨在为大家在了解大模型基本知识 …"
+      },
+      {
+        "title": "一文搞清楚大模型到底是什么？附国内外知名大模型及240余 ...",
+        "url": "https://zhuanlan.zhihu.com/p/1966910184287863166",
+        "snippet": "2025年10月29日   一、大模型概述1、 什么是大模型 AI大模型是“大数据+大算力+强算法”结合的产物，是一种能够利用大数据和神经网络来模拟人类思维和创造力的人工智能算法。 它利用海量的数据和深 …"
+      },
+      {
+        "title": "人工智能大模型 - 百度百科",
+        "url": "https://baike.baidu.com/item/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%A4%A7%E6%A8%A1%E5%9E%8B/63800799",
+        "snippet": "2026年4月8日   人工智能大模型（简称“大模型”）是指由 人工神经网络 构建的一类具有大量参数的人工智能模型。 人工智能大模型是近十年来兴起的新兴概念。 其通常先通过自监督学习或 半监督学习 在 …"
+      }
+    ],
+    "expectations": {
+      "noiseRateMax": 0.2,
+      "forbiddenDomains": [
+        "dict.baidu.com",
+        "zdic.net",
+        "iciba.com"
+      ],
+      "expectKeywords": [
+        "大模型",
+        "LLM",
+        "语言"
+      ]
+    },
+    "expectationFailures": []
+  }
+]

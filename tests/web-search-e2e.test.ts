@@ -81,6 +81,23 @@ console.log('\n[5] 空结果：兜底文案')
   check('空结果给兜底提示', out.includes('未找到') && out.includes('建议'))
 }
 
+console.log('\n[6] policy fallback：法规精确结果应排在泛“数据”结果前')
+{
+  const policyHits: SearchHit[] = [
+    { title: '国家数据', url: 'https://data.stats.gov.cn/',
+      snippet: '相关链接 统计法规 标准制度 统计数据生产过程 版权所有：国家统计局。' },
+    { title: '数据（计算机术语）_百度百科', url: 'https://baike.baidu.com/item/data',
+      snippet: '数据是事实或观察的结果，是对客观事物的逻辑归纳。' },
+    { title: '中华人民共和国数据安全法', url: 'https://www.npc.gov.cn/law/data-security-law',
+      snippet: '中华人民共和国数据安全法全文，规范数据处理活动，保障数据安全，促进数据开发利用。' },
+  ]
+  const out = await runWebSearch(['数据安全法 主要内容'], undefined, { search: async () => policyHits, zhihu: fakeZhihuEmpty })
+  const lawIdx = out.indexOf('中华人民共和国数据安全法')
+  const genericIdx = out.indexOf('国家数据')
+  check('法规精确结果排在泛数据结果前', lawIdx >= 0 && genericIdx >= 0 && lawIdx < genericIdx,
+    `lawIdx=${lawIdx}, genericIdx=${genericIdx}`)
+}
+
 console.log(`\n${failed === 0 ? '✓' : '✗'} ${passed} passed, ${failed} failed`)
 if (failed > 0) { console.log('\n失败项：'); failures.forEach(f => console.log('  - ' + f)) }
 process.exit(failed > 0 ? 1 : 0)

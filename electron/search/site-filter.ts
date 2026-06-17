@@ -1,8 +1,11 @@
 import type { SearchHit } from './duckduckgo'
 
 /**
- * 完全排除：词典/工具类站点，对绝大部分搜索意图都是噪声
- * 即便用户是查词，正经词义也能从更高质量的页面（如百度百科、维基百科）拿到
+ * 完全排除：词典/工具类站点 + CSDN，对绝大部分搜索意图都是噪声
+ * - 词典站：即便用户是查词，正经词义也能从更高质量的页面（百度百科、维基百科）拿到
+ * - CSDN：从降权升级为完全排除——实测它频繁挤进 top（同域≤2 补足逻辑会把它捞回），
+ *   且常字面误命中（如搜"比特币"命中 CSDN 的"bit/byte/KB"文章），噪声价值大于信息价值。
+ *   若某 query 确实只有 CSDN 有答案，用户可换关键词或加 site: 限定。
  */
 const EXCLUDED_DOMAINS = [
   // 词典站
@@ -13,6 +16,8 @@ const EXCLUDED_DOMAINS = [
   'qianp.com', 'guoxuedashi.com',
   'dictionary.com', 'merriam-webster.com',
   'translate.google.com',
+  // 内容农场（曾降权，现完全排除）
+  'csdn.net', 'blog.csdn.net',
 ]
 
 /**
@@ -21,7 +26,6 @@ const EXCLUDED_DOMAINS = [
  */
 const LOW_QUALITY_DOMAINS = [
   'wenku.baidu.com', 'doc.mbalib.com', 'docin.com', 'doc88.com',
-  'csdn.net',
   'jianshu.com',
   'toutiao.com',  // 标题党+大量低质转载
   'sohu.com',     // 搜狐号 SEO 农场

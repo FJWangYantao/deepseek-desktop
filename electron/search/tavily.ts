@@ -1,4 +1,5 @@
 import { searchWebLight, type SearchHit } from './duckduckgo'
+import { searchZhihuGlobalAsHits } from './zhihu-search'
 import { createLogger } from '../logger'
 
 const log = createLogger('tavily')
@@ -75,4 +76,37 @@ export async function searchTavilyThenFallback(
   const tavilyHits = await searchTavilyLight(query)
   if (tavilyHits.length > 0) return tavilyHits
   return fallback(query)
+}
+
+/**
+ * 主搜索入口：三级 fallback。
+ *   1. 知乎全网（额度多、中文召回好，作为第一优先级）
+ *   2. Tavily（结构化、中英都强，第二优先级）
+ *   3. Bing/DDG（HTML 抓取兜底，无 key 时也能用）
+ *
+ * 任一级返回非空即停止。所有级别失败时返回空数组（调用方决定如何提示）。
+ *
+ * deps 参数用于测试注入；生产代码用默认值即可。
+ */
+export interface PrimarySearchDeps {
+  zhihu?: (q: string) => Promise<SearchHit[]>
+  tavily?: (q: string) => Promise<SearchHit[]>
+  fallback?: (q: string) => Promise<SearchHit[]>
+}
+
+export async function searchPrimary(
+  query: string,
+  deps: PrimarySearchDeps = {},
+): Promise<SearchHit[]> {
+  const zhihu = deps.zhihu ?? searchZhihuGlobalAsHits
+  const tavily = deps.tavily ?? searchTavilyLight
+  const fallback = deps.fallback ?? searchWebLight
+
+  const zhihuHits = await zhihu(query).catch(() => [] as SearchHit[])
+  if (zhihuHits.length > 0) return zhihuHits
+
+  const tavilyHits = await tavily(query).catch(() => [] as SearchHit[])
+  if (tavilyHits.length > 0) return tavilyHits
+
+  return fallback(query).catch(() => [] as SearchHit[])
 }

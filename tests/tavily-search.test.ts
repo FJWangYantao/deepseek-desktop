@@ -6,6 +6,7 @@ import {
   setTavilyApiKey,
   searchTavilyLight,
   searchTavilyThenFallback,
+  searchPrimary,
 } from '../electron/search/tavily'
 import type { SearchHit } from '../electron/search/duckduckgo'
 
@@ -105,6 +106,48 @@ console.log('\n[4] searchTavilyThenFallback — priority/fallback')
   setFetch(async () => jsonResponse({ results: [] }))
   const fallbackHits = await searchTavilyThenFallback('q', fallback)
   check('Tavily 空结果时回退 fallback', fallbackHits[0]?.title === 'Fallback hit')
+}
+
+console.log('\n[5] searchPrimary — 三级链 zhihu→tavily→bing/ddg')
+{
+  const zhihu = async (): Promise<SearchHit[]> => [{ title: 'Zhihu hit', url: 'z', snippet: 'z' }]
+  const tavily = async (): Promise<SearchHit[]> => [{ title: 'Tavily hit', url: 't', snippet: 't' }]
+  const fallback = async (): Promise<SearchHit[]> => [{ title: 'Fallback hit', url: 'f', snippet: 'f' }]
+  const empty = async (): Promise<SearchHit[]> => []
+  const fail = async (): Promise<SearchHit[]> => { throw new Error('boom') }
+
+  // 1) 知乎有结果：直接用知乎，跳过 Tavily 和 fallback
+  let tavilyCalled = false
+  let fbCalled = false
+  const r1 = await searchPrimary('q', {
+    zhihu,
+    tavily: async (q) => { tavilyCalled = true; return tavily(q) },
+    fallback: async (q) => { fbCalled = true; return fallback(q) },
+  })
+  check('知乎有结果 → 用知乎', r1[0]?.title === 'Zhihu hit')
+  check('知乎有结果 → 不调 Tavily', !tavilyCalled)
+  check('知乎有结果 → 不调 fallback', !fbCalled)
+
+  // 2) 知乎空，Tavily 有 → 用 Tavily
+  fbCalled = false
+  const r2 = await searchPrimary('q', {
+    zhihu: empty, tavily,
+    fallback: async (q) => { fbCalled = true; return fallback(q) },
+  })
+  check('知乎空 → 用 Tavily', r2[0]?.title === 'Tavily hit')
+  check('知乎空+Tavily 有 → 不调 fallback', !fbCalled)
+
+  // 3) 知乎和 Tavily 都空 → 用 fallback
+  const r3 = await searchPrimary('q', { zhihu: empty, tavily: empty, fallback })
+  check('知乎+Tavily 都空 → 用 fallback', r3[0]?.title === 'Fallback hit')
+
+  // 4) 知乎抛错被 catch，继续 Tavily
+  const r4 = await searchPrimary('q', { zhihu: fail, tavily, fallback })
+  check('知乎抛错 → 继续 Tavily', r4[0]?.title === 'Tavily hit')
+
+  // 5) 全部失败/空 → 返回空数组（不抛错）
+  const r5 = await searchPrimary('q', { zhihu: empty, tavily: empty, fallback: empty })
+  check('三级全空 → 返回空数组', Array.isArray(r5) && r5.length === 0)
 }
 
 globalThis.fetch = originalFetch

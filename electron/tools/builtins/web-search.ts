@@ -1,7 +1,7 @@
 import type { ToolDefinition } from '../../../src/types/tools'
 import type { ToolExecutor } from '../registry'
 import type { SearchHit } from '../../search/duckduckgo'
-import { searchTavilyThenFallback } from '../../search/tavily'
+import { searchPrimary } from '../../search/tavily'
 import { preprocessQuery } from '../../search/query-preprocess'
 import { filterResults } from '../../search/site-filter'
 import { scoreAndRank } from '../../search/rank'
@@ -123,8 +123,8 @@ const definition: ToolDefinition = {
 }
 
 
-// 可注入的搜索依赖：默认走真实网络（searchWebLight + 知乎 searchAll）；
-// 测试注入 fixture 数据即可离线、确定性端到端验证 tool 的过滤/排序/包装。
+// 可注入的搜索依赖：默认主搜索走三级链 (知乎全网 → Tavily → Bing/DDG)，
+// 知乎站内问答仍单独占【知乎】面板。测试注入 fixture 数据即可离线、确定性端到端验证 tool。
 interface SearchDeps {
   search: (q: string) => Promise<SearchHit[]>
   zhihu: (q: string) => Promise<{ zhihu: ZhihuSearchResult[]; global: ZhihuSearchResult[] }>
@@ -137,7 +137,7 @@ interface SearchDeps {
 export async function runWebSearch(
   queryList: string[],
   sites: string[] | undefined,
-  deps: SearchDeps = { search: searchTavilyThenFallback, zhihu: searchAll },
+  deps: SearchDeps = { search: searchPrimary, zhihu: searchAll },
 ): Promise<string> {
   const siteFilter = sites?.length
     ? sites.map(s => `site:${s}`).join(' OR ')
@@ -229,12 +229,12 @@ export async function runWebSearch(
       qualityRanked.slice(0, 10).map((r, i) => `[${i + 1}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
   }
 
-  // 知乎结果：只保留有实质内容的（摘要≥50字符），并标注不要抓取
-  const zhihuAll = [...zhihu.zhihu, ...zhihu.global]
-    .filter(r => !seenUrls.has(r.url) && r.snippet.length >= 50)
-  if (zhihuAll.length > 0) {
+  // 知乎面板：只用站内问答（zhihu.zhihu）。知乎全网（zhihu.global）已经走主搜索链，
+  // 不在面板里重复展示，避免主结果和面板出现同一 URL。
+  const zhihuPanel = zhihu.zhihu.filter(r => !seenUrls.has(r.url) && r.snippet.length >= 50)
+  if (zhihuPanel.length > 0) {
     parts.push('【知乎】⚠️ 知乎页面有登录墙无法抓取全文，以下摘要即是最佳可用内容，请勿调用 web_fetch：\n' +
-      zhihuAll.slice(0, 5).map(r => `[${r.source}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
+      zhihuPanel.slice(0, 5).map(r => `[${r.source}] ${r.title}\n    ${r.url}\n    ${r.snippet}`).join('\n\n'))
   }
 
   if (parts.length === 0) {
