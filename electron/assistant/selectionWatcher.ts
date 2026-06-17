@@ -8,7 +8,7 @@
  */
 
 import { clipboard, app } from 'electron'
-import { execFile } from 'child_process'
+import { execFile, execFileSync } from 'child_process'
 import { join } from 'path'
 import { uIOhook } from 'uiohook-napi'
 
@@ -24,6 +24,27 @@ let suppressChecker: (() => boolean) | null = null // 抑制检查器：返回 t
 const MIN_DRAG_DISTANCE = 8 // 最小拖动距离（像素），过滤单击
 const MIN_TEXT_LENGTH = 1 // 最短有效选中文本
 
+/**
+ * 终端类前台进程黑名单：在这些进程聚焦时禁用助手。
+ * 原因：助手用模拟 Ctrl+C 抓取选区，但终端里 Ctrl+C 是中断信号，会杀掉用户正在跑的命令；
+ * 而且会临时擦剪贴板再恢复，干扰用户复制粘贴。这类应用必须完全跳过 capture。
+ *
+ * 命名以 ProcessName.exe（不含路径）形式，由 get-foreground-proc.exe 输出。
+ */
+const TERMINAL_PROCESS_BLOCKLIST = new Set([
+  'cmd.exe',                // 传统 cmd
+  'WindowsTerminal.exe',    // Windows Terminal (wt)
+  'OpenConsole.exe',        // Windows Terminal 内嵌 conhost
+  'powershell.exe',         // PowerShell 5
+  'pwsh.exe',               // PowerShell 7+
+  'ConEmu64.exe',           // ConEmu
+  'ConEmuC64.exe',
+  'mintty.exe',             // Git Bash / MSYS2
+  'alacritty.exe',          // Alacritty
+  'wezterm-gui.exe',        // WezTerm
+  'Tabby.exe',              // Tabby Terminal
+])
+
 /** 获取预编译的 Ctrl+C 模拟工具路径（比 PowerShell 启动快 30 倍） */
 function getCopyExePath(): string {
   // 开发模式：app.getAppPath() = 项目根目录
@@ -31,6 +52,31 @@ function getCopyExePath(): string {
   return app.isPackaged
     ? join(process.resourcesPath!, 'assistant', 'copy-selection.exe')
     : join(app.getAppPath(), 'electron', 'assistant', 'native', 'copy-selection.exe')
+}
+
+/** 获取前台进程查询工具路径（与 copy-selection.exe 同目录，相同打包逻辑） */
+function getForegroundProcExePath(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath!, 'assistant', 'get-foreground-proc.exe')
+    : join(app.getAppPath(), 'electron', 'assistant', 'native', 'get-foreground-proc.exe')
+}
+
+/**
+ * 同步读取当前前台窗口的进程 exe 名（如 "WindowsTerminal.exe"）。
+ * 失败/超时返回空串。同步是为了让 onMouseUp 在发 Ctrl+C 之前就能拦住——
+ * helper exe 单次调用约 5ms，值得这点阻塞换"在终端里不杀进程"。
+ */
+function getForegroundProcessName(): string {
+  try {
+    const out = execFileSync(getForegroundProcExePath(), [], {
+      windowsHide: true,
+      timeout: 300,           // 异常情况硬截断，宁可放过也不卡住选词
+      encoding: 'utf-8',
+    })
+    return out.trim()
+  } catch {
+    return ''
+  }
 }
 
 /** 模拟 Ctrl+C，返回剪贴板中的新文本（自动恢复原始剪贴板） */
@@ -73,6 +119,14 @@ async function onMouseUp(e: { x: number; y: number; clicks?: number }) {
   const isDrag = distance >= MIN_DRAG_DISTANCE
   const isMultiClick = clicks >= 2
   if (!isDrag && !isMultiClick) return
+
+  // 终端类前台进程下完全跳过（关键：模拟 Ctrl+C 在终端里会中断用户进程，且擦剪贴板）。
+  // 放在 isDrag/isMultiClick 之后，避免每次鼠标点击都 spawn helper。
+  const fgProc = getForegroundProcessName()
+  if (fgProc && TERMINAL_PROCESS_BLOCKLIST.has(fgProc)) {
+    console.log(`[Assistant] 终端进程 ${fgProc} 聚焦，跳过捕获（避免 Ctrl+C 中断与剪贴板抖动）`)
+    return
+  }
 
   isCapturing = true
 
