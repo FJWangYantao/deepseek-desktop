@@ -1,6 +1,7 @@
 import type { ToolDefinition } from '../../../src/types/tools'
 import type { ToolExecutor } from '../registry'
-import { searchWebLight, type SearchHit } from '../../search/duckduckgo'
+import type { SearchHit } from '../../search/duckduckgo'
+import { searchTavilyThenFallback } from '../../search/tavily'
 import { preprocessQuery } from '../../search/query-preprocess'
 import { filterResults } from '../../search/site-filter'
 import { scoreAndRank } from '../../search/rank'
@@ -17,13 +18,16 @@ export function classifyQuery(q: string): QueryIntent {
   if (/对比|比较|区别|差异|vs|和.{1,6}哪个/.test(q)) return 'comparison'
   if (/最新|新闻|今天|今日|昨天|消息|动态|刚刚/.test(q)) return 'news'
   if (/多少|几个|哪里|哪些|谁|什么时候|何时|数值|年份/.test(q)) return 'factual'
-  if (/政策|条例|法规|办法|通知|公告|规定|意见|标准|文件/.test(q)) return 'policy'
+  if (/政策|条例|法规|办法|通知|公告|规定|意见|标准|文件|法/.test(q)) return 'policy'
   return 'generic'
 }
 
 // ===== 查询扩展：自动生成多角度变体，一轮覆盖充分 =====
 
-const NEWS_SITES = 'site:sina.com.cn OR site:163.com OR site:qq.com OR site:sohu.com OR site:36kr.com OR site:thepaper.cn'
+// news 类加站点限定时用的门户。实测 163/qq/sohu 的二级页（邮箱注册、登录入口）
+// 会被 site: 限定拉进来污染结果（如搜 NVIDIA 拉来 QQ邮箱注册页），故只留科技/时政为主、
+// 垃圾页比例低的源。纯社会新闻覆盖会差一点，但 avoids 噪声收益更大。
+const NEWS_SITES = 'site:sina.com.cn OR site:36kr.com OR site:thepaper.cn'
 
 export function expandQueries(query: string, sites?: string[]): string[] {
   // 用户指定了 sites 就不做自动扩展
@@ -63,13 +67,28 @@ export function expandQueries(query: string, sites?: string[]): string[] {
       break
     case 'factual':
       break
-    case 'policy':
+    case 'policy': {
       variants.push(q + ' 全文')
+      variants.push(q + ' site:gov.cn OR site:npc.gov.cn')
+      // 政策法规 query 常带"主要内容/通过时间"等后缀，直接搜整句会被搜索引擎拆成普通词
+      // （如"数据安全法 主要内容"跑到"国家数据"）。抽出法规核心名后补全文/国家前缀，召回官方条文。
+      const core = q.match(/[一-鿿]{2,}(?:法|条例|办法|规定)/)?.[0]
+      if (core) {
+        variants.push(`${core} 全文`)
+        if (!core.startsWith('中华人民共和国')) variants.push(`中华人民共和国${core}`)
+      }
       break
+    }
     case 'generic': {
-      // 不再为 generic 自动加新闻门户限定：
-      // 这些门户上低质标题党/广告页比例高，主搜本身已能覆盖正经来源。
-      // 真要查最新动态，模型可以显式传 news 倾向的关键词或在 queries 里指定。
+      // 不再为 generic 自动加新闻门户限定（门户低质标题党多，主搜已能覆盖正经来源）。
+      // 但对"含拉丁 token（英文/数字）的 entity 查询"（如 GTA6、iPhone15、马斯克 推特），
+      // 加一个带引号的精确匹配变体，减少被搜索引擎/中文分词拆散。
+      const hasLatinToken = /[A-Za-z0-9]/.test(q)
+      if (hasLatinToken) {
+        // 给连续的拉丁/数字 token 加引号：GTA6 发布 时间 → "GTA6" 发布 时间
+        const quoted = q.replace(/[A-Za-z0-9]+/g, m => `"${m}"`)
+        if (quoted !== q) variants.push(quoted)
+      }
       break
     }
   }
@@ -115,7 +134,7 @@ interface SearchDeps {
 export async function runWebSearch(
   queryList: string[],
   sites: string[] | undefined,
-  deps: SearchDeps = { search: searchWebLight, zhihu: searchAll },
+  deps: SearchDeps = { search: searchTavilyThenFallback, zhihu: searchAll },
 ): Promise<string> {
   const siteFilter = sites?.length
     ? sites.map(s => `site:${s}`).join(' OR ')
@@ -164,6 +183,10 @@ export async function runWebSearch(
 
   const filtered = filterResults(merged)
   const ranked = scoreAndRank(filtered, primaryQuery)
+  const primaryIntent = classifyQuery(primaryQuery)
+  const policyCore = primaryIntent === 'policy'
+    ? primaryQuery.match(/[一-鿿]{2,}(?:法|条例|办法|规定)/)?.[0]
+    : undefined
 
   // 片段质量过滤：去除垃圾片段，长片段优先
   // 广告/SEO 文案常见的诱导词：命中即丢
@@ -178,7 +201,8 @@ export async function runWebSearch(
     const scoreA = ranked.indexOf(a)
     const scoreB = ranked.indexOf(b)
     const lenBonus = (s: string) => s.length > 200 ? -2 : s.length > 100 ? -1 : 0
-    return (scoreA + lenBonus(a.snippet)) - (scoreB + lenBonus(b.snippet))
+    const policyBonus = (r: SearchHit) => policyCore && `${r.title} ${r.snippet} ${r.url}`.includes(policyCore) ? -5 : 0
+    return (scoreA + lenBonus(a.snippet) + policyBonus(a)) - (scoreB + lenBonus(b.snippet) + policyBonus(b))
   })
 
   const zhihu = zhihuResults

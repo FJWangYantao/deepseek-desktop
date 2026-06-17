@@ -6,8 +6,8 @@
  *     —— 抓"被引入了随机性 / 副作用"的回归
  *  2. 所有分数落在 [0,1]
  *  3. fixture 序列化往返无损（save → load → deepEqual）
- *  4. 回归锚点：def-3 recall === 0 —— 验证 #2（recall 剔除 query 自身的词后，
- *     只看答案信号词 annealing；这份 fixture 里 annealing 未命中）
+ *  4. 回归锚点：def-3 recall === 1 —— 验证期望词修正后，中文科普结果不再因缺少
+ *     英文 annealing 被误判为 0 分。
  *
  * 锚点 4 绑定当前 fixture 快照；若重新 --save-fixture=selftest（raw 会漂），需复核。
  *
@@ -46,8 +46,8 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
       `overall=${(s.overall * 100).toFixed(0)}% recall=${s.recall === null ? 'null' : (s.recall * 100).toFixed(0) + '%'}`)
 
     if (c.id === 'def-3') {
-      check(`def-3 回归锚点 recall===0（#2 剔除 query 词后只看 annealing）`,
-        s.recall === 0, `实际=${s.recall}`)
+      check(`def-3 回归锚点 recall===1（期望词修正后中文科普结果应判为相关）`,
+        s.recall === 1, `实际=${s.recall}`)
     }
   }
 
