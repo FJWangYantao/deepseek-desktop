@@ -33,13 +33,13 @@ function createRuntimeId(prefix: string): string {
  */
 export function createAgentRun(input: CreateAgentRunInput): AgentRun {
   return {
-    id: input.id ?? input.runId ?? createRuntimeId('run'),
+    id: input.id ?? createRuntimeId('run'),
     sessionId: input.sessionId,
     conversationTurnId: input.conversationTurnId,
     status: 'created',
     mode: input.mode,
     rounds: [],
-    startedAt: input.startedAt ?? Date.now(),
+    createdAt: input.createdAt ?? Date.now(),
   }
 }
 
@@ -63,6 +63,25 @@ export function appendAgentRound(run: AgentRun, round: AgentRound): AgentRun {
     throw new Error(`重复的 AgentRound: ${round.roundId}`)
   }
 
+  const expectedIndex = run.rounds.length
+  if (round.index !== expectedIndex) {
+    throw new Error(`AgentRound index 非法: expected=${expectedIndex}, actual=${round.index}`)
+  }
+
   run.rounds.push(round)
+  return run
+}
+
+/**
+ * 将一个新建的 Run 标记为真正开始执行，并记录执行起始时间。
+ * 创建和启动分开，便于后续计算排队延迟（startedAt - createdAt）。
+ */
+export function startAgentRun(run: AgentRun, startedAt = Date.now()): AgentRun {
+  if (run.status !== 'created') {
+    throw new Error(`AgentRun 只能从 created 启动，当前状态: ${run.status}`)
+  }
+
+  run.status = 'running'
+  run.startedAt = startedAt
   return run
 }

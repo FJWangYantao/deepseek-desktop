@@ -87,7 +87,10 @@ export interface AgentRun {
   status: AgentRunStatus
   mode: string
   rounds: AgentRound[]
-  startedAt: number
+  /** Run 实体创建时间。 */
+  createdAt: number
+  /** Runtime 真正开始执行的时间；created 状态下尚未设置。 */
+  startedAt?: number
   finishedAt?: number
   error?: string
 }
@@ -98,9 +101,7 @@ export interface CreateAgentRunInput {
   mode: string
   /** 允许调用方注入 id，便于恢复、测试和未来跨进程关联。 */
   id?: string
-  /** runId 是语义化别名；未同时提供 id 时使用它。 */
-  runId?: string
-  startedAt?: number
+  createdAt?: number
 }
 
 export interface CreateAgentRoundInput {

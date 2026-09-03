@@ -2,6 +2,7 @@ export {
   appendAgentRound,
   createAgentRound,
   createAgentRun,
+  startAgentRun,
 } from './AgentRun'
 
 export type {

@@ -15,4 +15,5 @@ export {
   appendAgentRound,
   createAgentRound,
   createAgentRun,
+  startAgentRun,
 } from './run/AgentRun'
